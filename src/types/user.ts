@@ -1,0 +1,13 @@
+
+export type UserRole = 'admin' | 'doctor' | 'technician';
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  specialization?: string;
+  phone?: string;
+  active: boolean;
+}
