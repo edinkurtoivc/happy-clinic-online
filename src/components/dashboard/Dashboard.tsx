@@ -27,18 +27,18 @@ export default function Dashboard() {
   const stats = [
     {
       title: "Total Patients",
-      value: 1,248,
-      icon: <Users className="h-5 w-5" />,
+      value: 1248,
+      icon: <Users className="h-5 w-5" />
     },
     {
       title: "Today's Appointments",
       value: 8,
-      icon: <Calendar className="h-5 w-5" />,
+      icon: <Calendar className="h-5 w-5" />
     },
     {
       title: "Medical Reports",
       value: 347,
-      icon: <File className="h-5 w-5" />,
+      icon: <File className="h-5 w-5" />
     },
   ];
 
