@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Patients from "./pages/Patients";
 import Appointments from "./pages/Appointments";
 import MedicalReports from "./pages/MedicalReports";
+import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
