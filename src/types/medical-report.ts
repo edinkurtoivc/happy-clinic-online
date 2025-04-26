@@ -4,8 +4,14 @@ export interface MedicalReport {
   patientId: string;
   doctorId: string;
   date: string;
-  diagnosis: string;
-  treatment: string;
+  report: string;
+  therapy: string;
   notes?: string;
   status: 'draft' | 'final';
+  patientInfo: {
+    fullName: string;
+    birthDate: string;
+    gender: 'M' | 'F';
+    jmbg: string;
+  };
 }
