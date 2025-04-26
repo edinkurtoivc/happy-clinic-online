@@ -1,5 +1,5 @@
 
-export type UserRole = 'admin' | 'doctor' | 'technician';
+export type UserRole = 'admin' | 'doctor' | 'nurse';
 
 export interface User {
   id: string;
@@ -9,5 +9,9 @@ export interface User {
   role: UserRole;
   specialization?: string;
   phone?: string;
+  birthDate?: string;
+  signatureImage?: string;
+  stampImage?: string;
   active: boolean;
 }
+

@@ -14,6 +14,12 @@ export interface MedicalReport {
     gender: 'M' | 'F';
     jmbg: string;
   };
+  doctorInfo?: {
+    fullName: string;
+    specialization?: string;
+    signatureImage?: string;
+    stampImage?: string;
+  };
   signature?: boolean;
   stamp?: boolean;
 }

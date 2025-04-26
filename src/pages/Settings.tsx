@@ -6,6 +6,7 @@ import UsersManagement from "@/components/users/UsersManagement";
 import ClinicInfo from "@/components/settings/ClinicInfo";
 import UserRoles from "@/components/settings/UserRoles";
 import ExaminationTypes from "@/components/settings/ExaminationTypes";
+import UserProfile from "@/components/settings/UserProfile";
 
 export default function Settings() {
   return (
@@ -15,6 +16,7 @@ export default function Settings() {
         <Tabs defaultValue="clinic" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="clinic">Informacije o praksi</TabsTrigger>
+            <TabsTrigger value="profile">Moj profil</TabsTrigger>
             <TabsTrigger value="users">Korisnici</TabsTrigger>
             <TabsTrigger value="roles">Role i permisije</TabsTrigger>
             <TabsTrigger value="examTypes">Vrste pregleda</TabsTrigger>
@@ -22,6 +24,10 @@ export default function Settings() {
           
           <TabsContent value="clinic">
             <ClinicInfo />
+          </TabsContent>
+          
+          <TabsContent value="profile">
+            <UserProfile />
           </TabsContent>
           
           <TabsContent value="users">
