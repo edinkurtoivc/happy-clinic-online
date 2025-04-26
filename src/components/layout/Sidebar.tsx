@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Calendar, File, Users } from "lucide-react";
+import { Calendar, File, FileText, Settings, Users } from "lucide-react";
 
 const navigation = [
   {
@@ -22,12 +23,17 @@ const navigation = [
   {
     name: "Medical Reports",
     href: "/medical-reports",
-    icon: <File className="h-5 w-5" />
+    icon: <FileText className="h-5 w-5" />
   },
   {
     name: "Users",
     href: "/users",
     icon: <Users className="h-5 w-5" />
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: <Settings className="h-5 w-5" />
   }
 ];
 

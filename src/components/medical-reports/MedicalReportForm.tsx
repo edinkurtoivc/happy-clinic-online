@@ -12,14 +12,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { MedicalReport } from "@/types/medical-report";
 
 const formSchema = z.object({
-  diagnosis: z.string().min(1, "Diagnosis is required"),
-  treatment: z.string().min(1, "Treatment is required"),
+  report: z.string().min(1, "Nalaz je obavezan"),
+  therapy: z.string().min(1, "Terapija je obavezna"),
   notes: z.string().optional(),
   status: z.enum(["draft", "final"]),
 });
@@ -42,8 +41,8 @@ export default function MedicalReportForm({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      diagnosis: defaultValues?.diagnosis || "",
-      treatment: defaultValues?.treatment || "",
+      report: defaultValues?.report || "",
+      therapy: defaultValues?.therapy || "",
       notes: defaultValues?.notes || "",
       status: defaultValues?.status || "draft",
     },
@@ -63,7 +62,7 @@ export default function MedicalReportForm({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-[400px] sm:w-[540px]">
         <SheetHeader>
-          <SheetTitle>Medical Report</SheetTitle>
+          <SheetTitle>Medicinski nalaz</SheetTitle>
         </SheetHeader>
         
         <div className="mt-6">
@@ -71,12 +70,12 @@ export default function MedicalReportForm({
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
-                name="diagnosis"
+                name="report"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Diagnosis</FormLabel>
+                    <FormLabel>Nalaz</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Enter diagnosis" {...field} />
+                      <Textarea placeholder="Unesite nalaz" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -85,12 +84,12 @@ export default function MedicalReportForm({
 
               <FormField
                 control={form.control}
-                name="treatment"
+                name="therapy"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Treatment Plan</FormLabel>
+                    <FormLabel>Terapija</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Enter treatment plan" {...field} />
+                      <Textarea placeholder="Unesite terapiju" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -102,10 +101,10 @@ export default function MedicalReportForm({
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Additional Notes</FormLabel>
+                    <FormLabel>Dodatne napomene</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Enter any additional notes (optional)" 
+                        placeholder="Unesite dodatne napomene (opcionalno)" 
                         {...field} 
                       />
                     </FormControl>
@@ -123,7 +122,7 @@ export default function MedicalReportForm({
                     form.handleSubmit(handleSubmit)();
                   }}
                 >
-                  Save as Draft
+                  Sačuvaj kao nacrt
                 </Button>
                 <Button
                   type="button"
@@ -132,7 +131,7 @@ export default function MedicalReportForm({
                     form.handleSubmit(handleSubmit)();
                   }}
                 >
-                  Finalize Report
+                  Finaliziraj nalaz
                 </Button>
               </div>
             </form>
