@@ -20,14 +20,15 @@ import {
   DialogDescription, 
   DialogFooter 
 } from "@/components/ui/dialog";
+import { format } from "date-fns";
 
 // Mock data for patients
 const mockPatients = [
-  { id: 1, name: "Ana Marković", dob: "1985-04-12", gender: "F", jmbg: "1204985123456", phone: "064-123-4567" },
-  { id: 2, name: "Nikola Jovanović", dob: "1976-08-30", gender: "M", jmbg: "3008976123456", phone: "065-234-5678" },
-  { id: 3, name: "Milica Petrović", dob: "1990-11-15", gender: "F", jmbg: "1511990123456", phone: "063-345-6789" },
-  { id: 4, name: "Stefan Nikolić", dob: "1982-02-22", gender: "M", jmbg: "2202982123456", phone: "062-456-7890" },
-  { id: 5, name: "Jelena Stojanović", dob: "1995-07-08", gender: "F", jmbg: "0807995123456", phone: "061-567-8901" },
+  { id: 1, name: "Ana Marković", dob: "1985-04-12", gender: "F" as const, jmbg: "1204985123456", phone: "064-123-4567" },
+  { id: 2, name: "Nikola Jovanović", dob: "1976-08-30", gender: "M" as const, jmbg: "3008976123456", phone: "065-234-5678" },
+  { id: 3, name: "Milica Petrović", dob: "1990-11-15", gender: "F" as const, jmbg: "1511990123456", phone: "063-345-6789" },
+  { id: 4, name: "Stefan Nikolić", dob: "1982-02-22", gender: "M" as const, jmbg: "2202982123456", phone: "062-456-7890" },
+  { id: 5, name: "Jelena Stojanović", dob: "1995-07-08", gender: "F" as const, jmbg: "0807995123456", phone: "061-567-8901" },
 ];
 
 // Mock data for examination types - would come from settings in a real app
@@ -52,7 +53,7 @@ export default function MedicalReports() {
   const [isVerificationDialogOpen, setIsVerificationDialogOpen] = useState(false);
   const [showPatientsDropdown, setShowPatientsDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [reportText, setReportText] = useState("");
   const [therapyText, setTherapyText] = useState("");
   const [selectedExamType, setSelectedExamType] = useState<string>("");
@@ -77,8 +78,8 @@ export default function MedicalReports() {
     patient.jmbg.includes(searchTerm)
   );
 
-  const handleSelectPatient = (patient: Patient) => {
-    // Convert gender type if needed
+  const handleSelectPatient = (patient: any) => {
+    // Ensure patient has the correct gender type
     const typedPatient: Patient = {
       ...patient,
       gender: patient.gender as 'M' | 'F'
@@ -110,7 +111,7 @@ export default function MedicalReports() {
     const savedReportData: Partial<MedicalReport> = {
       ...data,
       id: `report-${Date.now()}`,
-      patientId: selectedPatient.id.toString(),
+      patientId: selectedPatient!.id.toString(),
       doctorId: currentDoctor.id,
       date: new Date().toISOString(),
       verificationStatus: data.status === 'final' ? 'pending' as const : 'unverified' as const,
@@ -176,7 +177,7 @@ export default function MedicalReports() {
     const currentDate = new Date().toISOString();
     
     const reportData: Partial<MedicalReport> = {
-      patientId: selectedPatient.id.toString(),
+      patientId: selectedPatient!.id.toString(),
       doctorId: currentDoctor.id,
       date: currentDate,
       report: reportText,
@@ -184,10 +185,10 @@ export default function MedicalReports() {
       status: isFinal ? 'final' : 'draft',
       appointmentType: selectedExamType,
       patientInfo: {
-        fullName: selectedPatient.name,
-        birthDate: selectedPatient.dob,
-        gender: selectedPatient.gender as 'M' | 'F',
-        jmbg: selectedPatient.jmbg
+        fullName: selectedPatient!.name,
+        birthDate: selectedPatient!.dob,
+        gender: selectedPatient!.gender,
+        jmbg: selectedPatient!.jmbg
       }
     };
 
@@ -268,6 +269,16 @@ export default function MedicalReports() {
       title: "PDF generisan",
       description: "Nalaz je uspješno konvertovan u PDF format.",
     });
+  };
+
+  // Format date properly - new function for better date formatting
+  const formatDate = (dateString: string) => {
+    try {
+      // Format the date as "dd.MM.yyyy." (Bosnian format)
+      return format(new Date(dateString), "dd.MM.yyyy.");
+    } catch (e) {
+      return dateString;
+    }
   };
 
   return (

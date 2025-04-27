@@ -3,6 +3,7 @@ import { forwardRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Printer, Save, ShieldCheck } from "lucide-react";
+import { format } from "date-fns";
 
 interface MedicalReportPreviewProps {
   patient?: any;
@@ -38,13 +39,12 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     const formatDate = (dateString?: string) => {
       if (!dateString) return "";
       
-      const options: Intl.DateTimeFormatOptions = { 
-        day: "numeric", 
-        month: "short", 
-        year: "numeric" 
-      };
-      
-      return new Date(dateString).toLocaleDateString("bs-BA", options);
+      try {
+        // Format the date as "dd.MM.yyyy." (Bosnian format)
+        return format(new Date(dateString), "dd.MM.yyyy.");
+      } catch (e) {
+        return dateString;
+      }
     };
 
     const today = formatDate(new Date().toISOString());

@@ -59,3 +59,17 @@ export interface ExaminationType {
   duration: string;
   price: string;
 }
+
+export interface Appointment {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  date: string;
+  time: string;
+  examinationType: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  notes?: string;
+  reportId?: string;
+}
