@@ -8,7 +8,7 @@ import type { MedicalReport, ExaminationType } from "@/types/medical-report";
 import type { Patient } from "@/types/patient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bold, Italic, Underline, Save, Printer, Signature, Stamp, AlertTriangle } from "lucide-react";
+import { Bold, Italic, Underline, Save, Printer, Signature, Stamp, AlertTriangle, ShieldCheck } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import PatientsList from "@/components/patients/PatientsList";
 import html2pdf from "html2pdf.js";
@@ -78,7 +78,13 @@ export default function MedicalReports() {
   );
 
   const handleSelectPatient = (patient: Patient) => {
-    setSelectedPatient(patient);
+    // Convert gender type if needed
+    const typedPatient: Patient = {
+      ...patient,
+      gender: patient.gender as 'M' | 'F'
+    };
+    
+    setSelectedPatient(typedPatient);
     setShowPatientsDropdown(false);
     // Reset the report form when a new patient is selected
     if (isSaved) {
@@ -101,13 +107,13 @@ export default function MedicalReports() {
     console.log('Kreiranje medicinskog izvještaja:', data);
     
     // For now, simulate saving with an ID
-    const savedReportData = {
+    const savedReportData: Partial<MedicalReport> = {
       ...data,
       id: `report-${Date.now()}`,
       patientId: selectedPatient.id.toString(),
       doctorId: currentDoctor.id,
       date: new Date().toISOString(),
-      verificationStatus: data.status === 'final' ? 'pending' : 'unverified',
+      verificationStatus: data.status === 'final' ? 'pending' as const : 'unverified' as const,
       doctorInfo: {
         fullName: currentDoctor.name,
         specialization: currentDoctor.specialization
