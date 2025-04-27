@@ -1,10 +1,12 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
+import type { Patient } from "@/types/patient";
 
 // Mock data for patients
-const mockPatients = [
+const mockPatients: Patient[] = [
   { id: 1, name: "Ana Marković", dob: "1985-04-12", jmbg: "1204985123456", phone: "064-123-4567" },
   { id: 2, name: "Nikola Jovanović", dob: "1976-08-30", jmbg: "3008976123456", phone: "065-234-5678" },
   { id: 3, name: "Milica Petrović", dob: "1990-11-15", jmbg: "1511990123456", phone: "063-345-6789" },
@@ -12,21 +14,17 @@ const mockPatients = [
   { id: 5, name: "Jelena Stojanović", dob: "1995-07-08", jmbg: "0807995123456", phone: "061-567-8901" },
 ];
 
-interface Patient {
-  id: number;
-  name: string;
-  dob: string;
-  jmbg: string;
-  phone: string;
-}
-
 interface PatientsListProps {
   onSelectPatient: (patient: Patient) => void;
 }
 
 export default function PatientsList({ onSelectPatient }: PatientsListProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [patients, setPatients] = useState<Patient[]>(mockPatients);
+  const [patients] = useState<Patient[]>(mockPatients);
+  const [filters, setFilters] = useState({
+    showInactive: false,
+    sortBy: "name",
+  });
 
   const filteredPatients = patients.filter(patient =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,12 +34,17 @@ export default function PatientsList({ onSelectPatient }: PatientsListProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">
-        <Input
-          placeholder="Search patients by name or JMBG..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-        />
+        <div className="relative flex-grow max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search patients by name or JMBG..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Button variant="outline" size="sm">Filter</Button>
+        <Button variant="outline" size="sm">Sort</Button>
       </div>
 
       <div className="rounded-md border">
@@ -63,12 +66,14 @@ export default function PatientsList({ onSelectPatient }: PatientsListProps) {
                 <td className="px-4 py-3 text-sm">{patient.jmbg}</td>
                 <td className="px-4 py-3 text-sm">{patient.phone}</td>
                 <td className="px-4 py-3 text-right">
-                  <button 
+                  <Button 
                     onClick={() => onSelectPatient(patient)} 
-                    className="text-sm font-medium text-clinic-600 hover:text-clinic-800"
+                    variant="ghost"
+                    size="sm"
+                    className="text-clinic-600 hover:text-clinic-800 hover:bg-clinic-50"
                   >
                     View
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

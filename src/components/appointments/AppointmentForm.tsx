@@ -10,10 +10,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import type { Patient } from "@/types/patient";
 
-export default function AppointmentForm({ onCancel }: { onCancel: () => void }) {
+interface AppointmentFormProps {
+  onCancel: () => void;
+  preselectedPatient?: Patient;
+}
+
+export default function AppointmentForm({ onCancel, preselectedPatient }: AppointmentFormProps) {
   const { toast } = useToast();
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [selectedPatientId, setSelectedPatientId] = useState<string>(
+    preselectedPatient ? preselectedPatient.id.toString() : ""
+  );
   
   // Mock data for doctors and patients
   const doctors = [
@@ -49,14 +58,22 @@ export default function AppointmentForm({ onCancel }: { onCancel: () => void }) 
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-xl font-bold text-clinic-800">Zakaži novi termin</CardTitle>
+        <CardTitle className="text-xl font-bold text-clinic-800">
+          {preselectedPatient 
+            ? `Zakaži novi termin za ${preselectedPatient.name}`
+            : "Zakaži novi termin"}
+        </CardTitle>
       </CardHeader>
       
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="patient">Pacijent</Label>
-            <Select>
+            <Select 
+              value={selectedPatientId} 
+              onValueChange={setSelectedPatientId}
+              disabled={!!preselectedPatient}
+            >
               <SelectTrigger id="patient">
                 <SelectValue placeholder="Odaberi pacijenta" />
               </SelectTrigger>
