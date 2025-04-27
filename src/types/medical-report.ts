@@ -8,6 +8,8 @@ export interface MedicalReport {
   therapy: string;
   notes?: string;
   status: 'draft' | 'final';
+  appointmentId?: string;
+  appointmentType?: string;
   patientInfo: {
     fullName: string;
     birthDate: string;
@@ -25,6 +27,9 @@ export interface MedicalReport {
   versions?: MedicalReportVersion[];
   updatedAt?: string;
   updatedBy?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  verificationStatus: 'unverified' | 'pending' | 'verified';
 }
 
 export interface MedicalReportVersion {
@@ -42,8 +47,15 @@ export interface MedicalReportVersion {
 export interface MedicalReportAudit {
   id: string;
   reportId: string;
-  action: 'created' | 'updated' | 'viewed' | 'printed';
+  action: 'created' | 'updated' | 'viewed' | 'printed' | 'verified';
   performedBy: string;
   performedAt: string;
   details?: string;
+}
+
+export interface ExaminationType {
+  id: number;
+  name: string;
+  duration: string;
+  price: string;
 }

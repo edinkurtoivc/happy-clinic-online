@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -13,14 +13,27 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import type { MedicalReport } from "@/types/medical-report";
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle 
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { MedicalReport, ExaminationType } from "@/types/medical-report";
 
 const formSchema = z.object({
   report: z.string().min(1, "Nalaz je obavezan"),
   therapy: z.string().min(1, "Terapija je obavezna"),
   notes: z.string().optional(),
   status: z.enum(["draft", "final"]),
+  appointmentType: z.string().min(1, "Vrsta pregleda je obavezna"),
 });
 
 interface MedicalReportFormProps {
@@ -28,6 +41,7 @@ interface MedicalReportFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: Partial<MedicalReport>) => void;
   defaultValues?: Partial<MedicalReport>;
+  examinationTypes: ExaminationType[];
 }
 
 export default function MedicalReportForm({
@@ -35,6 +49,7 @@ export default function MedicalReportForm({
   onOpenChange,
   onSubmit,
   defaultValues,
+  examinationTypes,
 }: MedicalReportFormProps) {
   const [status, setStatus] = useState<"draft" | "final">("draft");
 
@@ -45,6 +60,7 @@ export default function MedicalReportForm({
       therapy: defaultValues?.therapy || "",
       notes: defaultValues?.notes || "",
       status: defaultValues?.status || "draft",
+      appointmentType: defaultValues?.appointmentType || "",
     },
   });
 
@@ -53,6 +69,7 @@ export default function MedicalReportForm({
       ...values,
       date: new Date().toISOString(),
       status,
+      verificationStatus: status === "final" ? "pending" : "unverified",
     });
     onOpenChange(false);
     form.reset();
@@ -68,6 +85,34 @@ export default function MedicalReportForm({
         <div className="mt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="appointmentType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vrsta pregleda</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Izaberite vrstu pregleda" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {examinationTypes.map(type => (
+                          <SelectItem key={type.id} value={type.name}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="report"

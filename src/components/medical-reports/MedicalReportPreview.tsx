@@ -2,7 +2,7 @@
 import { forwardRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Printer, Save } from "lucide-react";
+import { Printer, Save, ShieldCheck } from "lucide-react";
 
 interface MedicalReportPreviewProps {
   patient?: any;
@@ -12,10 +12,28 @@ interface MedicalReportPreviewProps {
   showStamp: boolean;
   onPrint: () => void;
   onSave: () => void;
+  isSaved: boolean;
+  verificationStatus?: 'unverified' | 'pending' | 'verified';
+  verifiedBy?: string;
+  appointmentType?: string;
+  doctorName?: string;
 }
 
 const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProps>(
-  ({ patient, reportText, therapyText, showSignature, showStamp, onPrint, onSave }, ref) => {
+  ({ 
+    patient, 
+    reportText, 
+    therapyText, 
+    showSignature, 
+    showStamp, 
+    onPrint, 
+    onSave,
+    isSaved,
+    verificationStatus = 'unverified',
+    verifiedBy,
+    appointmentType,
+    doctorName
+  }, ref) => {
     // Format date in Bosnian locale
     const formatDate = (dateString?: string) => {
       if (!dateString) return "";
@@ -41,6 +59,9 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
               size="sm" 
               className="flex items-center gap-2"
               onClick={onPrint}
+              disabled={!isSaved || verificationStatus !== 'verified'}
+              title={!isSaved ? "Nalaz mora biti sačuvan prije printanja" : 
+                     verificationStatus !== 'verified' ? "Nalaz mora biti verifikovan prije printanja" : ""}
             >
               <Printer className="h-4 w-4" /> Print i PDF
             </Button>
@@ -84,6 +105,9 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             <p>Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
             <p>JMBG: {patient ? patient.jmbg : ""}</p>
             <p className="mt-4">Datum ispisa nalaza: {today}</p>
+            {appointmentType && (
+              <p className="mt-1 font-medium text-emerald-700">Vrsta pregleda: {appointmentType}</p>
+            )}
           </div>
 
           {/* Report content */}
@@ -102,6 +126,23 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
               </p>
             </div>
             
+            {/* Verification status */}
+            {isSaved && (
+              <div className="mt-4 p-2 rounded-md text-sm">
+                {verificationStatus === 'verified' && verifiedBy && (
+                  <div className="flex items-center text-green-700 bg-green-50 p-2 rounded-md">
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    <span>✅ Verifikovano od strane {verifiedBy}</span>
+                  </div>
+                )}
+                {verificationStatus === 'pending' && (
+                  <div className="text-amber-700 bg-amber-50 p-2 rounded-md">
+                    Čeka verifikaciju
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Signature and stamp area */}
             {(showSignature || showStamp) && (
               <div className="mt-12 pt-8 text-right">
@@ -109,7 +150,9 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                   {showSignature && (
                     <div className="text-center">
                       <div className="border-b border-black w-32 mb-1"></div>
-                      <p className="text-xs text-gray-600">potpis doktora</p>
+                      <p className="text-xs text-gray-600">
+                        {doctorName || "potpis doktora"}
+                      </p>
                     </div>
                   )}
                   
