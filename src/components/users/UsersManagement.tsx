@@ -42,12 +42,26 @@ export default function UsersManagement() {
     },
   ];
 
-  const handleAddUser = async (data: Partial<User>) => {
+  const handleAddUser = async (data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: "admin" | "doctor" | "nurse";
+    specialization?: string;
+    phone?: string;
+  }) => {
     // Will implement with Supabase
     console.log('Creating user:', data);
   };
 
-  const handleEditUser = async (data: Partial<User>) => {
+  const handleEditUser = async (data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: "admin" | "doctor" | "nurse";
+    specialization?: string;
+    phone?: string;
+  }) => {
     // Will implement with Supabase
     console.log('Updating user:', data);
   };

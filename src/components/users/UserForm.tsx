@@ -35,7 +35,7 @@ const userFormSchema = z.object({
   email: z.string().email(),
   firstName: z.string().min(2),
   lastName: z.string().min(2),
-  role: z.enum(['admin', 'doctor', 'technician']),
+  role: z.enum(['admin', 'doctor', 'nurse']),
   specialization: z.string().optional(),
   phone: z.string().optional(),
 });
@@ -62,13 +62,13 @@ export default function UserForm({
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
-    defaultValues: defaultValues || {
-      email: "",
-      firstName: "",
-      lastName: "",
-      role: "doctor",
-      specialization: "",
-      phone: "",
+    defaultValues: {
+      email: defaultValues?.email || "",
+      firstName: defaultValues?.firstName || "",
+      lastName: defaultValues?.lastName || "",
+      role: (defaultValues?.role as 'admin' | 'doctor' | 'nurse') || "doctor",
+      specialization: defaultValues?.specialization || "",
+      phone: defaultValues?.phone || "",
     },
   });
 

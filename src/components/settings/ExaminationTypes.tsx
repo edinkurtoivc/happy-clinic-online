@@ -23,6 +23,14 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useToast } from "@/components/ui/use-toast";
 
+// Define a proper interface for ExamType
+interface ExamType {
+  id: number;
+  name: string;
+  duration: string;
+  price: string;
+}
+
 const examTypeSchema = z.object({
   id: z.number().optional(),
   name: z.string().min(1, "Naziv vrste pregleda je obavezan"),
@@ -34,7 +42,7 @@ type ExamTypeFormData = z.infer<typeof examTypeSchema>;
 
 export default function ExaminationTypes() {
   const { toast } = useToast();
-  const [examTypes, setExamTypes] = useState([
+  const [examTypes, setExamTypes] = useState<ExamType[]>([
     { id: 1, name: "Opći pregled", duration: "30 min", price: "50 KM" },
     { id: 2, name: "Kardiološki pregled", duration: "45 min", price: "80 KM" },
     { id: 3, name: "Dermatološki pregled", duration: "30 min", price: "60 KM" },
@@ -62,7 +70,7 @@ export default function ExaminationTypes() {
     setIsDialogOpen(true);
   };
 
-  const openEditDialog = (examType: any) => {
+  const openEditDialog = (examType: ExamType) => {
     form.reset({
       id: examType.id,
       name: examType.name,
@@ -75,9 +83,12 @@ export default function ExaminationTypes() {
 
   const handleSubmit = (data: ExamTypeFormData) => {
     if (formMode === 'create') {
-      const newExamType = {
-        ...data,
+      // Ensure all required fields are provided
+      const newExamType: ExamType = {
         id: Math.max(0, ...examTypes.map(e => e.id)) + 1,
+        name: data.name,
+        duration: data.duration,
+        price: data.price || "",
       };
       setExamTypes([...examTypes, newExamType]);
       toast({
@@ -85,7 +96,13 @@ export default function ExaminationTypes() {
         description: "Nova vrsta pregleda je uspješno dodana",
       });
     } else {
-      setExamTypes(examTypes.map(e => (e.id === data.id ? { ...data } : e)));
+      // Ensure all required fields are provided when updating
+      setExamTypes(examTypes.map(e => (e.id === data.id ? {
+        id: e.id,
+        name: data.name,
+        duration: data.duration,
+        price: data.price || "",
+      } : e)));
       toast({
         title: "Vrsta pregleda ažurirana",
         description: "Vrsta pregleda je uspješno ažurirana",

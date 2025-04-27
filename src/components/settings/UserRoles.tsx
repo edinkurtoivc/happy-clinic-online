@@ -24,6 +24,14 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useToast } from "@/components/ui/use-toast";
 
+// Define a proper interface for Role
+interface Role {
+  id: number;
+  name: string;
+  description: string;
+  permissions: string;
+}
+
 // Define the role schema
 const roleSchema = z.object({
   id: z.number().optional(),
@@ -36,13 +44,13 @@ type RoleFormData = z.infer<typeof roleSchema>;
 
 export default function UserRoles() {
   const { toast } = useToast();
-  const [roles, setRoles] = useState([
+  const [roles, setRoles] = useState<Role[]>([
     { id: 1, name: "Administrator", description: "Potpuni pristup", permissions: "Sve" },
     { id: 2, name: "Doktor", description: "Pregledi i nalazi", permissions: "Pacijenti, Nalazi" },
     { id: 3, name: "Medicinska sestra", description: "Rezervacije termina", permissions: "Pacijenti, Termini" },
   ]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentRole, setCurrentRole] = useState<RoleFormData | null>(null);
+  const [currentRole, setCurrentRole] = useState<Role | null>(null);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   const form = useForm<RoleFormData>({
@@ -64,7 +72,7 @@ export default function UserRoles() {
     setIsDialogOpen(true);
   };
 
-  const openEditDialog = (role: any) => {
+  const openEditDialog = (role: Role) => {
     setCurrentRole(role);
     form.reset({
       id: role.id,
@@ -78,9 +86,12 @@ export default function UserRoles() {
 
   const handleSubmit = (data: RoleFormData) => {
     if (formMode === 'create') {
-      const newRole = {
-        ...data,
+      // Ensure all required fields are provided
+      const newRole: Role = {
         id: Math.max(0, ...roles.map(r => r.id)) + 1,
+        name: data.name,
+        description: data.description,
+        permissions: data.permissions,
       };
       setRoles([...roles, newRole]);
       toast({
@@ -88,7 +99,13 @@ export default function UserRoles() {
         description: "Nova rola je uspješno dodana",
       });
     } else {
-      setRoles(roles.map(r => (r.id === data.id ? { ...data } : r)));
+      // Ensure all required fields are provided when updating
+      setRoles(roles.map(r => (r.id === data.id ? {
+        id: r.id,
+        name: data.name,
+        description: data.description,
+        permissions: data.permissions,
+      } : r)));
       toast({
         title: "Rola ažurirana",
         description: "Rola je uspješno ažurirana",

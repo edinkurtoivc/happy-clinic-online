@@ -1,5 +1,5 @@
 
-export type UserRole = 'admin' | 'doctor' | 'nurse';
+export type UserRole = 'admin' | 'doctor' | 'nurse' | 'technician';
 
 export interface User {
   id: string;
@@ -14,4 +14,3 @@ export interface User {
   stampImage?: string;
   active: boolean;
 }
-

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Bold, Italic, Underline, Save, Printer, Signature, Stamp } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { PatientsList } from "@/components/patients/PatientsList";
+import PatientsList from "@/components/patients/PatientsList";
 import html2pdf from "html2pdf.js";
 
 // Mock data for patients
@@ -72,8 +72,8 @@ export default function MedicalReports() {
       return;
     }
 
-    const reportData = {
-      patientId: selectedPatient.id,
+    const reportData: Partial<MedicalReport> = {
+      patientId: selectedPatient.id.toString(),
       doctorId: "1", // Mock doctor ID
       date: currentDate,
       report: reportText,
@@ -82,7 +82,7 @@ export default function MedicalReports() {
       patientInfo: {
         fullName: selectedPatient.name,
         birthDate: selectedPatient.dob,
-        gender: selectedPatient.gender,
+        gender: selectedPatient.gender as 'M' | 'F',
         jmbg: selectedPatient.jmbg
       }
     };
