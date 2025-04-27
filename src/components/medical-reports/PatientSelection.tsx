@@ -1,0 +1,72 @@
+
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import type { Patient } from "@/types/patient";
+
+interface PatientSelectionProps {
+  selectedPatient: Patient | null;
+  onSelectPatient: (patient: Patient) => void;
+}
+
+const mockPatients = [
+  { id: 1, name: "Ana Marković", dob: "1985-04-12", gender: "F" as const, jmbg: "1204985123456", phone: "064-123-4567" },
+  { id: 2, name: "Nikola Jovanović", dob: "1976-08-30", gender: "M" as const, jmbg: "3008976123456", phone: "065-234-5678" },
+  { id: 3, name: "Milica Petrović", dob: "1990-11-15", gender: "F" as const, jmbg: "1511990123456", phone: "063-345-6789" },
+  { id: 4, name: "Stefan Nikolić", dob: "1982-02-22", gender: "M" as const, jmbg: "2202982123456", phone: "062-456-7890" },
+  { id: 5, name: "Jelena Stojanović", dob: "1995-07-08", gender: "F" as const, jmbg: "0807995123456", phone: "061-567-8901" },
+];
+
+export default function PatientSelection({ selectedPatient, onSelectPatient }: PatientSelectionProps) {
+  const [showPatientsDropdown, setShowPatientsDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredPatients = mockPatients.filter(patient =>
+    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.jmbg.includes(searchTerm)
+  );
+
+  const handleSelectPatient = (patient: Patient) => {
+    onSelectPatient(patient);
+    setShowPatientsDropdown(false);
+  };
+
+  return (
+    <div className="relative mb-6">
+      <div className="w-full relative">
+        <Input 
+          placeholder={selectedPatient ? selectedPatient.name : "Odaberite pacijenta"}
+          className="w-full border rounded-md p-4"
+          onClick={() => setShowPatientsDropdown(!showPatientsDropdown)}
+          readOnly
+        />
+        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+      </div>
+      
+      {showPatientsDropdown && (
+        <div className="absolute z-10 w-full bg-white border rounded-md mt-1 shadow-md">
+          <Input 
+            placeholder="Pronađite pacijenta..." 
+            className="m-2 w-[calc(100%-16px)]"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <div className="p-2 hover:bg-gray-100 cursor-pointer flex border-t">
+            <span className="text-emerald-600">+</span>
+            <span className="ml-2">Dodaj novog pacijenta</span>
+          </div>
+          {filteredPatients.map(patient => (
+            <div 
+              key={patient.id} 
+              className="p-2 hover:bg-gray-100 cursor-pointer"
+              onClick={() => handleSelectPatient(patient)}
+            >
+              {patient.name}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
