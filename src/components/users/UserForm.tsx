@@ -2,8 +2,7 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
-import type { User, UserRole } from "@/types/user";
+import type { User } from "@/types/user";
 import {
   Dialog,
   DialogContent,
@@ -12,37 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-
-const userFormSchema = z.object({
-  email: z.string().email("Unesite ispravnu email adresu"),
-  firstName: z.string().min(2, "Ime mora sadržavati najmanje 2 karaktera"),
-  lastName: z.string().min(2, "Prezime mora sadržavati najmanje 2 karaktera"),
-  role: z.enum(['admin', 'doctor', 'nurse'], {
-    errorMap: () => ({ message: "Odaberite ulogu" }),
-  }),
-  specialization: z.string().optional(),
-  phone: z.string().optional(),
-});
-
-type UserFormData = z.infer<typeof userFormSchema>;
+import { userFormSchema, type UserFormData } from "@/schemas/userForm";
+import { UserFormFields } from "./UserFormFields";
 
 interface UserFormProps {
   open: boolean;
@@ -111,96 +84,7 @@ export default function UserForm({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="korisnik@primjer.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ime</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Prezime</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Uloga</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Odaberite ulogu" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="admin">Administrator</SelectItem>
-                      <SelectItem value="doctor">Doktor</SelectItem>
-                      <SelectItem value="nurse">Medicinski tehničar</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="specialization"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Specijalizacija</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Broj telefona</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <UserFormFields form={form} />
             <DialogFooter>
               <Button type="submit" disabled={isLoading}>
                 {mode === 'create' ? 'Kreiraj korisnika' : 'Ažuriraj korisnika'}
