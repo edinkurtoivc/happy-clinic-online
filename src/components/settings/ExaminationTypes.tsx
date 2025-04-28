@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,15 +52,32 @@ export default function ExaminationTypes() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
+  useEffect(() => {
+    try {
+      const savedTypes = localStorage.getItem('examination-types');
+      if (savedTypes) {
+        const parsedTypes = JSON.parse(savedTypes);
+        if (Array.isArray(parsedTypes) && parsedTypes.length > 0) {
+          console.log("[ExaminationTypes] Loaded saved examination types:", parsedTypes);
+          setExamTypes(parsedTypes);
+        }
+      }
+    } catch (error) {
+      console.error("[ExaminationTypes] Error loading examination types:", error);
+    }
+  }, []);
+
   const { isSaving, lastSaved, isOffline, forceSave, saveStatus } = useSaveData({
     data: examTypes,
     key: "examination-types",
     onSave: async (data) => {
+      console.log("[ExaminationTypes] Saving examination types:", data);
       // U stvarnoj aplikaciji, ovdje bi bio API poziv
       await new Promise(resolve => setTimeout(resolve, 500));
       localStorage.setItem('examination-types', JSON.stringify(data));
       return;
-    }
+    },
+    loadFromStorage: false // We handle loading manually above
   });
 
   const form = useForm<ExamTypeFormData>({

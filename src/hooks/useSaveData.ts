@@ -9,6 +9,8 @@ interface UseSaveDataConfig<T> {
   onSave?: (data: T) => Promise<void>;
   saveDelay?: number;
   condition?: boolean;
+  loadFromStorage?: boolean;
+  onDataLoaded?: (data: T) => void;
 }
 
 export function useSaveData<T>({
@@ -17,6 +19,8 @@ export function useSaveData<T>({
   onSave,
   saveDelay = 2000,
   condition = true,
+  loadFromStorage = true,
+  onDataLoaded,
 }: UseSaveDataConfig<T>) {
   const { toast } = useToast();
   const location = useLocation();
@@ -25,6 +29,7 @@ export function useSaveData<T>({
   const [needsSave, setNeedsSave] = useState(false);
   const [saveAttempts, setSaveAttempts] = useState(0);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
 
   // Monitor online status
   useEffect(() => {
@@ -39,6 +44,27 @@ export function useSaveData<T>({
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+
+  // Load data from storage on initial render
+  useEffect(() => {
+    if (loadFromStorage && !initialDataLoaded) {
+      try {
+        const savedItem = localStorage.getItem(`autosave_${key}`);
+        if (savedItem) {
+          const savedData = JSON.parse(savedItem);
+          console.log(`[AutoSave] Loaded data for key ${key}:`, savedData);
+          
+          if (savedData.data && onDataLoaded) {
+            onDataLoaded(savedData.data);
+            setLastSaved(new Date(savedData.timestamp));
+            setInitialDataLoaded(true);
+          }
+        }
+      } catch (error) {
+        console.error(`[AutoSave] Error loading data for key ${key}:`, error);
+      }
+    }
+  }, [key, loadFromStorage, initialDataLoaded, onDataLoaded]);
 
   // Save on location change (navigation)
   useEffect(() => {
@@ -55,11 +81,13 @@ export function useSaveData<T>({
 
   // Save on data change after delay
   useEffect(() => {
-    if (!condition) return;
+    if (!condition || !initialDataLoaded) return;
     
+    console.log(`[AutoSave] Data changed for key ${key}, scheduling save...`);
     setNeedsSave(true);
     const timer = setTimeout(() => {
       if (needsSave) {
+        console.log(`[AutoSave] Saving data for key ${key} after delay...`);
         saveData();
       }
     }, saveDelay);
@@ -76,6 +104,7 @@ export function useSaveData<T>({
 
     try {
       setIsSaving(true);
+      console.log(`[AutoSave] Starting save for key ${key}`);
       
       // If we're offline or no onSave callback provided, save locally
       if (isOffline || !onSave) {
@@ -83,15 +112,19 @@ export function useSaveData<T>({
         setLastSaved(new Date());
         setNeedsSave(false);
         setSaveAttempts(0);
+        console.log(`[AutoSave] Saved locally for key ${key}`);
       } else {
         // Online saving with provided callback
         await onSave(data);
+        console.log(`[AutoSave] Saved online for key ${key}`);
+        // Also save locally as a backup
+        saveLocally(key, data);
         setLastSaved(new Date());
         setNeedsSave(false);
         setSaveAttempts(0);
       }
     } catch (error) {
-      console.error("Error saving data:", error);
+      console.error(`[AutoSave] Error saving data for key ${key}:`, error);
       const newAttempts = saveAttempts + 1;
       setSaveAttempts(newAttempts);
       
@@ -115,6 +148,7 @@ export function useSaveData<T>({
 
   // Manual save function that can be called externally
   const forceSave = async () => {
+    console.log(`[AutoSave] Force saving data for key ${key}`);
     await saveData();
   };
 
@@ -132,9 +166,9 @@ export function useSaveData<T>({
       }));
       
       // For demo purposes, log the save location
-      console.log(`Data saved locally to ${savedPath || "/default/path"} for key ${key}`);
+      console.log(`[AutoSave] Data saved locally to ${savedPath || "/default/path"} for key ${key}`);
     } catch (error) {
-      console.error("Error saving locally:", error);
+      console.error(`[AutoSave] Error saving locally for key ${key}:`, error);
       throw error;
     }
   };
@@ -146,5 +180,6 @@ export function useSaveData<T>({
     forceSave,
     saveStatus: isSaving ? "saving" : needsSave ? "pending" : "saved",
     retry: forceSave,
+    initialDataLoaded,
   };
 }

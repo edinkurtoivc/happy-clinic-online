@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,6 +14,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { useSaveData } from "@/hooks/useSaveData";
+import { AutoSaveIndicator } from "@/components/ui/auto-save-indicator";
 
 export default function DataFolderSelect() {
   const { toast } = useToast();
@@ -25,20 +25,28 @@ export default function DataFolderSelect() {
   // U stvarnoj aplikaciji, ovo bismo dohvatili iz sistemske pohrane
   useEffect(() => {
     const savedPath = localStorage.getItem('dataFolderPath');
+    console.log("[DataFolderSelect] Initial data path from storage:", savedPath);
     if (savedPath) {
       setDataPath(savedPath);
     }
   }, []);
 
-  const { isSaving: autoSaving, isOffline, saveStatus } = useSaveData({
+  const { isSaving: autoSaving, isOffline, saveStatus, initialDataLoaded } = useSaveData({
     data: { path: dataPath },
     key: "data-folder-config",
     onSave: async (data) => {
+      console.log("[DataFolderSelect] Saving data folder config:", data);
       // U stvarnoj aplikaciji, ovdje bi bio API poziv
       await new Promise(resolve => setTimeout(resolve, 1000));
       localStorage.setItem('dataFolderPath', data.path);
     },
-    condition: !!dataPath
+    condition: !!dataPath,
+    onDataLoaded: (loadedData) => {
+      if (loadedData.path) {
+        console.log("[DataFolderSelect] Loaded data path from auto-save:", loadedData.path);
+        setDataPath(loadedData.path);
+      }
+    }
   });
 
   const handleSelectFolder = () => {
