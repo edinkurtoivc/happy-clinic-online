@@ -1,4 +1,3 @@
-
 import { UseFormReturn } from "react-hook-form";
 import {
   FormField,
@@ -37,6 +36,21 @@ export function UserFormFields({ form }: UserFormFieldsProps) {
           </FormItem>
         )}
       />
+
+      <FormField
+        control={form.control}
+        name="password"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Šifra</FormLabel>
+            <FormControl>
+              <Input type="password" placeholder="Minimalno 6 karaktera" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <FormField
         control={form.control}
         name="firstName"

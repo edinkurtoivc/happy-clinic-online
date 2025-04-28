@@ -14,26 +14,11 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  // Temporarily set authentication to true by default
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  // Load user from localStorage on mount
-  useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-        console.log("[AuthContext] User loaded from localStorage:", parsedUser.email);
-      } catch (error) {
-        console.error("[AuthContext] Error parsing user from localStorage:", error);
-        localStorage.removeItem("currentUser");
-      }
-    }
-  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
