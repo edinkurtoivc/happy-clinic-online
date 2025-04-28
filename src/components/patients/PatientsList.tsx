@@ -5,22 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import type { Patient } from "@/types/patient";
 
-// Mock data for patients
-const mockPatients: Patient[] = [
-  { id: 1, name: "Ana Marković", dob: "1985-04-12", jmbg: "1204985123456", phone: "064-123-4567" },
-  { id: 2, name: "Nikola Jovanović", dob: "1976-08-30", jmbg: "3008976123456", phone: "065-234-5678" },
-  { id: 3, name: "Milica Petrović", dob: "1990-11-15", jmbg: "1511990123456", phone: "063-345-6789" },
-  { id: 4, name: "Stefan Nikolić", dob: "1982-02-22", jmbg: "2202982123456", phone: "062-456-7890" },
-  { id: 5, name: "Jelena Stojanović", dob: "1995-07-08", jmbg: "0807995123456", phone: "061-567-8901" },
-];
-
 interface PatientsListProps {
+  patients: Patient[];
   onSelectPatient: (patient: Patient) => void;
 }
 
-export default function PatientsList({ onSelectPatient }: PatientsListProps) {
+export default function PatientsList({ patients, onSelectPatient }: PatientsListProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [patients] = useState<Patient[]>(mockPatients);
   const [filters, setFilters] = useState({
     showInactive: false,
     sortBy: "name",
@@ -37,7 +28,7 @@ export default function PatientsList({ onSelectPatient }: PatientsListProps) {
         <div className="relative flex-grow max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search patients by name or JMBG..."
+            placeholder="Pretražite po imenu ili JMBG..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-8"
@@ -51,11 +42,11 @@ export default function PatientsList({ onSelectPatient }: PatientsListProps) {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-muted">
             <tr>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Name</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Date of Birth</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Ime</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Datum rođenja</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">JMBG</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Phone</th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Telefon</th>
+              <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Akcije</th>
             </tr>
           </thead>
           <tbody className="divide-y bg-white">
@@ -72,7 +63,7 @@ export default function PatientsList({ onSelectPatient }: PatientsListProps) {
                     size="sm"
                     className="text-clinic-600 hover:text-clinic-800 hover:bg-clinic-50"
                   >
-                    View
+                    Pregled
                   </Button>
                 </td>
               </tr>
@@ -82,7 +73,7 @@ export default function PatientsList({ onSelectPatient }: PatientsListProps) {
 
         {filteredPatients.length === 0 && (
           <div className="flex h-32 items-center justify-center">
-            <p className="text-muted-foreground">No patients found</p>
+            <p className="text-muted-foreground">Nije pronađen nijedan pacijent</p>
           </div>
         )}
       </div>
