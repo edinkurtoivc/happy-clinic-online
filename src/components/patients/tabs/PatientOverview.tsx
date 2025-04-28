@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Users, Calendar, Edit, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { RecentVisits } from "./RecentVisits";
 import type { Patient } from "@/types/patient";
 
 interface PatientOverviewProps {
