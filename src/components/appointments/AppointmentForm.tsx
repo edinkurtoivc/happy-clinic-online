@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
 import type { Patient } from "@/types/patient";
 import type { Appointment } from "@/types/medical-report";
+import type { User } from "@/types/user";
 
 interface AppointmentFormProps {
   onCancel: () => void;
@@ -28,14 +30,30 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [selectedAppointmentType, setSelectedAppointmentType] = useState<string>("");
-  const [notes, setNotes] = useState<string>("");
-  
-  // Mock data for doctors and patients
-  const doctors = [
-    { id: "1", name: "Dr. Marija Popović" },
-    { id: "2", name: "Dr. Petar Petrović" },
+
+  // Mock data for doctors - will be replaced with data from Settings
+  const doctors: User[] = [
+    { 
+      id: "1", 
+      email: "dr.smith@klinika.com", 
+      firstName: "Adnan", 
+      lastName: "Hadžić",
+      role: "doctor",
+      specialization: "Kardiologija",
+      active: true 
+    },
+    { 
+      id: "2", 
+      email: "dr.jones@klinika.com", 
+      firstName: "Petar", 
+      lastName: "Petrović",
+      role: "doctor",
+      specialization: "Neurologija",
+      active: true 
+    },
   ];
   
+  // Mock data for patients - will be replaced with data from patient list
   const patients = [
     { id: "1", name: "Ana Marković" },
     { id: "2", name: "Nikola Jovanović" },
@@ -44,7 +62,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
     { id: "5", name: "Jelena Stojanović" },
   ];
   
-  // Use exam types from the settings component
+  // Mock data for examination types - will be replaced with data from Settings
   const appointmentTypes = [
     { id: "1", name: "Internistički pregled", duration: "30 min", price: "50 KM" },
     { id: "2", name: "Kardiološki pregled", duration: "45 min", price: "80 KM" },
@@ -52,7 +70,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
     { id: "4", name: "Neurološki pregled", duration: "60 min", price: "100 KM" },
     { id: "5", name: "Laboratorijski nalaz", duration: "20 min", price: "30 KM" },
   ];
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -85,12 +103,11 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       patientId: selectedPatientId,
       patientName: selectedPatient.name,
       doctorId: selectedDoctorId,
-      doctorName: selectedDoctor.name,
+      doctorName: `${selectedDoctor.firstName} ${selectedDoctor.lastName}`,
       date: format(date!, "yyyy-MM-dd"),
       time: selectedTime,
       examinationType: appointmentType,
       status: 'scheduled',
-      notes: notes
     };
     
     // Save the appointment
@@ -107,7 +124,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="text-xl font-bold text-clinic-800">
           {preselectedPatient 
@@ -139,18 +156,53 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
           </div>
           
           <div className="space-y-2">
+            <Label htmlFor="doctor">Doktor</Label>
+            <Select onValueChange={setSelectedDoctorId}>
+              <SelectTrigger id="doctor">
+                <SelectValue placeholder="Odaberi doktora" />
+              </SelectTrigger>
+              <SelectContent>
+                {doctors.filter(d => d.role === 'doctor' && d.active).map(doctor => (
+                  <SelectItem key={doctor.id} value={doctor.id}>
+                    {doctor.firstName} {doctor.lastName} - {doctor.specialization}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="type">Vrsta pregleda</Label>
+            <Select onValueChange={setSelectedAppointmentType}>
+              <SelectTrigger id="type">
+                <SelectValue placeholder="Odaberi vrstu pregleda" />
+              </SelectTrigger>
+              <SelectContent>
+                {appointmentTypes.map(type => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {type.name} - {type.duration} ({type.price})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
             <Label>Datum</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-start text-left font-normal"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {date ? format(date, "dd.MM.yyyy.") : <span>Odaberi datum</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={date}
@@ -180,55 +232,18 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="doctor">Doktor</Label>
-            <Select onValueChange={setSelectedDoctorId}>
-              <SelectTrigger id="doctor">
-                <SelectValue placeholder="Odaberi doktora" />
-              </SelectTrigger>
-              <SelectContent>
-                {doctors.map(doctor => (
-                  <SelectItem key={doctor.id} value={doctor.id}>
-                    {doctor.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="type">Vrsta pregleda</Label>
-            <Select onValueChange={setSelectedAppointmentType}>
-              <SelectTrigger id="type">
-                <SelectValue placeholder="Odaberi vrstu pregleda" />
-              </SelectTrigger>
-              <SelectContent>
-                {appointmentTypes.map(type => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {type.name} - {type.duration} ({type.price})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="notes">Napomena (opcionalno)</Label>
-            <Input 
-              id="notes" 
-              placeholder="Unesite dodatne napomene" 
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </div>
         </CardContent>
         
         <CardFooter className="flex justify-between">
-          <Button type="button" variant="outline" onClick={onCancel}>Odustani</Button>
-          <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Zakaži termin</Button>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Odustani
+          </Button>
+          <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+            Zakaži termin
+          </Button>
         </CardFooter>
       </form>
     </Card>
   );
 }
+
