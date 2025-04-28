@@ -1,11 +1,12 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Users, Calendar, Edit, Save, X } from "lucide-react";
+import { Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RecentVisits } from "./RecentVisits";
+import { PatientInfoCard } from "./patient-overview/PatientInfoCard";
+import { PatientDetailsForm } from "./patient-overview/PatientDetailsForm";
+import { EditActions } from "./patient-overview/EditActions";
 import type { Patient } from "@/types/patient";
 
 interface PatientOverviewProps {
@@ -59,53 +60,16 @@ export function PatientOverview({
     });
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('bs-BA', { 
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
-
-  const calculateAge = (dob: string) => {
-    const birthDate = new Date(dob);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDifference = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    
-    return age;
-  };
-
   return (
     <div className="space-y-4">
       <div className="rounded-lg border bg-white p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="mr-4 rounded-full bg-clinic-100 p-3 text-clinic-700">
-              <Users className="h-6 w-6" />
-            </div>
-            <div>
-              {isEditing ? (
-                <Input 
-                  value={editedPatient.name} 
-                  onChange={(e) => setEditedPatient({...editedPatient, name: e.target.value})}
-                  className="font-semibold text-lg"
-                />
-              ) : (
-                <>
-                  <h3 className="text-xl font-semibold text-clinic-800">{patient.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {calculateAge(patient.dob)} godina · JMBG: {patient.jmbg}
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
+        <div className="flex justify-between items-center mb-4">
+          <PatientInfoCard
+            patient={patient}
+            editedPatient={editedPatient}
+            isEditing={isEditing}
+            setEditedPatient={setEditedPatient}
+          />
           {!isEditing && (
             <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
               <Edit className="h-4 w-4 mr-1" /> Uredi podatke
@@ -113,81 +77,12 @@ export function PatientOverview({
           )}
         </div>
         
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Datum rođenja</Label>
-            {isEditing ? (
-              <Input 
-                type="date" 
-                value={editedPatient.dob} 
-                onChange={(e) => setEditedPatient({...editedPatient, dob: e.target.value})}
-              />
-            ) : (
-              <p>{formatDate(patient.dob)}</p>
-            )}
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">JMBG</Label>
-            {isEditing ? (
-              <Input 
-                value={editedPatient.jmbg} 
-                onChange={(e) => setEditedPatient({...editedPatient, jmbg: e.target.value})}
-              />
-            ) : (
-              <p>{patient.jmbg}</p>
-            )}
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Telefon</Label>
-            {isEditing ? (
-              <Input 
-                value={editedPatient.phone} 
-                onChange={(e) => setEditedPatient({...editedPatient, phone: e.target.value})}
-              />
-            ) : (
-              <p>{patient.phone}</p>
-            )}
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Adresa</Label>
-            {isEditing ? (
-              <Input 
-                value={editedPatient.address || ''} 
-                onChange={(e) => setEditedPatient({...editedPatient, address: e.target.value})}
-              />
-            ) : (
-              <p>{patient.address || 'Nije uneseno'}</p>
-            )}
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Email</Label>
-            {isEditing ? (
-              <Input 
-                type="email" 
-                value={editedPatient.email || ''} 
-                onChange={(e) => setEditedPatient({...editedPatient, email: e.target.value})}
-              />
-            ) : (
-              <p>{patient.email || 'Nije uneseno'}</p>
-            )}
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Spol</Label>
-            {isEditing ? (
-              <select 
-                className="w-full h-10 px-3 rounded-md border border-input"
-                value={editedPatient.gender || ''}
-                onChange={(e) => setEditedPatient({...editedPatient, gender: e.target.value as 'M' | 'F'})}
-              >
-                <option value="">Odaberite spol</option>
-                <option value="M">Muško</option>
-                <option value="F">Žensko</option>
-              </select>
-            ) : (
-              <p>{patient.gender === 'M' ? 'Muško' : patient.gender === 'F' ? 'Žensko' : 'Nije navedeno'}</p>
-            )}
-          </div>
-        </div>
+        <PatientDetailsForm
+          patient={patient}
+          editedPatient={editedPatient}
+          isEditing={isEditing}
+          setEditedPatient={setEditedPatient}
+        />
       </div>
 
       <RecentVisits 
@@ -195,16 +90,11 @@ export function PatientOverview({
         setIsScheduling={setIsScheduling} 
       />
 
-      {isEditing && (
-        <div className="flex justify-end space-x-2">
-          <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
-            <X className="h-4 w-4 mr-1" /> Odustani
-          </Button>
-          <Button size="sm" onClick={handleSaveChanges}>
-            <Save className="h-4 w-4 mr-1" /> Spremi promjene
-          </Button>
-        </div>
-      )}
+      <EditActions
+        isEditing={isEditing}
+        onSave={handleSaveChanges}
+        onCancel={() => setIsEditing(false)}
+      />
     </div>
   );
 }
