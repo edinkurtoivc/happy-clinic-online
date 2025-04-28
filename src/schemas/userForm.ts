@@ -5,6 +5,7 @@ export const userFormSchema = z.object({
   email: z.string().email("Unesite ispravnu email adresu"),
   firstName: z.string().min(2, "Ime mora sadržavati najmanje 2 karaktera"),
   lastName: z.string().min(2, "Prezime mora sadržavati najmanje 2 karaktera"),
+  password: z.string().min(6, "Šifra mora imati najmanje 6 karaktera"),
   role: z.enum(['admin', 'doctor', 'nurse'], {
     errorMap: () => ({ message: "Odaberite ulogu" }),
   }),

@@ -4,6 +4,7 @@ export type UserRole = 'admin' | 'doctor' | 'nurse' | 'technician';
 export interface User {
   id: string;
   email: string;
+  password: string; // Added password field
   firstName: string;
   lastName: string;
   role: UserRole;
