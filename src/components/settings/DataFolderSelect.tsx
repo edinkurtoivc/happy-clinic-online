@@ -22,6 +22,12 @@ export default function DataFolderSelect() {
   const [dataPath, setDataPath] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [isOnlineMode, setIsOnlineMode] = useState(true);
+  const [folderSizeInfo, setFolderSizeInfo] = useState({
+    usedSpace: "0 MB",
+    totalSpace: "500 GB",
+    percentage: 0,
+  });
+  const isElectron = typeof window !== 'undefined' && window.electron?.isElectron;
   
   const { isSaving: autoSaving, isOffline, saveStatus, lastSaved, forceSave } = useSaveData({
     data: { path: dataPath },
@@ -36,6 +42,9 @@ export default function DataFolderSelect() {
       if (loadedData.path) {
         console.log("[DataFolderSelect] Loaded data path from auto-save:", loadedData.path);
         setDataPath(loadedData.path);
+        if (isElectron && loadedData.path) {
+          updateFolderInfo(loadedData.path);
+        }
       }
     }
   });
@@ -45,21 +54,59 @@ export default function DataFolderSelect() {
     console.log("[DataFolderSelect] Initial data path from storage:", savedPath);
     if (savedPath) {
       setDataPath(savedPath);
+      if (isElectron) {
+        updateFolderInfo(savedPath);
+      }
     }
   }, []);
 
-  const handleSelectFolder = () => {
-    const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
-    const newPath = `/Users/Documents/MedicalData_${timestamp}`;
-    setDataPath(newPath);
+  const updateFolderInfo = async (path: string) => {
+    if (!isElectron || !path) return;
     
-    localStorage.setItem('dataFolderPath', newPath);
-    console.log("[DataFolderSelect] Selected new folder path:", newPath);
-    
-    toast({
-      title: "Folder odabran",
-      description: "Nova lokacija je postavljena za spremanje podataka."
-    });
+    try {
+      const info = await window.electron.getFolderInfo(path);
+      setFolderSizeInfo(info);
+    } catch (error) {
+      console.error("Error getting folder info:", error);
+    }
+  };
+
+  const handleSelectFolder = async () => {
+    if (isElectron) {
+      try {
+        const selectedPath = await window.electron.openDirectory();
+        if (selectedPath) {
+          setDataPath(selectedPath);
+          localStorage.setItem('dataFolderPath', selectedPath);
+          updateFolderInfo(selectedPath);
+          
+          toast({
+            title: "Folder odabran",
+            description: "Nova lokacija je postavljena za spremanje podataka."
+          });
+        }
+      } catch (error) {
+        console.error("Error selecting folder:", error);
+        toast({
+          title: "Greška",
+          description: "Nije moguće odabrati folder.",
+          variant: "destructive"
+        });
+      }
+    } else {
+      // Fallback for web version
+      const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
+      const newPath = `/Users/Documents/MedicalData_${timestamp}`;
+      setDataPath(newPath);
+      
+      localStorage.setItem('dataFolderPath', newPath);
+      console.log("[DataFolderSelect] Selected new folder path:", newPath);
+      
+      toast({
+        title: "Folder odabran",
+        description: "Nova lokacija je postavljena za spremanje podataka."
+      });
+    }
   };
   
   const handleSaveLocation = async () => {
@@ -97,16 +144,6 @@ export default function DataFolderSelect() {
     }
   };
   
-  const getFolderSizeInfo = () => {
-    return {
-      usedSpace: "245 MB",
-      totalSpace: "500 GB",
-      percentage: 0.5,  // 0.5%
-    };
-  };
-  
-  const sizeInfo = getFolderSizeInfo();
-
   const toggleMode = () => {
     setIsOnlineMode(!isOnlineMode);
     toast({
@@ -124,7 +161,7 @@ export default function DataFolderSelect() {
           <div>
             <h2 className="text-xl font-semibold">Lokacija podataka</h2>
             <p className="text-muted-foreground">
-              Odaberite gdje želite da se vaši podaci spremaju na računaru
+              Odaberite gdje želite da se vaši podaci spremaju {isElectron ? "na računaru" : ""}
             </p>
           </div>
           <Button
@@ -163,7 +200,7 @@ export default function DataFolderSelect() {
             <Input 
               value={dataPath} 
               onChange={(e) => setDataPath(e.target.value)}
-              placeholder="/putanja/do/vašeg/foldera"
+              placeholder={isElectron ? "Odaberite folder klikom na gumb" : "/putanja/do/vašeg/foldera"}
               className="flex-1"
             />
             <Button 
@@ -178,8 +215,9 @@ export default function DataFolderSelect() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2 text-sm">
               <AutoSaveIndicator 
-                status={isOffline ? "offline" : saveStatus as "idle" | "saving" | "saved" | "error" | "offline"} 
-                lastSaved={lastSaved}
+                status={isOffline ? "offline" : saveStatus as "idle" | "saving" | "saved" | "error" | "offline" | "pending"}
+                lastSaved={lastSaved} 
+                onRetry={forceSave}
               />
             </div>
             
@@ -203,22 +241,22 @@ export default function DataFolderSelect() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Iskorišteno:</span>
-                <span className="font-medium">{sizeInfo.usedSpace}</span>
+                <span className="font-medium">{folderSizeInfo.usedSpace}</span>
               </div>
               
               <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-clinic-600 rounded-full"
-                  style={{ width: `${sizeInfo.percentage}%` }}
+                  style={{ width: `${folderSizeInfo.percentage}%` }}
                 ></div>
               </div>
               
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {sizeInfo.percentage.toFixed(2)}% iskorišteno
+                  {folderSizeInfo.percentage.toFixed(2)}% iskorišteno
                 </span>
                 <span className="text-muted-foreground">
-                  Ukupno: {sizeInfo.totalSpace}
+                  Ukupno: {folderSizeInfo.totalSpace}
                 </span>
               </div>
             </div>

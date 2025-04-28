@@ -1,0 +1,23 @@
+
+{
+  "appId": "com.happyclinic.app",
+  "productName": "Happy Clinic",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*"
+  ],
+  "mac": {
+    "category": "public.app-category.medical",
+    "target": "dmg"
+  },
+  "win": {
+    "target": "nsis"
+  },
+  "linux": {
+    "target": "AppImage",
+    "category": "Medical"
+  }
+}
