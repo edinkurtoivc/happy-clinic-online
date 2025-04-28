@@ -32,10 +32,12 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 const userFormSchema = z.object({
-  email: z.string().email(),
-  firstName: z.string().min(2),
-  lastName: z.string().min(2),
-  role: z.enum(['admin', 'doctor', 'nurse']),
+  email: z.string().email("Unesite ispravnu email adresu"),
+  firstName: z.string().min(2, "Ime mora sadržavati najmanje 2 karaktera"),
+  lastName: z.string().min(2, "Prezime mora sadržavati najmanje 2 karaktera"),
+  role: z.enum(['admin', 'doctor', 'nurse'], {
+    errorMap: () => ({ message: "Odaberite ulogu" }),
+  }),
   specialization: z.string().optional(),
   phone: z.string().optional(),
 });
@@ -79,14 +81,14 @@ export default function UserForm({
       onOpenChange(false);
       form.reset();
       toast({
-        title: `User ${mode === 'create' ? 'created' : 'updated'} successfully`,
-        description: `${data.firstName} ${data.lastName} has been ${mode === 'create' ? 'added to' : 'updated in'} the system.`,
+        title: `Korisnik ${mode === 'create' ? 'kreiran' : 'ažuriran'} uspješno`,
+        description: `${data.firstName} ${data.lastName} je ${mode === 'create' ? 'dodan u' : 'ažuriran u'} sistem.`,
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: "Greška",
+        description: "Nešto je pošlo po zlu. Molimo pokušajte ponovo.",
       });
     } finally {
       setIsLoading(false);
@@ -98,12 +100,12 @@ export default function UserForm({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {mode === 'create' ? 'Add New User' : 'Edit User'}
+            {mode === 'create' ? 'Dodaj novog korisnika' : 'Uredi korisnika'}
           </DialogTitle>
           <DialogDescription>
             {mode === 'create' 
-              ? 'Add a new user to the system. They will receive an email to set their password.'
-              : 'Update user information and roles.'
+              ? 'Dodajte novog korisnika u sistem. Dobit će email za postavljanje lozinke.'
+              : 'Ažurirajte informacije i uloge korisnika.'
             }
           </DialogDescription>
         </DialogHeader>
@@ -116,7 +118,7 @@ export default function UserForm({
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="user@example.com" {...field} />
+                    <Input placeholder="korisnik@primjer.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -127,7 +129,7 @@ export default function UserForm({
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>First Name</FormLabel>
+                  <FormLabel>Ime</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -140,7 +142,7 @@ export default function UserForm({
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last Name</FormLabel>
+                  <FormLabel>Prezime</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -153,20 +155,20 @@ export default function UserForm({
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
+                  <FormLabel>Uloga</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
+                        <SelectValue placeholder="Odaberite ulogu" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="admin">Administrator</SelectItem>
-                      <SelectItem value="doctor">Doctor</SelectItem>
-                      <SelectItem value="technician">Medical Technician</SelectItem>
+                      <SelectItem value="doctor">Doktor</SelectItem>
+                      <SelectItem value="nurse">Medicinski tehničar</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -178,7 +180,7 @@ export default function UserForm({
               name="specialization"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Specialization</FormLabel>
+                  <FormLabel>Specijalizacija</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -191,7 +193,7 @@ export default function UserForm({
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
+                  <FormLabel>Broj telefona</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -201,7 +203,7 @@ export default function UserForm({
             />
             <DialogFooter>
               <Button type="submit" disabled={isLoading}>
-                {mode === 'create' ? 'Create User' : 'Update User'}
+                {mode === 'create' ? 'Kreiraj korisnika' : 'Ažuriraj korisnika'}
               </Button>
             </DialogFooter>
           </form>

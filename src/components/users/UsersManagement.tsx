@@ -19,25 +19,25 @@ export default function UsersManagement() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
-  // Mock data - will be replaced with Supabase data
+  // Mock podaci - bit će zamijenjeni Supabase podacima
   const users: User[] = [
     {
       id: "1",
-      email: "dr.smith@clinic.com",
-      firstName: "John",
-      lastName: "Smith",
+      email: "dr.smith@klinika.com",
+      firstName: "Adnan",
+      lastName: "Hadžić",
       role: "doctor",
-      specialization: "Cardiology",
-      phone: "+123456789",
+      specialization: "Kardiologija",
+      phone: "+38761123456",
       active: true,
     },
     {
       id: "2",
-      email: "admin@clinic.com",
-      firstName: "Jane",
-      lastName: "Doe",
+      email: "admin@klinika.com",
+      firstName: "Amina",
+      lastName: "Selimović",
       role: "admin",
-      phone: "+987654321",
+      phone: "+38761654321",
       active: true,
     },
   ];
@@ -50,8 +50,8 @@ export default function UsersManagement() {
     specialization?: string;
     phone?: string;
   }) => {
-    // Will implement with Supabase
-    console.log('Creating user:', data);
+    // Implementacija sa Supabase
+    console.log('Kreiranje korisnika:', data);
   };
 
   const handleEditUser = async (data: {
@@ -62,8 +62,8 @@ export default function UsersManagement() {
     specialization?: string;
     phone?: string;
   }) => {
-    // Will implement with Supabase
-    console.log('Updating user:', data);
+    // Implementacija sa Supabase
+    console.log('Ažuriranje korisnika:', data);
   };
 
   const openAddForm = () => {
@@ -83,53 +83,58 @@ export default function UsersManagement() {
       <Card className="p-6">
         <div className="mb-6 flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-semibold text-clinic-800">Staff Members</h2>
+            <h2 className="text-lg font-semibold text-clinic-800">Osoblje</h2>
             <p className="text-sm text-muted-foreground">
-              Manage doctors, administrators, and medical technicians
+              Upravljanje doktorima, administratorima i medicinskim tehničarima
             </p>
           </div>
-          <Button onClick={openAddForm}>Add User</Button>
+          <Button onClick={openAddForm}>Dodaj korisnika</Button>
         </div>
 
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Specialization</TableHead>
+                <TableHead>Ime</TableHead>
+                <TableHead>Uloga</TableHead>
+                <TableHead>Specijalizacija</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Akcije</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>{user.firstName} {user.lastName}</TableCell>
-                  <TableCell className="capitalize">{user.role}</TableCell>
+                  <TableCell className="capitalize">
+                    {user.role === 'admin' ? 'Administrator' : 
+                     user.role === 'doctor' ? 'Doktor' : 
+                     user.role === 'nurse' ? 'Tehničar' : user.role}
+                  </TableCell>
                   <TableCell>{user.specialization || '-'}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                       user.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}>
-                      {user.active ? 'Active' : 'Inactive'}
+                      {user.active ? 'Aktivan' : 'Neaktivan'}
                     </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" title="Pregledaj">
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="icon"
                         onClick={() => openEditForm(user)}
+                        title="Uredi"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" title="Obriši">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

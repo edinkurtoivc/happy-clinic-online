@@ -13,18 +13,18 @@ export default function Patients() {
   const [isCreating, setIsCreating] = useState(false);
   
   const handleUpdatePatient = (updatedPatient: Patient) => {
-    // In a real app, this would update the patient in the database
+    // U stvarnoj aplikaciji, ovo bi ažuriralo pacijenta u bazi podataka
     setSelectedPatient(updatedPatient);
     
     toast({
-      title: "Success",
-      description: "Patient information updated successfully.",
+      title: "Uspješno",
+      description: "Informacije o pacijentu su uspješno ažurirane.",
     });
     
-    // Log the audit event
-    console.log('Audit log: Patient information updated', {
+    // Evidencija događaja
+    console.log('Evidencija: Informacije o pacijentu su ažurirane', {
       patientId: updatedPatient.id,
-      updatedBy: 'Current User', // In a real app, get from auth context
+      updatedBy: 'Trenutni korisnik', // U stvarnoj aplikaciji, dohvatiti iz konteksta autentifikacije
       timestamp: new Date().toISOString(),
     });
   };
@@ -32,9 +32,9 @@ export default function Patients() {
   return (
     <div className="flex h-full flex-col">
       <Header 
-        title="Patients"
+        title="Pacijenti"
         action={{
-          label: "Add Patient",
+          label: "Dodaj pacijenta",
           onClick: () => setIsCreating(true),
         }}
       />
@@ -48,11 +48,11 @@ export default function Patients() {
         ) : isCreating ? (
           <div>
             <Button variant="outline" onClick={() => setIsCreating(false)} className="mb-4">
-              Back to list
+              Nazad na listu
             </Button>
             <div className="p-4 border rounded-md">
-              <h2 className="text-lg font-semibold mb-4">Add New Patient</h2>
-              <p className="text-muted-foreground">Patient creation form would go here</p>
+              <h2 className="text-lg font-semibold mb-4">Dodaj novog pacijenta</h2>
+              <p className="text-muted-foreground">Ovdje bi bio formular za kreiranje pacijenta</p>
             </div>
           </div>
         ) : (

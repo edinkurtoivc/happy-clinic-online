@@ -20,14 +20,14 @@ export function RecentVisits({ patientHistory, setIsScheduling }: RecentVisitsPr
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-medium">Recent Visits</h3>
+        <h3 className="text-lg font-medium">Nedavne posjete</h3>
         <Button 
           size="sm" 
           variant="outline" 
           className="text-sm"
           onClick={() => setIsScheduling(true)}
         >
-          Schedule Appointment
+          Zakaži termin
         </Button>
       </div>
       
@@ -51,7 +51,7 @@ export function RecentVisits({ patientHistory, setIsScheduling }: RecentVisitsPr
                 </div>
               </div>
               <button className="text-sm font-medium text-clinic-600 hover:text-clinic-800">
-                View
+                Pregledaj
               </button>
             </div>
           </div>

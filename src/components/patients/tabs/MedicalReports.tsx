@@ -25,8 +25,8 @@ export function MedicalReports({ reports }: MedicalReportsProps) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between mb-4">
-        <h3 className="text-lg font-medium">Medical Reports</h3>
-        <Button size="sm" variant="outline">View All</Button>
+        <h3 className="text-lg font-medium">Medicinski nalazi</h3>
+        <Button size="sm" variant="outline">Prikaži sve</Button>
       </div>
       
       {reports.length > 0 ? (
@@ -46,9 +46,9 @@ export function MedicalReports({ reports }: MedicalReportsProps) {
                   </div>
                 </div>
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">View</Button>
-                  <Button variant="outline" size="sm">Edit</Button>
-                  <Button variant="outline" size="sm">Print</Button>
+                  <Button variant="outline" size="sm">Pregledaj</Button>
+                  <Button variant="outline" size="sm">Uredi</Button>
+                  <Button variant="outline" size="sm">Printaj</Button>
                 </div>
               </div>
             </div>
@@ -56,7 +56,7 @@ export function MedicalReports({ reports }: MedicalReportsProps) {
         </div>
       ) : (
         <div className="text-center p-6 border rounded-md">
-          <p className="text-muted-foreground">No medical reports found for this patient.</p>
+          <p className="text-muted-foreground">Nema medicinskih nalaza za ovog pacijenta.</p>
         </div>
       )}
     </div>

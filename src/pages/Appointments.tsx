@@ -10,9 +10,9 @@ export default function Appointments() {
   return (
     <div className="flex h-full flex-col">
       <Header 
-        title="Appointments"
+        title="Termini"
         action={{
-          label: "Schedule",
+          label: "Zakaži",
           onClick: () => setIsCreating(true),
         }}
       />

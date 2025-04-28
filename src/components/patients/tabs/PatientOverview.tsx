@@ -52,9 +52,9 @@ export function PatientOverview({
     
     setIsEditing(false);
     
-    console.log('Audit log: Patient information updated', {
+    console.log('Evidencija: Podaci o pacijentu su ažurirani', {
       patientId: patient.id,
-      updatedBy: 'Current User',
+      updatedBy: 'Trenutni korisnik',
       timestamp: new Date().toISOString(),
     });
   };
