@@ -289,7 +289,6 @@ export default function MedicalReports() {
               verifiedBy={savedReport?.verifiedBy}
               visitType={visitType}
               doctorName={currentDoctor.name}
-              appointmentType={selectedExamType}
             />
           </div>
         </div>
