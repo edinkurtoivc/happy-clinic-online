@@ -69,7 +69,7 @@ export default function MedicalReportForm({
       ...values,
       date: new Date().toISOString(),
       status,
-      verificationStatus: status === "final" ? "pending" : "unverified",
+      verificationStatus: status === "final" ? "pending" as const : "unverified" as const,
     };
 
     // Save to patient history as well
