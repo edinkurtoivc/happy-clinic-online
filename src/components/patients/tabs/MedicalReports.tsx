@@ -1,6 +1,8 @@
 
 import { FileText, Eye, Edit, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { MedicalReport } from "@/types/medical-report";
@@ -18,6 +20,7 @@ interface MedicalReportsProps {
 
 export function MedicalReports({ reports }: MedicalReportsProps) {
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
   
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('bs-BA', {
@@ -26,6 +29,15 @@ export function MedicalReports({ reports }: MedicalReportsProps) {
       year: 'numeric'
     });
   };
+
+  const filteredReports = reports.filter(report => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      report.title.toLowerCase().includes(searchLower) ||
+      report.doctor.toLowerCase().includes(searchLower) ||
+      formatDate(report.date).includes(searchTerm)
+    );
+  });
 
   const handleView = (reportId: string) => {
     navigate(`/medical-reports?reportId=${reportId}&mode=view`);
@@ -51,8 +63,18 @@ export function MedicalReports({ reports }: MedicalReportsProps) {
           Novi nalaz
         </Button>
       </div>
+
+      <div className="relative flex-grow max-w-sm mb-4">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Pretraži nalaze..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-8"
+        />
+      </div>
       
-      {reports.length > 0 ? (
+      {filteredReports.length > 0 ? (
         <div className="space-y-3">
           {reports.map((report) => (
             <div key={report.id} className="rounded-md border p-4 hover:bg-muted/50">
@@ -97,7 +119,9 @@ export function MedicalReports({ reports }: MedicalReportsProps) {
         </div>
       ) : (
         <div className="text-center p-6 border rounded-md">
-          <p className="text-muted-foreground">Nema medicinskih nalaza za ovog pacijenta.</p>
+          <p className="text-muted-foreground">
+            {searchTerm ? "Nema pronađenih nalaza." : "Nema medicinskih nalaza za ovog pacijenta."}
+          </p>
           <Button 
             variant="outline" 
             size="sm" 
@@ -111,3 +135,4 @@ export function MedicalReports({ reports }: MedicalReportsProps) {
     </div>
   );
 }
+
