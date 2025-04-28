@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
@@ -72,13 +72,44 @@ const mockAppointments: AppointmentWithCancellation[] = [
   },
 ];
 
-export default function AppointmentsList() {
+interface AppointmentsListProps {
+  initialAppointments?: Appointment[];
+}
+
+export default function AppointmentsList({ initialAppointments }: AppointmentsListProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [appointments, setAppointments] = useState<AppointmentWithCancellation[]>(mockAppointments);
+  const [appointments, setAppointments] = useState<AppointmentWithCancellation[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithCancellation | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (initialAppointments && initialAppointments.length > 0) {
+      console.log("[AppointmentsList] Using provided appointments:", initialAppointments);
+      setAppointments(initialAppointments as AppointmentWithCancellation[]);
+    } else {
+      const savedAppointments = localStorage.getItem('appointments');
+      if (savedAppointments) {
+        try {
+          const parsed = JSON.parse(savedAppointments);
+          setAppointments(parsed);
+          console.log("[AppointmentsList] Loaded appointments from localStorage:", parsed);
+        } catch (error) {
+          console.error("[AppointmentsList] Error parsing appointments:", error);
+          setAppointments(mockAppointments);
+        }
+      } else {
+        console.log("[AppointmentsList] Using mock appointments");
+        setAppointments(mockAppointments);
+      }
+    }
+  }, [initialAppointments]);
+
+  const saveAppointments = (updatedAppointments: AppointmentWithCancellation[]) => {
+    localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
+    console.log("[AppointmentsList] Saved appointments to localStorage:", updatedAppointments);
+  };
 
   const formatDisplayDate = (dateStr: string) => {
     try {
@@ -95,17 +126,18 @@ export default function AppointmentsList() {
     : appointments;
     
   const handleStatusChange = (appointmentId: string, newStatus: 'scheduled' | 'completed' | 'cancelled', reason?: string) => {
-    setAppointments(prevAppointments => 
-      prevAppointments.map(appointment => 
-        appointment.id === appointmentId 
-          ? { 
-              ...appointment, 
-              status: newStatus,
-              ...(reason && { cancellationReason: reason })
-            } 
-          : appointment
-      )
+    const updatedAppointments = appointments.map(appointment => 
+      appointment.id === appointmentId 
+        ? { 
+            ...appointment, 
+            status: newStatus,
+            ...(reason && { cancellationReason: reason })
+          } 
+        : appointment
     );
+
+    setAppointments(updatedAppointments);
+    saveAppointments(updatedAppointments);
 
     if (newStatus === 'cancelled') {
       toast({
@@ -232,7 +264,10 @@ export default function AppointmentsList() {
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => handleCreateReport(appointment)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCreateReport(appointment)
+                              }}
                             >
                               Kreiraj nalaz
                             </Button>
@@ -240,7 +275,10 @@ export default function AppointmentsList() {
                               variant="ghost" 
                               size="sm" 
                               className="text-red-600"
-                              onClick={() => handleCancelClick(appointment)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCancelClick(appointment);
+                              }}
                             >
                               Otkaži
                             </Button>
@@ -250,7 +288,10 @@ export default function AppointmentsList() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => navigate(`/medical-reports/${appointment.reportId}`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/medical-reports/${appointment.reportId}`);
+                            }}
                           >
                             Pregled nalaza
                           </Button>

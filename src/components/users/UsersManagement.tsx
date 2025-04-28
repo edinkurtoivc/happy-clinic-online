@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -13,34 +13,68 @@ import { Card } from "@/components/ui/card";
 import { Eye, Edit, Trash2 } from "lucide-react";
 import type { User } from "@/types/user";
 import UserForm from "./UserForm";
+import { useToast } from "@/hooks/use-toast";
 
 export default function UsersManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [users, setUsers] = useState<User[]>([]);
+  const { toast } = useToast();
 
-  // Mock podaci - bit će zamijenjeni Supabase podacima
-  const users: User[] = [
-    {
-      id: "1",
-      email: "dr.smith@klinika.com",
-      firstName: "Adnan",
-      lastName: "Hadžić",
-      role: "doctor",
-      specialization: "Kardiologija",
-      phone: "+38761123456",
-      active: true,
-    },
-    {
-      id: "2",
-      email: "admin@klinika.com",
-      firstName: "Amina",
-      lastName: "Selimović",
-      role: "admin",
-      phone: "+38761654321",
-      active: true,
-    },
-  ];
+  // Učitaj korisnike iz localStorage
+  useEffect(() => {
+    const savedUsers = localStorage.getItem('users');
+    if (savedUsers) {
+      try {
+        const parsedUsers = JSON.parse(savedUsers);
+        setUsers(parsedUsers);
+        console.log("[UsersManagement] Loaded users from localStorage:", parsedUsers);
+      } catch (error) {
+        console.error("[UsersManagement] Error parsing users:", error);
+        loadDefaultUsers();
+      }
+    } else {
+      loadDefaultUsers();
+    }
+  }, []);
+
+  // Učitaj default korisnike
+  const loadDefaultUsers = () => {
+    // Default podaci za korisnike
+    const defaultUsers: User[] = [
+      {
+        id: "1",
+        email: "dr.smith@klinika.com",
+        firstName: "Adnan",
+        lastName: "Hadžić",
+        role: "doctor",
+        specialization: "Kardiologija",
+        phone: "+38761123456",
+        active: true,
+      },
+      {
+        id: "2",
+        email: "admin@klinika.com",
+        firstName: "Amina",
+        lastName: "Selimović",
+        role: "admin",
+        phone: "+38761654321",
+        active: true,
+      },
+    ];
+
+    setUsers(defaultUsers);
+    // Spremi default korisnike u localStorage
+    localStorage.setItem('users', JSON.stringify(defaultUsers));
+    console.log("[UsersManagement] Loaded default users");
+  };
+
+  // Spremi korisnike u localStorage
+  const saveUsers = (updatedUsers: User[]) => {
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    console.log("[UsersManagement] Saved users to localStorage:", updatedUsers);
+  };
 
   const handleAddUser = async (data: {
     email: string;
@@ -50,8 +84,31 @@ export default function UsersManagement() {
     specialization?: string;
     phone?: string;
   }) => {
-    // Implementacija sa Supabase
-    console.log('Kreiranje korisnika:', data);
+    try {
+      // Kreiraj novog korisnika
+      const newUser: User = {
+        id: `user-${Date.now()}`, // Generiši ID
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: data.role,
+        specialization: data.specialization,
+        phone: data.phone,
+        active: true,
+      };
+      
+      // Dodaj korisnika u listu
+      const updatedUsers = [...users, newUser];
+      setUsers(updatedUsers);
+      
+      // Spremi u localStorage
+      saveUsers(updatedUsers);
+      
+      console.log("[UsersManagement] Added new user:", newUser);
+    } catch (error) {
+      console.error("[UsersManagement] Error adding user:", error);
+      throw error; // Proslijedi grešku da je UserForm može uhvatiti
+    }
   };
 
   const handleEditUser = async (data: {
@@ -62,8 +119,51 @@ export default function UsersManagement() {
     specialization?: string;
     phone?: string;
   }) => {
-    // Implementacija sa Supabase
-    console.log('Ažuriranje korisnika:', data);
+    try {
+      if (!selectedUser) return;
+      
+      // Ažuriraj korisnika
+      const updatedUsers = users.map(user => 
+        user.id === selectedUser.id 
+          ? { ...user, ...data }
+          : user
+      );
+      
+      setUsers(updatedUsers);
+      
+      // Spremi u localStorage
+      saveUsers(updatedUsers);
+      
+      console.log("[UsersManagement] Updated user:", selectedUser.id);
+    } catch (error) {
+      console.error("[UsersManagement] Error updating user:", error);
+      throw error;
+    }
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    try {
+      // Filtriraj korisnike i ukloni odabrani
+      const updatedUsers = users.filter(user => user.id !== userId);
+      setUsers(updatedUsers);
+      
+      // Spremi u localStorage
+      saveUsers(updatedUsers);
+      
+      toast({
+        title: "Korisnik obrisan",
+        description: "Korisnik je uspješno obrisan iz sistema",
+      });
+      
+      console.log("[UsersManagement] Deleted user:", userId);
+    } catch (error) {
+      console.error("[UsersManagement] Error deleting user:", error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška pri brisanju korisnika",
+        variant: "destructive"
+      });
+    }
   };
 
   const openAddForm = () => {
@@ -134,7 +234,12 @@ export default function UsersManagement() {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" title="Obriši">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        title="Obriši"
+                        onClick={() => handleDeleteUser(user.id)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

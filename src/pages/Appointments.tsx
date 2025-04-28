@@ -1,11 +1,45 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import AppointmentsList from "@/components/appointments/AppointmentsList";
 import AppointmentForm from "@/components/appointments/AppointmentForm";
+import type { Appointment } from "@/types/medical-report";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Appointments() {
   const [isCreating, setIsCreating] = useState(false);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const { toast } = useToast();
+  
+  // Učitaj termine pri inicijalnom renderiranju
+  useEffect(() => {
+    const savedAppointments = localStorage.getItem('appointments');
+    if (savedAppointments) {
+      try {
+        const parsed = JSON.parse(savedAppointments);
+        setAppointments(parsed);
+        console.log("[Appointments] Loaded appointments:", parsed);
+      } catch (error) {
+        console.error("[Appointments] Error parsing appointments:", error);
+      }
+    }
+  }, []);
+
+  const handleSaveAppointment = (appointment: Appointment) => {
+    const newAppointments = [...appointments, appointment];
+    setAppointments(newAppointments);
+    
+    // Spremi termine u localStorage
+    localStorage.setItem('appointments', JSON.stringify(newAppointments));
+    
+    toast({
+      title: "Termin spremljen",
+      description: "Termin je uspješno spremljen"
+    });
+    
+    console.log("[Appointments] Saved new appointment:", appointment);
+    console.log("[Appointments] All appointments:", newAppointments);
+  };
   
   return (
     <div className="flex h-full flex-col">
@@ -18,9 +52,12 @@ export default function Appointments() {
       />
       <div className="page-container">
         {isCreating ? (
-          <AppointmentForm onCancel={() => setIsCreating(false)} />
+          <AppointmentForm 
+            onCancel={() => setIsCreating(false)}
+            onSave={handleSaveAppointment}
+          />
         ) : (
-          <AppointmentsList />
+          <AppointmentsList initialAppointments={appointments} />
         )}
       </div>
     </div>

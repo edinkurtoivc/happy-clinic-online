@@ -81,7 +81,7 @@ export function useSaveData<T>({
 
   // Save on data change after delay
   useEffect(() => {
-    if (!condition || !initialDataLoaded) return;
+    if (!condition) return;
     
     console.log(`[AutoSave] Data changed for key ${key}, scheduling save...`);
     setNeedsSave(true);
@@ -106,23 +106,19 @@ export function useSaveData<T>({
       setIsSaving(true);
       console.log(`[AutoSave] Starting save for key ${key}`);
       
-      // If we're offline or no onSave callback provided, save locally
-      if (isOffline || !onSave) {
-        saveLocally(key, data);
-        setLastSaved(new Date());
-        setNeedsSave(false);
-        setSaveAttempts(0);
-        console.log(`[AutoSave] Saved locally for key ${key}`);
-      } else {
-        // Online saving with provided callback
+      // Save locally always to ensure data persistence
+      saveLocally(key, data);
+      
+      // If we're online and onSave callback provided, also do cloud save
+      if (!isOffline && onSave) {
         await onSave(data);
         console.log(`[AutoSave] Saved online for key ${key}`);
-        // Also save locally as a backup
-        saveLocally(key, data);
-        setLastSaved(new Date());
-        setNeedsSave(false);
-        setSaveAttempts(0);
       }
+      
+      setLastSaved(new Date());
+      setNeedsSave(false);
+      setSaveAttempts(0);
+      
     } catch (error) {
       console.error(`[AutoSave] Error saving data for key ${key}:`, error);
       const newAttempts = saveAttempts + 1;
@@ -157,16 +153,13 @@ export function useSaveData<T>({
     try {
       const savedPath = localStorage.getItem('dataFolderPath');
       
-      // In a real desktop app, we would write to the file system here
-      // For this web simulation, we'll use localStorage
       localStorage.setItem(`autosave_${key}`, JSON.stringify({
         data,
         timestamp: new Date().toISOString(),
         path: savedPath || "/default/path",
       }));
       
-      // For demo purposes, log the save location
-      console.log(`[AutoSave] Data saved locally to ${savedPath || "/default/path"} for key ${key}`);
+      console.log(`[AutoSave] Data saved locally for key ${key}`);
     } catch (error) {
       console.error(`[AutoSave] Error saving locally for key ${key}:`, error);
       throw error;

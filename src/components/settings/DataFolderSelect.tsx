@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,16 +23,7 @@ export default function DataFolderSelect() {
   const [isSaving, setIsSaving] = useState(false);
   const [isOnlineMode, setIsOnlineMode] = useState(true);
   
-  // U stvarnoj aplikaciji, ovo bismo dohvatili iz sistemske pohrane
-  useEffect(() => {
-    const savedPath = localStorage.getItem('dataFolderPath');
-    console.log("[DataFolderSelect] Initial data path from storage:", savedPath);
-    if (savedPath) {
-      setDataPath(savedPath);
-    }
-  }, []);
-
-  const { isSaving: autoSaving, isOffline, saveStatus, initialDataLoaded } = useSaveData({
+  const { isSaving: autoSaving, isOffline, saveStatus, lastSaved, forceSave } = useSaveData({
     data: { path: dataPath },
     key: "data-folder-config",
     onSave: async (data) => {
@@ -39,6 +31,7 @@ export default function DataFolderSelect() {
       // U stvarnoj aplikaciji, ovdje bi bio API poziv
       await new Promise(resolve => setTimeout(resolve, 1000));
       localStorage.setItem('dataFolderPath', data.path);
+      return Promise.resolve();
     },
     condition: !!dataPath,
     onDataLoaded: (loadedData) => {
@@ -48,6 +41,15 @@ export default function DataFolderSelect() {
       }
     }
   });
+
+  // U stvarnoj aplikaciji, ovo bismo dohvatili iz sistemske pohrane
+  useEffect(() => {
+    const savedPath = localStorage.getItem('dataFolderPath');
+    console.log("[DataFolderSelect] Initial data path from storage:", savedPath);
+    if (savedPath) {
+      setDataPath(savedPath);
+    }
+  }, []);
 
   const handleSelectFolder = () => {
     // U stvarnoj desktop aplikaciji, ovo bi otvorilo dialog za izbor foldera
@@ -68,18 +70,30 @@ export default function DataFolderSelect() {
     
     setIsSaving(true);
     
-    // Simulacija spremanja lokacije
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // U stvarnoj desktop aplikaciji, ovdje bismo spremili konfiguraciju u sistemsku pohranu
-    localStorage.setItem('dataFolderPath', dataPath);
-    
-    toast({
-      title: "Uspješno",
-      description: "Lokacija za podatke je uspješno spremljena.",
-    });
-    
-    setIsSaving(false);
+    try {
+      // Simulacija spremanja lokacije
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Spremanje u localStorage
+      localStorage.setItem('dataFolderPath', dataPath);
+      
+      // Poziv forceSave da bi se sigurno spremilo
+      await forceSave();
+      
+      toast({
+        title: "Uspješno",
+        description: "Lokacija za podatke je uspješno spremljena.",
+      });
+    } catch (error) {
+      console.error("Greška pri spremanju lokacije:", error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška pri spremanju lokacije.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   const getFolderSizeInfo = () => {
@@ -101,21 +115,6 @@ export default function DataFolderSelect() {
         ? "Podatci će biti spremljeni lokalno" 
         : "Podatci će biti sinkronizirani s serverom",
     });
-  };
-
-  const getSaveStatusIndicator = () => {
-    if (isOffline || !isOnlineMode) {
-      return <WifiOff className="h-4 w-4 text-amber-500" />;
-    }
-    
-    switch (saveStatus) {
-      case "saving":
-        return <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />;
-      case "saved":
-        return <Check className="h-4 w-4 text-green-500" />;
-      default:
-        return <Save className="h-4 w-4 text-muted-foreground" />;
-    }
   };
 
   return (
@@ -178,14 +177,10 @@ export default function DataFolderSelect() {
           
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2 text-sm">
-              Status: 
-              {getSaveStatusIndicator()}
-              <span className="text-muted-foreground">
-                {autoSaving ? "Spremanje..." : 
-                  isOffline || !isOnlineMode ? "Lokalno spremljeno" : 
-                  saveStatus === "saved" ? "Automatski spremljeno" : 
-                  ""}
-              </span>
+              <AutoSaveIndicator 
+                status={isOffline ? "offline" : saveStatus} 
+                lastSaved={lastSaved}
+              />
             </div>
             
             <Button 

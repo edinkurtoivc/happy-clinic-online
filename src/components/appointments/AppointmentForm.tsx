@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Patient } from "@/types/patient";
 import type { Appointment } from "@/types/medical-report";
@@ -31,50 +30,84 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [selectedAppointmentType, setSelectedAppointmentType] = useState<string>("");
 
-  // Mock data for doctors - will be replaced with data from Settings
-  const doctors: User[] = [
-    { 
-      id: "1", 
-      email: "dr.smith@klinika.com", 
-      firstName: "Adnan", 
-      lastName: "Hadžić",
-      role: "doctor",
-      specialization: "Kardiologija",
-      active: true 
-    },
-    { 
-      id: "2", 
-      email: "dr.jones@klinika.com", 
-      firstName: "Petar", 
-      lastName: "Petrović",
-      role: "doctor",
-      specialization: "Neurologija",
-      active: true 
-    },
-  ];
+  const loadDoctors = (): User[] => {
+    try {
+      const savedDoctors = localStorage.getItem('doctors');
+      if (savedDoctors) {
+        return JSON.parse(savedDoctors);
+      }
+    } catch (error) {
+      console.error("[AppointmentForm] Error loading doctors:", error);
+    }
+    
+    return [
+      { 
+        id: "1", 
+        email: "dr.smith@klinika.com", 
+        firstName: "Adnan", 
+        lastName: "Hadžić",
+        role: "doctor",
+        specialization: "Kardiologija",
+        active: true 
+      },
+      { 
+        id: "2", 
+        email: "dr.jones@klinika.com", 
+        firstName: "Petar", 
+        lastName: "Petrović",
+        role: "doctor",
+        specialization: "Neurologija",
+        active: true 
+      },
+    ];
+  };
   
-  // Mock data for patients - will be replaced with data from patient list
-  const patients = [
-    { id: "1", name: "Ana Marković" },
-    { id: "2", name: "Nikola Jovanović" },
-    { id: "3", name: "Milica Petrović" },
-    { id: "4", name: "Stefan Nikolić" },
-    { id: "5", name: "Jelena Stojanović" },
-  ];
+  const loadPatients = () => {
+    try {
+      const savedPatients = localStorage.getItem('patients');
+      if (savedPatients) {
+        const patients = JSON.parse(savedPatients);
+        return patients.map((p: any) => ({ id: p.id.toString(), name: `${p.firstName} ${p.lastName}` }));
+      }
+    } catch (error) {
+      console.error("[AppointmentForm] Error loading patients:", error);
+    }
+    
+    return [
+      { id: "1", name: "Ana Marković" },
+      { id: "2", name: "Nikola Jovanović" },
+      { id: "3", name: "Milica Petrović" },
+      { id: "4", name: "Stefan Nikolić" },
+      { id: "5", name: "Jelena Stojanović" },
+    ];
+  };
   
-  // Mock data for examination types - will be replaced with data from Settings
-  const appointmentTypes = [
-    { id: "1", name: "Internistički pregled", duration: "30 min", price: "50 KM" },
-    { id: "2", name: "Kardiološki pregled", duration: "45 min", price: "80 KM" },
-    { id: "3", name: "Dermatološki pregled", duration: "30 min", price: "60 KM" },
-    { id: "4", name: "Neurološki pregled", duration: "60 min", price: "100 KM" },
-    { id: "5", name: "Laboratorijski nalaz", duration: "20 min", price: "30 KM" },
-  ];
+  const loadAppointmentTypes = () => {
+    try {
+      const savedTypes = localStorage.getItem('examinationTypes');
+      if (savedTypes) {
+        return JSON.parse(savedTypes);
+      }
+    } catch (error) {
+      console.error("[AppointmentForm] Error loading examination types:", error);
+    }
+    
+    return [
+      { id: "1", name: "Internistički pregled", duration: "30 min", price: "50 KM" },
+      { id: "2", name: "Kardiološki pregled", duration: "45 min", price: "80 KM" },
+      { id: "3", name: "Dermatološki pregled", duration: "30 min", price: "60 KM" },
+      { id: "4", name: "Neurološki pregled", duration: "60 min", price: "100 KM" },
+      { id: "5", name: "Laboratorijski nalaz", duration: "20 min", price: "30 KM" },
+    ];
+  };
+  
+  const doctors = loadDoctors();
+  const patients = loadPatients();
+  const appointmentTypes = loadAppointmentTypes();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
     if (!selectedPatientId || !date || !selectedTime || !selectedDoctorId || !selectedAppointmentType) {
       toast({
         title: "Greška pri validaciji",
@@ -84,7 +117,6 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       return;
     }
     
-    // Create appointment data
     const selectedPatient = patients.find(p => p.id === selectedPatientId);
     const selectedDoctor = doctors.find(d => d.id === selectedDoctorId);
     const appointmentType = appointmentTypes.find(t => t.id === selectedAppointmentType)?.name;
@@ -110,17 +142,33 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       status: 'scheduled',
     };
     
-    // Save the appointment
+    console.log("[AppointmentForm] Creating new appointment:", newAppointment);
+    
     if (onSave) {
       onSave(newAppointment);
+    } else {
+      try {
+        const savedAppointments = localStorage.getItem('appointments') || '[]';
+        const appointments = JSON.parse(savedAppointments);
+        appointments.push(newAppointment);
+        localStorage.setItem('appointments', JSON.stringify(appointments));
+        
+        toast({
+          title: "Termin zakazan",
+          description: `Termin uspješno zakazan za ${format(date!, "dd.MM.yyyy.")} u ${selectedTime}`,
+        });
+        
+        console.log("[AppointmentForm] Saved appointment directly to localStorage");
+        onCancel();
+      } catch (error) {
+        console.error("[AppointmentForm] Error saving appointment:", error);
+        toast({
+          title: "Greška",
+          description: "Dogodila se greška pri spremanju termina",
+          variant: "destructive"
+        });
+      }
     }
-    
-    toast({
-      title: "Termin zakazan",
-      description: `Termin uspješno zakazan za ${format(date!, "dd.MM.yyyy.")} u ${selectedTime}`,
-    });
-    
-    onCancel();
   };
 
   return (
@@ -246,4 +294,3 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
     </Card>
   );
 }
-

@@ -1,32 +1,65 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import PatientsList from "@/components/patients/PatientsList";
 import PatientCard from "@/components/patients/PatientCard";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import type { Patient } from "@/types/patient";
 
 export default function Patients() {
   const { toast } = useToast();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  
+  // Učitaj pacijente iz localStorage
+  useEffect(() => {
+    try {
+      const savedPatients = localStorage.getItem('patients');
+      if (savedPatients) {
+        const parsedPatients = JSON.parse(savedPatients);
+        console.log("[Patients] Loaded patients from localStorage:", parsedPatients);
+      }
+    } catch (error) {
+      console.error("[Patients] Error checking patients:", error);
+    }
+  }, []);
   
   const handleUpdatePatient = (updatedPatient: Patient) => {
-    // U stvarnoj aplikaciji, ovo bi ažuriralo pacijenta u bazi podataka
-    setSelectedPatient(updatedPatient);
-    
-    toast({
-      title: "Uspješno",
-      description: "Informacije o pacijentu su uspješno ažurirane.",
-    });
-    
-    // Evidencija događaja
-    console.log('Evidencija: Informacije o pacijentu su ažurirane', {
-      patientId: updatedPatient.id,
-      updatedBy: 'Trenutni korisnik', // U stvarnoj aplikaciji, dohvatiti iz konteksta autentifikacije
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      // Učitaj trenutne pacijente
+      const savedPatients = localStorage.getItem('patients') || '[]';
+      const currentPatients = JSON.parse(savedPatients);
+      
+      // Pronađi i ažuriraj pacijenta
+      const updatedPatients = currentPatients.map((p: Patient) => 
+        p.id === updatedPatient.id ? updatedPatient : p
+      );
+      
+      // Spremi ažurirane pacijente
+      localStorage.setItem('patients', JSON.stringify(updatedPatients));
+      setSelectedPatient(updatedPatient);
+      
+      toast({
+        title: "Uspješno",
+        description: "Informacije o pacijentu su uspješno ažurirane.",
+      });
+      
+      // Evidencija događaja
+      console.log('[Patients] Patient updated:', {
+        patientId: updatedPatient.id,
+        updatedBy: 'Trenutni korisnik', 
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("[Patients] Error updating patient:", error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška pri ažuriranju pacijenta.",
+        variant: "destructive"
+      });
+    }
   };
   
   return (
