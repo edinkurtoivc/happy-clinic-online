@@ -60,6 +60,16 @@ export default function UsersManagement() {
         password: "admin123",
         active: true,
       },
+      {
+        id: "3",
+        email: "superadmin@klinika.com",
+        firstName: "Super",
+        lastName: "Admin",
+        role: "admin",
+        phone: "+38761111111",
+        password: "superadmin123",
+        active: true,
+      }
     ];
 
     setUsers(defaultUsers);
