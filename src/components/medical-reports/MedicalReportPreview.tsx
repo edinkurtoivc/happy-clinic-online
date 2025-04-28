@@ -15,7 +15,7 @@ interface MedicalReportPreviewProps {
   isSaved: boolean;
   verificationStatus?: 'unverified' | 'pending' | 'verified';
   verifiedBy?: string;
-  visitType?: string;
+  appointmentType?: string;
   doctorName?: string;
 }
 
@@ -31,7 +31,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     isSaved,
     verificationStatus = 'unverified',
     verifiedBy,
-    visitType,
+    appointmentType,
     doctorName
   }, ref) => {
     const formatDate = (dateString?: string) => {
@@ -98,9 +98,9 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             <p>Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
             <p>JMBG: {patient ? patient.jmbg : ""}</p>
             <p className="mt-4">Datum ispisa nalaza: {today}</p>
-            {visitType && (
-              <p className="mt-1 font-medium text-emerald-700">
-                {visitType === 'first' ? 'Prvi pregled' : 'Kontrolni pregled'}
+            {appointmentType && (
+              <p className="mt-2 font-medium text-emerald-700">
+                Vrsta pregleda: {appointmentType}
               </p>
             )}
           </div>
