@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -177,7 +178,7 @@ export default function DataFolderSelect() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2 text-sm">
               <AutoSaveIndicator 
-                status={isOffline ? "offline" : saveStatus} 
+                status={isOffline ? "offline" : saveStatus as "idle" | "saving" | "saved" | "error" | "offline"} 
                 lastSaved={lastSaved}
               />
             </div>

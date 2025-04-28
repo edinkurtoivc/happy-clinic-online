@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "react-router-dom";
@@ -11,6 +12,8 @@ interface UseSaveDataConfig<T> {
   loadFromStorage?: boolean;
   onDataLoaded?: (data: T) => void;
 }
+
+export type SaveStatus = "saving" | "saved" | "error" | "offline" | "idle" | "pending";
 
 export function useSaveData<T>({
   data,
@@ -123,12 +126,22 @@ export function useSaveData<T>({
     await saveData();
   };
 
+  // Determine the current save status
+  const getSaveStatus = (): "saving" | "saved" | "error" | "offline" | "idle" | "pending" => {
+    if (isSaving) return "saving";
+    if (isOffline) return "offline";
+    if (saveAttempts > 0) return "error";
+    if (needsSave) return "pending";
+    if (lastSaved) return "saved";
+    return "idle";
+  };
+
   return {
     isSaving,
     lastSaved,
     isOffline,
     forceSave,
-    saveStatus: isSaving ? "saving" : needsSave ? "pending" : "saved",
+    saveStatus: getSaveStatus(),
     retry: forceSave,
     initialDataLoaded,
   };

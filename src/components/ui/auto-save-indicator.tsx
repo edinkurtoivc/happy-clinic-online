@@ -1,9 +1,10 @@
 
-import { Save, RefreshCw, Check, WifiOff, AlertCircle } from "lucide-react";
+import { Save, RefreshCw, Check, WifiOff, AlertCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SaveStatus } from "@/hooks/useSaveData";
 
 interface AutoSaveIndicatorProps {
-  status: "idle" | "saving" | "saved" | "error" | "offline";
+  status: "idle" | "saving" | "saved" | "error" | "offline" | "pending";
   lastSaved?: Date | null;
   className?: string;
   showText?: boolean;
@@ -27,6 +28,8 @@ export function AutoSaveIndicator({
         return <AlertCircle className="h-3.5 w-3.5" />;
       case "offline":
         return <WifiOff className="h-3.5 w-3.5" />;
+      case "pending":
+        return <Clock className="h-3.5 w-3.5" />;
       default:
         return <Save className="h-3.5 w-3.5" />;
     }
@@ -46,6 +49,8 @@ export function AutoSaveIndicator({
         return "Greška pri spremanju";
       case "offline":
         return "Lokalno spremljeno";
+      case "pending":
+        return "Čekanje na spremanje...";
       default:
         return "Nije spremljeno";
     }
@@ -60,6 +65,8 @@ export function AutoSaveIndicator({
       case "error":
         return "text-red-500";
       case "offline":
+        return "text-amber-500";
+      case "pending":
         return "text-amber-500";
       default:
         return "text-muted-foreground";
