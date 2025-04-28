@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,7 @@ import Appointments from "./pages/Appointments";
 import MedicalReports from "./pages/MedicalReports";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
+import Statistics from "./pages/Statistics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -93,6 +95,7 @@ const AppRoutes = () => {
       <Route path="/medical-reports" element={<ProtectedRoute><MedicalReports /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
