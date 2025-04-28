@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,8 +34,8 @@ export function PatientOverview({
   const handleSaveChanges = () => {
     if (!editedPatient.name || !editedPatient.jmbg) {
       toast({
-        title: "Error",
-        description: "Name and JMBG are required fields.",
+        title: "Greška",
+        description: "Ime i JMBG su obavezna polja.",
         variant: "destructive",
       });
       return;
@@ -45,8 +46,8 @@ export function PatientOverview({
     }
     
     toast({
-      title: "Success",
-      description: "Patient information updated successfully.",
+      title: "Uspješno",
+      description: "Podaci o pacijentu su uspješno ažurirani.",
     });
     
     setIsEditing(false);
@@ -99,7 +100,7 @@ export function PatientOverview({
                 <>
                   <h3 className="text-xl font-semibold text-clinic-800">{patient.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {calculateAge(patient.dob)} years old · JMBG: {patient.jmbg}
+                    {calculateAge(patient.dob)} godina · JMBG: {patient.jmbg}
                   </p>
                 </>
               )}
@@ -107,14 +108,14 @@ export function PatientOverview({
           </div>
           {!isEditing && (
             <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-              <Edit className="h-4 w-4 mr-1" /> Edit Info
+              <Edit className="h-4 w-4 mr-1" /> Uredi podatke
             </Button>
           )}
         </div>
         
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Date of Birth</Label>
+            <Label className="text-sm font-medium text-muted-foreground">Datum rođenja</Label>
             {isEditing ? (
               <Input 
                 type="date" 
@@ -137,7 +138,7 @@ export function PatientOverview({
             )}
           </div>
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
+            <Label className="text-sm font-medium text-muted-foreground">Telefon</Label>
             {isEditing ? (
               <Input 
                 value={editedPatient.phone} 
@@ -148,14 +149,14 @@ export function PatientOverview({
             )}
           </div>
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Address</Label>
+            <Label className="text-sm font-medium text-muted-foreground">Adresa</Label>
             {isEditing ? (
               <Input 
                 value={editedPatient.address || ''} 
                 onChange={(e) => setEditedPatient({...editedPatient, address: e.target.value})}
               />
             ) : (
-              <p>{patient.address || 'Not provided'}</p>
+              <p>{patient.address || 'Nije uneseno'}</p>
             )}
           </div>
           <div>
@@ -167,23 +168,23 @@ export function PatientOverview({
                 onChange={(e) => setEditedPatient({...editedPatient, email: e.target.value})}
               />
             ) : (
-              <p>{patient.email || 'Not provided'}</p>
+              <p>{patient.email || 'Nije uneseno'}</p>
             )}
           </div>
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Gender</Label>
+            <Label className="text-sm font-medium text-muted-foreground">Spol</Label>
             {isEditing ? (
               <select 
                 className="w-full h-10 px-3 rounded-md border border-input"
                 value={editedPatient.gender || ''}
                 onChange={(e) => setEditedPatient({...editedPatient, gender: e.target.value as 'M' | 'F'})}
               >
-                <option value="">Select gender</option>
-                <option value="M">Male</option>
-                <option value="F">Female</option>
+                <option value="">Odaberite spol</option>
+                <option value="M">Muško</option>
+                <option value="F">Žensko</option>
               </select>
             ) : (
-              <p>{patient.gender === 'M' ? 'Male' : patient.gender === 'F' ? 'Female' : 'Not specified'}</p>
+              <p>{patient.gender === 'M' ? 'Muško' : patient.gender === 'F' ? 'Žensko' : 'Nije navedeno'}</p>
             )}
           </div>
         </div>
@@ -197,10 +198,10 @@ export function PatientOverview({
       {isEditing && (
         <div className="flex justify-end space-x-2">
           <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
-            <X className="h-4 w-4 mr-1" /> Cancel
+            <X className="h-4 w-4 mr-1" /> Odustani
           </Button>
           <Button size="sm" onClick={handleSaveChanges}>
-            <Save className="h-4 w-4 mr-1" /> Save Changes
+            <Save className="h-4 w-4 mr-1" /> Spremi promjene
           </Button>
         </div>
       )}
