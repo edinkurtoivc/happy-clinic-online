@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import type { Patient } from "@/types/patient";
 
 interface PatientSelectionProps {
@@ -20,14 +21,19 @@ export default function PatientSelection({ selectedPatient, onSelectPatient }: P
   const [showPatientsDropdown, setShowPatientsDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredPatients = mockPatients.filter(patient =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.jmbg.includes(searchTerm)
-  );
+  const filteredPatients = mockPatients.filter(patient => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      patient.name.toLowerCase().includes(searchLower) ||
+      patient.jmbg.includes(searchTerm) ||
+      patient.dob.includes(searchTerm)
+    );
+  });
 
   const handleSelectPatient = (patient: Patient) => {
     onSelectPatient(patient);
     setShowPatientsDropdown(false);
+    setSearchTerm("");
   };
 
   return (
@@ -46,25 +52,43 @@ export default function PatientSelection({ selectedPatient, onSelectPatient }: P
       
       {showPatientsDropdown && (
         <div className="absolute z-10 w-full bg-white border rounded-md mt-1 shadow-md">
-          <Input 
-            placeholder="Pronađite pacijenta..." 
-            className="m-2 w-[calc(100%-16px)]"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <div className="p-2 hover:bg-gray-100 cursor-pointer flex border-t">
-            <span className="text-emerald-600">+</span>
-            <span className="ml-2">Dodaj novog pacijenta</span>
+          <div className="relative m-2">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Pronađite pacijenta..." 
+              className="pl-8 w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
+            />
           </div>
-          {filteredPatients.map(patient => (
-            <div 
-              key={patient.id} 
-              className="p-2 hover:bg-gray-100 cursor-pointer"
-              onClick={() => handleSelectPatient(patient)}
-            >
-              {patient.name}
+
+          {filteredPatients.length > 0 ? (
+            <>
+              <div className="max-h-[300px] overflow-y-auto">
+                {filteredPatients.map(patient => (
+                  <div 
+                    key={patient.id} 
+                    className="p-2 hover:bg-gray-100 cursor-pointer flex flex-col"
+                    onClick={() => handleSelectPatient(patient)}
+                  >
+                    <span className="font-medium">{patient.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      JMBG: {patient.jmbg} · Rođen: {patient.dob}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="p-2 hover:bg-gray-100 cursor-pointer flex border-t">
+                <span className="text-emerald-600">+</span>
+                <span className="ml-2">Dodaj novog pacijenta</span>
+              </div>
+            </>
+          ) : (
+            <div className="p-4 text-center text-muted-foreground">
+              {searchTerm ? "Nema pronađenih pacijenata." : "Učitavanje pacijenata..."}
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
