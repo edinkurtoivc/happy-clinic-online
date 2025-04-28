@@ -4,12 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { FolderOpen, Check, HardDrive } from "lucide-react";
+import { 
+  FolderOpen, 
+  Check, 
+  HardDrive, 
+  Save,
+  WifiOff,
+  Cloud,
+  CloudOff,
+  RefreshCw
+} from "lucide-react";
+import { useSaveData } from "@/hooks/useSaveData";
 
 export default function DataFolderSelect() {
   const { toast } = useToast();
   const [dataPath, setDataPath] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isOnlineMode, setIsOnlineMode] = useState(true);
   
   // U stvarnoj aplikaciji, ovo bismo dohvatili iz sistemske pohrane
   useEffect(() => {
@@ -18,6 +29,17 @@ export default function DataFolderSelect() {
       setDataPath(savedPath);
     }
   }, []);
+
+  const { isSaving: autoSaving, isOffline, saveStatus } = useSaveData({
+    data: { path: dataPath },
+    key: "data-folder-config",
+    onSave: async (data) => {
+      // U stvarnoj aplikaciji, ovdje bi bio API poziv
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      localStorage.setItem('dataFolderPath', data.path);
+    },
+    condition: !!dataPath
+  });
 
   const handleSelectFolder = () => {
     // U stvarnoj desktop aplikaciji, ovo bi otvorilo dialog za izbor foldera
@@ -63,13 +85,67 @@ export default function DataFolderSelect() {
   
   const sizeInfo = getFolderSizeInfo();
 
+  const toggleMode = () => {
+    setIsOnlineMode(!isOnlineMode);
+    toast({
+      title: isOnlineMode ? "Offline način rada" : "Online način rada",
+      description: isOnlineMode 
+        ? "Podatci će biti spremljeni lokalno" 
+        : "Podatci će biti sinkronizirani s serverom",
+    });
+  };
+
+  const getSaveStatusIndicator = () => {
+    if (isOffline || !isOnlineMode) {
+      return <WifiOff className="h-4 w-4 text-amber-500" />;
+    }
+    
+    switch (saveStatus) {
+      case "saving":
+        return <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />;
+      case "saved":
+        return <Check className="h-4 w-4 text-green-500" />;
+      default:
+        return <Save className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
   return (
     <Card className="p-6">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold">Lokacija podataka</h2>
-        <p className="text-muted-foreground">
-          Odaberite gdje želite da se vaši podaci spremaju na računaru
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">Lokacija podataka</h2>
+            <p className="text-muted-foreground">
+              Odaberite gdje želite da se vaši podaci spremaju na računaru
+            </p>
+          </div>
+          <Button
+            variant="outline" 
+            size="sm" 
+            onClick={toggleMode}
+            className="flex items-center gap-2"
+          >
+            {isOnlineMode ? (
+              <>
+                <Cloud className="h-4 w-4" />
+                Online način
+              </>
+            ) : (
+              <>
+                <CloudOff className="h-4 w-4" />
+                Offline način
+              </>
+            )}
+          </Button>
+        </div>
+        
+        {isOffline && (
+          <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md flex items-center gap-2 text-sm text-amber-800">
+            <WifiOff className="h-4 w-4" />
+            Internet konekcija nije dostupna. Podaci će biti spremljeni lokalno.
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">
@@ -92,15 +168,26 @@ export default function DataFolderSelect() {
             </Button>
           </div>
           
-          {dataPath && (
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2 text-sm">
+              Status: 
+              {getSaveStatusIndicator()}
+              <span className="text-muted-foreground">
+                {autoSaving ? "Spremanje..." : 
+                  isOffline || !isOnlineMode ? "Lokalno spremljeno" : 
+                  saveStatus === "saved" ? "Automatski spremljeno" : 
+                  ""}
+              </span>
+            </div>
+            
             <Button 
               onClick={handleSaveLocation} 
-              disabled={isSaving}
+              disabled={isSaving || !dataPath}
             >
               <Check className="mr-2 h-4 w-4" />
               {isSaving ? "Spremanje..." : "Spremi lokaciju"}
             </Button>
-          )}
+          </div>
         </div>
         
         {dataPath && (

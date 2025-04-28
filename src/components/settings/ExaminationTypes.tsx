@@ -21,7 +21,9 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { useSaveData } from "@/hooks/useSaveData";
+import { AutoSaveIndicator } from "@/components/ui/auto-save-indicator";
 
 // Define a proper interface for ExamType
 interface ExamType {
@@ -50,6 +52,17 @@ export default function ExaminationTypes() {
   ]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+
+  const { isSaving, lastSaved, isOffline, forceSave, saveStatus } = useSaveData({
+    data: examTypes,
+    key: "examination-types",
+    onSave: async (data) => {
+      // U stvarnoj aplikaciji, ovdje bi bio API poziv
+      await new Promise(resolve => setTimeout(resolve, 500));
+      localStorage.setItem('examination-types', JSON.stringify(data));
+      return;
+    }
+  });
 
   const form = useForm<ExamTypeFormData>({
     resolver: zodResolver(examTypeSchema),
@@ -129,7 +142,18 @@ export default function ExaminationTypes() {
               Definišite vrste pregleda koje obavljate u praksi
             </p>
           </div>
-          <Button onClick={openAddDialog}>Dodaj vrstu pregleda</Button>
+          <div className="flex items-center gap-4">
+            <AutoSaveIndicator 
+              status={
+                isOffline ? "offline" : 
+                isSaving ? "saving" : 
+                saveStatus === "saved" ? "saved" : "idle"
+              } 
+              lastSaved={lastSaved} 
+              onRetry={forceSave}
+            />
+            <Button onClick={openAddDialog}>Dodaj vrstu pregleda</Button>
+          </div>
         </div>
         
         <Table>
