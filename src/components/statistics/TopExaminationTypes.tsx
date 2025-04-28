@@ -46,7 +46,7 @@ export default function TopExaminationTypes() {
         const completedAppointments = appointments.filter((appt: Appointment) => {
           const appointmentDate = new Date(appt.date);
           return (
-            (appt.status === "completed" || appt.status === "završen") &&
+            appt.status === "completed" &&
             appointmentDate >= threshold
           );
         });

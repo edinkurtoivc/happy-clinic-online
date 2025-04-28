@@ -60,7 +60,7 @@ export default function DoctorsStatistics() {
             const appointmentDate = new Date(appt.date);
             return (
               appt.doctorId === doctor.id && 
-              (appt.status === "completed" || appt.status === "završen") &&
+              appt.status === "completed" &&
               appointmentDate >= threshold
             );
           });
