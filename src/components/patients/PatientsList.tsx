@@ -17,10 +17,14 @@ export default function PatientsList({ patients, onSelectPatient }: PatientsList
     sortBy: "name",
   });
 
-  const filteredPatients = patients.filter(patient =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.jmbg.includes(searchTerm)
-  );
+  const filteredPatients = patients.filter(patient => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      patient.name.toLowerCase().includes(searchLower) ||
+      patient.jmbg.includes(searchLower) ||
+      (patient.dob && patient.dob.includes(searchTerm))
+    );
+  });
 
   return (
     <div className="space-y-4">
