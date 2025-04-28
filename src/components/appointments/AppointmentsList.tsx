@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -6,10 +5,15 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import CancelAppointmentDialog from "./CancelAppointmentDialog";
 import type { Appointment } from "@/types/medical-report";
 
-// Mock data for appointments
-const mockAppointments: Appointment[] = [
+interface AppointmentWithCancellation extends Appointment {
+  cancellationReason?: string;
+}
+
+const mockAppointments: AppointmentWithCancellation[] = [
   { 
     id: "1", 
     patientId: "1", 
@@ -70,10 +74,12 @@ const mockAppointments: Appointment[] = [
 
 export default function AppointmentsList() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
+  const [appointments, setAppointments] = useState<AppointmentWithCancellation[]>(mockAppointments);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithCancellation | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  // Format date properly
   const formatDisplayDate = (dateStr: string) => {
     try {
       return format(new Date(dateStr), "dd.MM.yyyy.");
@@ -88,18 +94,41 @@ export default function AppointmentsList() {
       )
     : appointments;
     
-  const handleStatusChange = (appointmentId: string, newStatus: 'scheduled' | 'completed' | 'cancelled') => {
+  const handleStatusChange = (appointmentId: string, newStatus: 'scheduled' | 'completed' | 'cancelled', reason?: string) => {
     setAppointments(prevAppointments => 
       prevAppointments.map(appointment => 
         appointment.id === appointmentId 
-          ? { ...appointment, status: newStatus } 
+          ? { 
+              ...appointment, 
+              status: newStatus,
+              ...(reason && { cancellationReason: reason })
+            } 
           : appointment
       )
     );
+
+    if (newStatus === 'cancelled') {
+      toast({
+        title: "Termin otkazan",
+        description: "Termin je uspješno otkazan"
+      });
+    }
+  };
+
+  const handleCancelClick = (appointment: AppointmentWithCancellation) => {
+    setSelectedAppointment(appointment);
+    setShowCancelDialog(true);
+  };
+
+  const handleCancelConfirm = (reason: string) => {
+    if (selectedAppointment) {
+      handleStatusChange(selectedAppointment.id, 'cancelled', reason);
+    }
+    setShowCancelDialog(false);
+    setSelectedAppointment(null);
   };
   
   const handleCreateReport = (appointment: Appointment) => {
-    // Navigate to medical reports page with appointment data
     navigate('/medical-reports', { 
       state: { 
         patientId: appointment.patientId,
@@ -166,7 +195,14 @@ export default function AppointmentsList() {
                       }`}
                     >
                       <td className="px-4 py-3 text-sm">{appointment.time}</td>
-                      <td className="px-4 py-3 text-sm font-medium">{appointment.patientName}</td>
+                      <td className="px-4 py-3 text-sm font-medium">
+                        {appointment.patientName}
+                        {appointment.cancellationReason && (
+                          <div className="text-xs text-red-600 mt-1">
+                            Razlog otkazivanja: {appointment.cancellationReason}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm">{appointment.examinationType}</td>
                       <td className="px-4 py-3 text-sm">{appointment.doctorName}</td>
                       <td className="px-4 py-3 text-sm">
@@ -186,24 +222,19 @@ export default function AppointmentsList() {
                               variant="ghost" 
                               size="sm" 
                               className="text-red-600"
-                              onClick={() => handleStatusChange(appointment.id, 'cancelled')}
+                              onClick={() => handleCancelClick(appointment)}
                             >
                               Otkaži
                             </Button>
                           </>
                         )}
                         {appointment.status === 'completed' && appointment.reportId && (
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/medical-reports/${appointment.reportId}`)}>
-                            Pregled nalaza
-                          </Button>
-                        )}
-                        {appointment.status === 'cancelled' && (
                           <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleStatusChange(appointment.id, 'scheduled')}
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => navigate(`/medical-reports/${appointment.reportId}`)}
                           >
-                            Aktiviraj
+                            Pregled nalaza
                           </Button>
                         )}
                       </td>
@@ -221,6 +252,19 @@ export default function AppointmentsList() {
           </div>
         </div>
       </Card>
+
+      {selectedAppointment && (
+        <CancelAppointmentDialog
+          isOpen={showCancelDialog}
+          onClose={() => {
+            setShowCancelDialog(false);
+            setSelectedAppointment(null);
+          }}
+          onConfirm={handleCancelConfirm}
+          appointmentDate={format(new Date(selectedAppointment.date), "dd.MM.yyyy.")}
+          patientName={selectedAppointment.patientName}
+        />
+      )}
     </div>
   );
 }
