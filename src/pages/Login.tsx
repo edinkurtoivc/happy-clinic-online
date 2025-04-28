@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -23,9 +24,11 @@ const loginSchema = z.object({
 });
 
 export default function Login() {
-  const { toast } = useToast();
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -37,24 +40,13 @@ export default function Login() {
 
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const user = users.find((u: any) => 
-        u.email === values.email && u.password === values.password
-      );
-
-      if (user) {
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        toast({
-          title: "Uspješna prijava",
-          description: `Dobrodošli, ${user.firstName}!`,
-        });
+      setIsLoading(true);
+      console.log("Login attempt with:", values.email);
+      
+      const success = await login(values.email, values.password);
+      
+      if (success) {
         navigate('/');
-      } else {
-        toast({
-          title: "Greška",
-          description: "Pogrešan email ili šifra",
-          variant: "destructive",
-        });
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -63,6 +55,8 @@ export default function Login() {
         description: "Došlo je do greške prilikom prijave",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -130,11 +124,26 @@ export default function Login() {
               )}
             />
 
-            <Button type="submit" className="w-full">
-              Prijava
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Prijava u toku..." : "Prijava"}
             </Button>
           </form>
         </Form>
+        
+        <div className="pt-4 text-center text-sm">
+          <p className="text-gray-600">
+            Testni korisnici:
+          </p>
+          <p className="text-gray-500">
+            Admin: admin@klinika.com / admin123
+          </p>
+          <p className="text-gray-500">
+            Super Admin: superadmin@klinika.com / superadmin123
+          </p>
+          <p className="text-gray-500">
+            Doktor: dr.smith@klinika.com / doctor123
+          </p>
+        </div>
       </div>
     </div>
   );
