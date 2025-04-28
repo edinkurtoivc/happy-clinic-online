@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
         lastName: "Hadžić",
         role: "doctor",
         specialization: "Kardiologija",
+        password: "doctor123", // Added password field
         active: true 
       },
       { 
@@ -57,6 +59,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
         lastName: "Petrović",
         role: "doctor",
         specialization: "Neurologija",
+        password: "doctor123", // Added password field
         active: true 
       },
     ];

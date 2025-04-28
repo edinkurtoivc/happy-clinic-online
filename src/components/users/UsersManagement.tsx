@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -22,7 +21,6 @@ export default function UsersManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const { toast } = useToast();
 
-  // Učitaj korisnike iz localStorage
   useEffect(() => {
     const savedUsers = localStorage.getItem('users');
     if (savedUsers) {
@@ -39,9 +37,7 @@ export default function UsersManagement() {
     }
   }, []);
 
-  // Učitaj default korisnike
   const loadDefaultUsers = () => {
-    // Default podaci za korisnike
     const defaultUsers: User[] = [
       {
         id: "1",
@@ -51,6 +47,7 @@ export default function UsersManagement() {
         role: "doctor",
         specialization: "Kardiologija",
         phone: "+38761123456",
+        password: "doctor123",
         active: true,
       },
       {
@@ -60,17 +57,16 @@ export default function UsersManagement() {
         lastName: "Selimović",
         role: "admin",
         phone: "+38761654321",
+        password: "admin123",
         active: true,
       },
     ];
 
     setUsers(defaultUsers);
-    // Spremi default korisnike u localStorage
     localStorage.setItem('users', JSON.stringify(defaultUsers));
     console.log("[UsersManagement] Loaded default users");
   };
 
-  // Spremi korisnike u localStorage
   const saveUsers = (updatedUsers: User[]) => {
     localStorage.setItem('users', JSON.stringify(updatedUsers));
     console.log("[UsersManagement] Saved users to localStorage:", updatedUsers);
@@ -80,34 +76,32 @@ export default function UsersManagement() {
     email: string;
     firstName: string;
     lastName: string;
+    password: string;
     role: "admin" | "doctor" | "nurse";
     specialization?: string;
     phone?: string;
   }) => {
     try {
-      // Kreiraj novog korisnika
       const newUser: User = {
-        id: `user-${Date.now()}`, // Generiši ID
+        id: `user-${Date.now()}`,
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
+        password: data.password,
         role: data.role,
         specialization: data.specialization,
         phone: data.phone,
         active: true,
       };
       
-      // Dodaj korisnika u listu
       const updatedUsers = [...users, newUser];
       setUsers(updatedUsers);
-      
-      // Spremi u localStorage
       saveUsers(updatedUsers);
       
       console.log("[UsersManagement] Added new user:", newUser);
     } catch (error) {
       console.error("[UsersManagement] Error adding user:", error);
-      throw error; // Proslijedi grešku da je UserForm može uhvatiti
+      throw error;
     }
   };
 
@@ -115,6 +109,7 @@ export default function UsersManagement() {
     email: string;
     firstName: string;
     lastName: string;
+    password: string;
     role: "admin" | "doctor" | "nurse";
     specialization?: string;
     phone?: string;
@@ -122,7 +117,6 @@ export default function UsersManagement() {
     try {
       if (!selectedUser) return;
       
-      // Ažuriraj korisnika
       const updatedUsers = users.map(user => 
         user.id === selectedUser.id 
           ? { ...user, ...data }
@@ -131,7 +125,6 @@ export default function UsersManagement() {
       
       setUsers(updatedUsers);
       
-      // Spremi u localStorage
       saveUsers(updatedUsers);
       
       console.log("[UsersManagement] Updated user:", selectedUser.id);
@@ -143,11 +136,9 @@ export default function UsersManagement() {
 
   const handleDeleteUser = (userId: string) => {
     try {
-      // Filtriraj korisnike i ukloni odabrani
       const updatedUsers = users.filter(user => user.id !== userId);
       setUsers(updatedUsers);
       
-      // Spremi u localStorage
       saveUsers(updatedUsers);
       
       toast({
