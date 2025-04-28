@@ -8,6 +8,7 @@ import type { Patient } from "@/types/patient";
 interface PatientSelectionProps {
   selectedPatient: Patient | null;
   onSelectPatient: (patient: Patient) => void;
+  onVisitTypeChange?: (visitType: string) => void;
 }
 
 const mockPatients = [
@@ -18,7 +19,7 @@ const mockPatients = [
   { id: 5, name: "Jelena Stojanović", dob: "1995-07-08", gender: "F" as const, jmbg: "0807995123456", phone: "061-567-8901" },
 ];
 
-export default function PatientSelection({ selectedPatient, onSelectPatient }: PatientSelectionProps) {
+export default function PatientSelection({ selectedPatient, onSelectPatient, onVisitTypeChange }: PatientSelectionProps) {
   const [showPatientsDropdown, setShowPatientsDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [visitType, setVisitType] = useState<string | undefined>();
@@ -36,6 +37,11 @@ export default function PatientSelection({ selectedPatient, onSelectPatient }: P
     onSelectPatient(patient);
     setShowPatientsDropdown(false);
     setSearchTerm("");
+  };
+
+  const handleVisitTypeChange = (value: string) => {
+    setVisitType(value);
+    onVisitTypeChange?.(value);
   };
 
   return (
@@ -101,7 +107,7 @@ export default function PatientSelection({ selectedPatient, onSelectPatient }: P
           <div className="text-sm font-medium mb-2 text-gray-600">Tip pregleda (opcionalno)</div>
           <RadioGroup
             value={visitType}
-            onValueChange={setVisitType}
+            onValueChange={handleVisitTypeChange}
             className="flex space-x-4"
           >
             <div className="flex items-center space-x-2">
@@ -122,4 +128,3 @@ export default function PatientSelection({ selectedPatient, onSelectPatient }: P
     </div>
   );
 }
-

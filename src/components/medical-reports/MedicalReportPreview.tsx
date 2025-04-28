@@ -1,4 +1,3 @@
-
 import { forwardRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ interface MedicalReportPreviewProps {
   isSaved: boolean;
   verificationStatus?: 'unverified' | 'pending' | 'verified';
   verifiedBy?: string;
-  appointmentType?: string;
+  visitType?: string;
   doctorName?: string;
 }
 
@@ -32,15 +31,13 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     isSaved,
     verificationStatus = 'unverified',
     verifiedBy,
-    appointmentType,
+    visitType,
     doctorName
   }, ref) => {
-    // Format date in Bosnian locale
     const formatDate = (dateString?: string) => {
       if (!dateString) return "";
       
       try {
-        // Format the date as "dd.MM.yyyy." (Bosnian format)
         return format(new Date(dateString), "dd.MM.yyyy.");
       } catch (e) {
         return dateString;
@@ -76,9 +73,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
         </div>
         
         <Card className="p-6 font-[Inter] text-sm flex-1 overflow-auto" ref={ref}>
-          {/* Header with clinic and logo info */}
           <div className="flex justify-between items-start mb-8">
-            {/* Logo on the left */}
             <div className="flex-shrink-0">
               <img 
                 src="/placeholder.svg" 
@@ -87,7 +82,6 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
               />
             </div>
             
-            {/* Clinic info on the right */}
             <div className="text-right">
               <h2 className="font-semibold text-lg text-emerald-600">Spark Studio</h2>
               <p className="text-muted-foreground">
@@ -98,19 +92,19 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             </div>
           </div>
 
-          {/* Patient info */}
           <div className="mb-8">
             <p className="font-bold">Ime i Prezime: {patient ? patient.name : ""}</p>
             <p>Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
             <p>Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
             <p>JMBG: {patient ? patient.jmbg : ""}</p>
             <p className="mt-4">Datum ispisa nalaza: {today}</p>
-            {appointmentType && (
-              <p className="mt-1 font-medium text-emerald-700">Vrsta pregleda: {appointmentType}</p>
+            {visitType && (
+              <p className="mt-1 font-medium text-emerald-700">
+                {visitType === 'first' ? 'Prvi pregled' : 'Kontrolni pregled'}
+              </p>
             )}
           </div>
 
-          {/* Report content */}
           <div className="space-y-6">
             <div>
               <h3 className="font-semibold mb-2">Nalaz</h3>
@@ -126,7 +120,6 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
               </p>
             </div>
             
-            {/* Verification status */}
             {isSaved && (
               <div className="mt-4 p-2 rounded-md text-sm">
                 {verificationStatus === 'verified' && verifiedBy && (
@@ -143,7 +136,6 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
               </div>
             )}
             
-            {/* Signature and stamp area */}
             {(showSignature || showStamp) && (
               <div className="mt-12 pt-8 text-right">
                 <div className="flex justify-end items-end space-x-4">
