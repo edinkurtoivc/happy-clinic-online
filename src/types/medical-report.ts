@@ -10,6 +10,7 @@ export interface MedicalReport {
   status: 'draft' | 'final';
   appointmentId?: string;
   appointmentType?: string;
+  visitType: 'first' | 'followup';
   patientInfo: {
     fullName: string;
     birthDate: string;

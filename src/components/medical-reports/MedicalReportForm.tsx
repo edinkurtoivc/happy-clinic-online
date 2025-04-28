@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -26,6 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  RadioGroup,
+  RadioGroupItem
+} from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { useSaveData } from "@/hooks/useSaveData";
 import type { MedicalReport, ExaminationType } from "@/types/medical-report";
@@ -36,6 +39,9 @@ const formSchema = z.object({
   notes: z.string().optional(),
   status: z.enum(["draft", "final"]),
   appointmentType: z.string().min(1, "Vrsta pregleda je obavezna"),
+  visitType: z.enum(["first", "followup"], {
+    required_error: "Molimo odaberite vrstu posjete",
+  }),
 });
 
 interface MedicalReportFormProps {
@@ -62,6 +68,7 @@ export default function MedicalReportForm({
     notes: defaultValues?.notes || "",
     status: defaultValues?.status || "draft",
     appointmentType: defaultValues?.appointmentType || "",
+    visitType: defaultValues?.visitType || "first",
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -69,7 +76,6 @@ export default function MedicalReportForm({
     defaultValues: formData,
   });
 
-  // Update form when defaultValues change
   useEffect(() => {
     if (defaultValues) {
       console.log("[MedicalReportForm] Default values updated:", defaultValues);
@@ -79,6 +85,7 @@ export default function MedicalReportForm({
         notes: defaultValues.notes || "",
         status: defaultValues.status || "draft",
         appointmentType: defaultValues.appointmentType || "",
+        visitType: defaultValues.visitType || "first",
       });
       form.reset({
         report: defaultValues.report || "",
@@ -86,12 +93,12 @@ export default function MedicalReportForm({
         notes: defaultValues.notes || "",
         status: defaultValues.status || "draft",
         appointmentType: defaultValues.appointmentType || "",
+        visitType: defaultValues.visitType || "first",
       });
       setFormKey(`report-form-${Date.now()}`); // Force re-render of the form
     }
   }, [defaultValues, form]);
 
-  // Autosave draft report
   const { forceSave } = useSaveData({
     data: { ...formData, defaultValues },
     key: `medical-report-draft-${defaultValues?.id || "new"}`,
@@ -99,10 +106,8 @@ export default function MedicalReportForm({
     condition: open,
     onSave: async (data) => {
       console.log("[MedicalReportForm] Auto-saving draft:", data);
-      // This is just for auto-saving drafts locally, not submitting
     },
     onDataLoaded: (loadedData) => {
-      // Only load if we don't have default values or if this is the same report
       if ((!defaultValues || loadedData.defaultValues?.id === defaultValues?.id) && loadedData.report) {
         console.log("[MedicalReportForm] Loading saved draft:", loadedData);
         setFormData(loadedData);
@@ -111,7 +116,6 @@ export default function MedicalReportForm({
     }
   });
 
-  // Watch for form changes and update formData for auto-save
   useEffect(() => {
     const subscription = form.watch((formValues) => {
       setFormData(formValues);
@@ -129,7 +133,6 @@ export default function MedicalReportForm({
       verificationStatus: status === "final" ? "pending" as const : "unverified" as const,
     };
 
-    // Save to patient history as well
     const patientHistoryEntry = {
       id: Date.now(),
       patientId: defaultValues?.patientId || 0,
@@ -139,7 +142,6 @@ export default function MedicalReportForm({
       reportId: defaultValues?.id,
     };
 
-    // Save patient history entry
     try {
       const existingHistory = localStorage.getItem('patientHistory') || '[]';
       const historyArray = JSON.parse(existingHistory);
@@ -159,7 +161,6 @@ export default function MedicalReportForm({
     onOpenChange(false);
     form.reset();
     
-    // Remove draft after successful submission
     localStorage.removeItem(`autosave_medical-report-draft-${defaultValues?.id || "new"}`);
   };
 
@@ -173,6 +174,37 @@ export default function MedicalReportForm({
         <div className="mt-6">
           <Form {...form} key={formKey}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="visitType"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Tip posjete</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-row space-x-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="first" id="first" />
+                          <label htmlFor="first" className="text-sm font-normal">
+                            Prvi pregled
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="followup" id="followup" />
+                          <label htmlFor="followup" className="text-sm font-normal">
+                            Kontrolni pregled
+                          </label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="appointmentType"
