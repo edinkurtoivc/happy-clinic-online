@@ -65,12 +65,30 @@ export default function MedicalReportForm({
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit({
+    const reportData = {
       ...values,
       date: new Date().toISOString(),
       status,
       verificationStatus: status === "final" ? "pending" : "unverified",
-    });
+    };
+
+    // Save to patient history as well
+    const patientHistoryEntry = {
+      id: Date.now(),
+      patientId: defaultValues?.patientId || 0,
+      date: new Date().toISOString(),
+      type: values.appointmentType,
+      doctor: defaultValues?.doctorInfo?.fullName || "",
+      reportId: defaultValues?.id,
+    };
+
+    // Save patient history entry
+    const existingHistory = localStorage.getItem('patientHistory') || '[]';
+    const historyArray = JSON.parse(existingHistory);
+    historyArray.push(patientHistoryEntry);
+    localStorage.setItem('patientHistory', JSON.stringify(historyArray));
+
+    onSubmit(reportData);
     onOpenChange(false);
     form.reset();
   };
