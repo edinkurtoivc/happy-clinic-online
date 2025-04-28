@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import html2pdf from "html2pdf.js";
 
+// Mock data for examination types - would come from settings in a real app
 const mockExaminationTypes: ExaminationType[] = [
   { id: 1, name: "Internistički pregled", duration: "30", price: "50" },
   { id: 2, name: "Kardiološki pregled", duration: "40", price: "80" },
@@ -21,6 +22,7 @@ const mockExaminationTypes: ExaminationType[] = [
   { id: 5, name: "Pedijatrijski pregled", duration: "30", price: "40" },
 ];
 
+// Mock current user/doctor
 const currentDoctor = {
   id: "1",
   name: "Dr. Marko Marković",
@@ -43,22 +45,19 @@ export default function MedicalReports() {
   const [isFinalizingReport, setIsFinalizingReport] = useState(false);
   const reportPreviewRef = useRef<HTMLDivElement>(null);
   const [examinationTypes] = useState<ExaminationType[]>(mockExaminationTypes);
-  const [visitType, setVisitType] = useState<string | undefined>();
 
   const handleSelectPatient = (patient: any) => {
+    // Ensure patient has the correct gender type
     const typedPatient: Patient = {
       ...patient,
       gender: patient.gender as 'M' | 'F'
     };
     
     setSelectedPatient(typedPatient);
+    // Reset the report form when a new patient is selected
     if (isSaved) {
       resetReportState();
     }
-  };
-
-  const handleVisitTypeChange = (value: string) => {
-    setVisitType(value);
   };
 
   const resetReportState = () => {
@@ -69,12 +68,13 @@ export default function MedicalReports() {
     setSavedReport(null);
     setHasSignature(false);
     setHasStamp(false);
-    setVisitType(undefined);
   };
 
   const handleCreateReport = async (data: Partial<MedicalReport>) => {
+    // Will implement with Supabase later
     console.log('Kreiranje medicinskog izvještaja:', data);
     
+    // For now, simulate saving with an ID
     const savedReportData: Partial<MedicalReport> = {
       ...data,
       id: `report-${Date.now()}`,
@@ -97,6 +97,7 @@ export default function MedicalReports() {
         : "Nalaz je sačuvan kao nacrt.",
     });
     
+    // If it's a final report, show verification dialog
     if (data.status === 'final') {
       setTimeout(() => {
         setIsVerificationDialogOpen(true);
@@ -132,6 +133,7 @@ export default function MedicalReports() {
       return;
     }
 
+    // Ask if they want to finalize
     setShowFinalizeConfirm(true);
   };
   
@@ -149,7 +151,6 @@ export default function MedicalReports() {
       therapy: therapyText,
       status: isFinal ? 'final' : 'draft',
       appointmentType: selectedExamType,
-      visitType: visitType as 'first' | 'followup' | undefined,
       patientInfo: {
         fullName: selectedPatient!.name,
         birthDate: selectedPatient!.dob,
@@ -158,6 +159,7 @@ export default function MedicalReports() {
       }
     };
 
+    // Simulate a delay for saving
     setTimeout(() => {
       handleCreateReport(reportData);
       setIsFinalizingReport(false);
@@ -166,6 +168,7 @@ export default function MedicalReports() {
   };
   
   const handleVerifyReport = (reportId: string, doctorName: string) => {
+    // In a real app, this would call your backend API
     if (savedReport) {
       const verifiedReport = {
         ...savedReport,
@@ -176,6 +179,7 @@ export default function MedicalReports() {
       
       setSavedReport(verifiedReport);
       
+      // Log this action
       console.log('Report verified:', {
         reportId,
         verifiedBy: doctorName,
@@ -199,6 +203,7 @@ export default function MedicalReports() {
       return;
     }
 
+    // Don't allow printing unverified reports
     if (savedReport?.verificationStatus !== 'verified') {
       toast({
         title: "Upozorenje",
@@ -219,6 +224,7 @@ export default function MedicalReports() {
 
     html2pdf().set(opt).from(element).save();
     
+    // Log audit information about printing
     console.log('Audit log: Report printed', {
       reportId: savedReport?.id,
       patientId: selectedPatient?.id,
@@ -237,6 +243,7 @@ export default function MedicalReports() {
       <Header title="Nalaz i Mišljenje" />
       
       <div className="page-container p-4">
+        {/* Breadcrumb */}
         <div className="flex items-center text-sm mb-6">
           <span className="text-muted-foreground">Početna</span>
           <span className="mx-2">›</span>
@@ -245,8 +252,7 @@ export default function MedicalReports() {
         
         <PatientSelection 
           selectedPatient={selectedPatient}
-          onSelectPatient={selectedPatient => handleSelectPatient(selectedPatient)}
-          onVisitTypeChange={handleVisitTypeChange}
+          onSelectPatient={setSelectedPatient}
         />
         
         {selectedPatient && (
@@ -287,7 +293,7 @@ export default function MedicalReports() {
               isSaved={isSaved}
               verificationStatus={savedReport?.verificationStatus}
               verifiedBy={savedReport?.verifiedBy}
-              visitType={visitType}
+              appointmentType={selectedExamType}
               doctorName={currentDoctor.name}
             />
           </div>
