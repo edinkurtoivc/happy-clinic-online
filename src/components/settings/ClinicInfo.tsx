@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Check } from "lucide-react";
+import { Upload, Check, RefreshCw } from "lucide-react";
 import { useSaveData } from "@/hooks/useSaveData";
 
 interface ClinicData {

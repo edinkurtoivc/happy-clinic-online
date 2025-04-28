@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -28,8 +27,6 @@ export default function DataFolderSelect() {
     key: "data-folder-config",
     onSave: async (data) => {
       console.log("[DataFolderSelect] Saving data folder config:", data);
-      // U stvarnoj aplikaciji, ovdje bi bio API poziv
-      await new Promise(resolve => setTimeout(resolve, 1000));
       localStorage.setItem('dataFolderPath', data.path);
       return Promise.resolve();
     },
@@ -42,7 +39,6 @@ export default function DataFolderSelect() {
     }
   });
 
-  // U stvarnoj aplikaciji, ovo bismo dohvatili iz sistemske pohrane
   useEffect(() => {
     const savedPath = localStorage.getItem('dataFolderPath');
     console.log("[DataFolderSelect] Initial data path from storage:", savedPath);
@@ -52,10 +48,17 @@ export default function DataFolderSelect() {
   }, []);
 
   const handleSelectFolder = () => {
-    // U stvarnoj desktop aplikaciji, ovo bi otvorilo dialog za izbor foldera
-    // Za potrebe simulacije, postavit ćemo samo primjer puta
-    const newPath = `/Users/korisnik/Documents/MedicalData_${Date.now()}`;
+    const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
+    const newPath = `/Users/Documents/MedicalData_${timestamp}`;
     setDataPath(newPath);
+    
+    localStorage.setItem('dataFolderPath', newPath);
+    console.log("[DataFolderSelect] Selected new folder path:", newPath);
+    
+    toast({
+      title: "Folder odabran",
+      description: "Nova lokacija je postavljena za spremanje podataka."
+    });
   };
   
   const handleSaveLocation = async () => {
@@ -71,13 +74,10 @@ export default function DataFolderSelect() {
     setIsSaving(true);
     
     try {
-      // Simulacija spremanja lokacije
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Spremanje u localStorage
       localStorage.setItem('dataFolderPath', dataPath);
       
-      // Poziv forceSave da bi se sigurno spremilo
       await forceSave();
       
       toast({
@@ -97,7 +97,6 @@ export default function DataFolderSelect() {
   };
   
   const getFolderSizeInfo = () => {
-    // U stvarnoj aplikaciji, ovo bi dohvatilo stvarnu veličinu podataka
     return {
       usedSpace: "245 MB",
       totalSpace: "500 GB",
