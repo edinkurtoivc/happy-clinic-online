@@ -2,31 +2,33 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Calendar, File, FileText, Settings, Users } from "lucide-react";
+
 const navigation = [{
-  name: "Dashboard",
+  name: "Početna",
   href: "/",
   icon: <File className="h-5 w-5" />
 }, {
-  name: "Patients",
+  name: "Pacijenti",
   href: "/patients",
   icon: <Users className="h-5 w-5" />
 }, {
-  name: "Appointments",
+  name: "Termini",
   href: "/appointments",
   icon: <Calendar className="h-5 w-5" />
 }, {
-  name: "Medical Reports",
+  name: "Nalazi",
   href: "/medical-reports",
   icon: <FileText className="h-5 w-5" />
 }, {
-  name: "Users",
+  name: "Korisnici",
   href: "/users",
   icon: <Users className="h-5 w-5" />
 }, {
-  name: "Settings",
+  name: "Postavke",
   href: "/settings",
   icon: <Settings className="h-5 w-5" />
 }];
+
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
