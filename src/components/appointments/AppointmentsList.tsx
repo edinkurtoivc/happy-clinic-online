@@ -139,6 +139,21 @@ export default function AppointmentsList() {
     });
   };
 
+  const handleAppointmentClick = (appointment: Appointment) => {
+    if (appointment.status === 'scheduled') {
+      navigate('/medical-reports', { 
+        state: { 
+          patientId: appointment.patientId,
+          patientName: appointment.patientName,
+          doctorId: appointment.doctorId,
+          doctorName: appointment.doctorName,
+          appointmentId: appointment.id,
+          examinationType: appointment.examinationType
+        } 
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch(status) {
       case 'completed':
@@ -192,7 +207,10 @@ export default function AppointmentsList() {
                       className={`hover:bg-muted/50 ${
                         appointment.status === 'completed' ? 'bg-green-50' : 
                         appointment.status === 'cancelled' ? 'bg-red-50' : ''
+                      } ${
+                        appointment.status === 'scheduled' ? 'cursor-pointer' : ''
                       }`}
+                      onClick={() => handleAppointmentClick(appointment)}
                     >
                       <td className="px-4 py-3 text-sm">{appointment.time}</td>
                       <td className="px-4 py-3 text-sm font-medium">
