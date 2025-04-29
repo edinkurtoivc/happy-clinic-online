@@ -75,7 +75,7 @@ export default function Login() {
           <div className="flex justify-center mb-4">
             <img src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" alt="EIBS Logo" className="h-32 w-32" />
           </div>
-          <CardDescription className="text-center">Prijava</CardDescription>
+          <CardDescription className="text-center text-3xl text-slate-600">Prijava</CardDescription>
         </CardHeader>
         <CardContent>
           {loginAttempts > 2 && <Alert variant="destructive" className="mb-4">
