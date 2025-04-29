@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { BarChart, Calendar, File, FileText, Settings, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserRole } from "@/types/user";
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
@@ -16,43 +17,43 @@ export default function Sidebar() {
       name: "Početna",
       href: "/",
       icon: <File className="h-5 w-5" />,
-      roles: ["admin", "doctor", "nurse", "technician"] // Everyone can access home
+      roles: ["admin", "doctor", "nurse", "technician"] as UserRole[] // Cast as UserRole[]
     },
     {
       name: "Pacijenti",
       href: "/patients",
       icon: <Users className="h-5 w-5" />,
-      roles: ["admin", "doctor", "nurse"] // Admin, doctors and nurses can access patients
+      roles: ["admin", "doctor", "nurse"] as UserRole[] // Cast as UserRole[]
     },
     {
       name: "Termini",
       href: "/appointments",
       icon: <Calendar className="h-5 w-5" />,
-      roles: ["admin", "doctor", "nurse", "technician"] // Everyone can access appointments
+      roles: ["admin", "doctor", "nurse", "technician"] as UserRole[] // Cast as UserRole[]
     },
     {
       name: "Nalazi",
       href: "/medical-reports",
       icon: <FileText className="h-5 w-5" />,
-      roles: ["admin", "doctor"] // Only admin and doctors can access medical reports
+      roles: ["admin", "doctor"] as UserRole[] // Cast as UserRole[]
     },
     {
       name: "Statistika",
       href: "/statistics", 
       icon: <BarChart className="h-5 w-5" />,
-      roles: ["admin", "doctor"] // Only admin and doctors can access statistics
+      roles: ["admin", "doctor"] as UserRole[] // Cast as UserRole[]
     },
     {
       name: "Korisnici",
       href: "/users",
       icon: <Users className="h-5 w-5" />,
-      roles: ["admin"] // Only admin can access user management
+      roles: ["admin"] as UserRole[] // Cast as UserRole[]
     },
     {
       name: "Postavke",
       href: "/settings",
       icon: <Settings className="h-5 w-5" />,
-      roles: ["admin"] // Only admin can access settings
+      roles: ["admin"] as UserRole[] // Cast as UserRole[]
     }
   ];
 
