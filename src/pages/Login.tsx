@@ -9,8 +9,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ShieldAlert } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   email: z.string().email("Unesite ispravnu email adresu"),
@@ -27,13 +28,21 @@ export default function Login() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
 
-  // Redirect if already authenticated
+  // Auto-login bypass - Automatically redirect to main page
+  useEffect(() => {
+    // Simulate successful authentication
+    console.log("Auto-login bypass activated");
+    navigate('/');
+  }, [navigate]);
+
+  // Original authentication code is kept but will not run due to the auto-redirect above
   useEffect(() => {
     if (isAuthenticated && !isLoadingAuth) {
       navigate('/');
     }
-  }, [isAuthenticated, isLoadingAuth, navigate]);
+  }, [isAuthenticated, navigate, isLoadingAuth]);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -48,9 +57,11 @@ export default function Login() {
       setIsLoading(true);
       console.log("Login attempt with:", values.email);
       const success = await login(values.email, values.password);
-      
       if (success) {
         navigate('/');
+      } else {
+        // Track failed login attempts
+        setLoginAttempts(prev => prev + 1);
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -64,6 +75,7 @@ export default function Login() {
     }
   };
 
+  // Loading state is preserved for completeness
   if (isLoadingAuth) {
     return <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-lg">Učitavanje...</div>
@@ -74,11 +86,18 @@ export default function Login() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
-            <img src="/lovable-uploads/3fe35f09-5479-454b-bbd8-b2885d2418b0.png" alt="EBIS Logo" className="h-32 w-32" />
+            <img src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" alt="EIBS Logo" className="h-32 w-32" />
           </div>
           <CardDescription className="text-center text-3xl text-slate-600">Prijava</CardDescription>
         </CardHeader>
         <CardContent>
+          {loginAttempts > 2 && <Alert variant="destructive" className="mb-4">
+              <ShieldAlert className="h-4 w-4 mr-2" />
+              <AlertDescription>
+                Previše neuspješnih pokušaja. Molimo kontaktirajte administratora ako ne možete pristupiti svom računu.
+              </AlertDescription>
+            </Alert>}
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField control={form.control} name="email" render={({
@@ -106,7 +125,7 @@ export default function Login() {
                     <FormMessage />
                   </FormItem>} />
 
-              <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Prijava u toku..." : "Prijavi se"}
               </Button>
             </form>
