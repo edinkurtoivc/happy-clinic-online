@@ -4,7 +4,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Spinner } from "@/components/ui/spinner";
 import Sidebar from "@/components/layout/Sidebar";
@@ -61,7 +60,7 @@ const ProtectedRoute = ({
   );
 };
 
-// App Router with Auth Provider
+// Define AppRoutes separate from BrowserRouter
 const AppRoutes = () => {
   return (
     <Routes>
@@ -107,7 +106,7 @@ const AppRoutes = () => {
   );
 };
 
-// Main App component
+// Main App component with correct provider nesting order
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>

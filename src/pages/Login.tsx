@@ -9,9 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, ShieldAlert } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   email: z.string().email("Unesite ispravnu email adresu"),
@@ -28,16 +27,8 @@ export default function Login() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [loginAttempts, setLoginAttempts] = useState(0);
 
-  // Auto-login bypass - Automatically redirect to main page
-  useEffect(() => {
-    // Simulate successful authentication
-    console.log("Auto-login bypass activated");
-    navigate('/');
-  }, [navigate]);
-
-  // Original authentication code is kept but will not run due to the auto-redirect above
+  // Check if already authenticated
   useEffect(() => {
     if (isAuthenticated && !isLoadingAuth) {
       navigate('/');
@@ -59,9 +50,6 @@ export default function Login() {
       const success = await login(values.email, values.password);
       if (success) {
         navigate('/');
-      } else {
-        // Track failed login attempts
-        setLoginAttempts(prev => prev + 1);
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -75,7 +63,7 @@ export default function Login() {
     }
   };
 
-  // Loading state is preserved for completeness
+  // Loading state
   if (isLoadingAuth) {
     return <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-lg">Učitavanje...</div>
@@ -91,13 +79,6 @@ export default function Login() {
           <CardDescription className="text-center text-3xl text-slate-600">Prijava</CardDescription>
         </CardHeader>
         <CardContent>
-          {loginAttempts > 2 && <Alert variant="destructive" className="mb-4">
-              <ShieldAlert className="h-4 w-4 mr-2" />
-              <AlertDescription>
-                Previše neuspješnih pokušaja. Molimo kontaktirajte administratora ako ne možete pristupiti svom računu.
-              </AlertDescription>
-            </Alert>}
-
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField control={form.control} name="email" render={({
