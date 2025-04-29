@@ -12,10 +12,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, ShieldAlert } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
 const loginSchema = z.object({
   email: z.string().email("Unesite ispravnu email adresu"),
   password: z.string().min(1, "Šifra je obavezna")
 });
+
 export default function Login() {
   const {
     login,
@@ -23,9 +25,7 @@ export default function Login() {
     isLoadingAuth
   } = useAuth();
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
@@ -35,7 +35,8 @@ export default function Login() {
     if (isAuthenticated && !isLoadingAuth) {
       navigate('/');
     }
-  }, [isAuthenticated, navigate, isLoadingAuth]);
+  }, [isAuthenticated, isLoadingAuth, navigate]);
+
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -43,11 +44,13 @@ export default function Login() {
       password: ""
     }
   });
+
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
       console.log("Login attempt with:", values.email);
       const success = await login(values.email, values.password);
+      
       if (success) {
         navigate('/');
       } else {
@@ -65,11 +68,13 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
   if (isLoadingAuth) {
     return <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-lg">Učitavanje...</div>
       </div>;
   }
+
   return <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
