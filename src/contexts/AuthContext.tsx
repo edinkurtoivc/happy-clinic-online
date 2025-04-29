@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -169,6 +168,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
+      // Check if user has a password property before comparing
+      if (!user.password) {
+        console.error("User record missing password hash");
+        toast({
+          title: "Greška sistema",
+          description: "Greška u podacima korisnika. Kontaktirajte administratora.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Debug log to see what's being compared
+      console.log("Comparing password:", password ? "******" : "undefined", "with hash:", user.password ? "******" : "undefined");
+      
       // Verify password with bcrypt
       const isPasswordValid = await bcrypt.compare(password, user.password);
       
