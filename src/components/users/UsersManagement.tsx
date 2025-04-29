@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -13,6 +14,7 @@ import { Eye, Edit, Trash2 } from "lucide-react";
 import type { User } from "@/types/user";
 import UserForm from "./UserForm";
 import { useToast } from "@/hooks/use-toast";
+import * as bcrypt from 'bcryptjs';
 
 export default function UsersManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -92,12 +94,15 @@ export default function UsersManagement() {
     phone?: string;
   }) => {
     try {
+      // Hash the password before storing it
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+      
       const newUser: User = {
         id: `user-${Date.now()}`,
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
-        password: data.password,
+        password: hashedPassword,
         role: data.role,
         specialization: data.specialization,
         phone: data.phone,
@@ -127,14 +132,18 @@ export default function UsersManagement() {
     try {
       if (!selectedUser) return;
       
+      // Only hash password if it was changed (not empty string)
+      const password = data.password 
+        ? await bcrypt.hash(data.password, 10)
+        : selectedUser.password;
+      
       const updatedUsers = users.map(user => 
         user.id === selectedUser.id 
-          ? { ...user, ...data }
+          ? { ...user, ...data, password }
           : user
       );
       
       setUsers(updatedUsers);
-      
       saveUsers(updatedUsers);
       
       console.log("[UsersManagement] Updated user:", selectedUser.id);

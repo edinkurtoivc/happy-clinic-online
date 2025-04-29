@@ -1,8 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import type { User, UserRole } from "@/types/user";
 import * as bcrypt from 'bcryptjs';
+import type { User, UserRole } from "@/types/user";
 
 // Define the auth context type
 type AuthContextType = {
