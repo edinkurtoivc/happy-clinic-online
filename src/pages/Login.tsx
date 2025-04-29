@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -117,17 +118,6 @@ export default function Login() {
               </Button>
             </form>
           </Form>
-          
-          <div className="pt-6 text-center text-sm">
-            <p className="text-gray-600 mb-2">
-              Testni korisnici:
-            </p>
-            <div className="grid gap-1 text-gray-500 text-xs">
-              <p>Admin: admin@klinika.com / admin123</p>
-              <p>Doktor: dr.smith@klinika.com / doctor123</p>
-              <p>Tehničar: tehnicar@klinika.com / nurse123</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>;
