@@ -9,7 +9,14 @@ type HeaderWithUserMenuProps = {
 export function HeaderWithUserMenu({ title }: HeaderWithUserMenuProps) {
   return (
     <div className="flex items-center justify-between px-6 py-4 border-b">
-      <Header title={title} />
+      <div className="flex items-center">
+        <img 
+          src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
+          alt="EIBS Logo" 
+          className="h-8 w-8 mr-3 hidden md:block" 
+        />
+        <Header title={title} />
+      </div>
       <div className="ml-auto">
         <UserMenu />
       </div>

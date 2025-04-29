@@ -39,7 +39,22 @@ export default function Sidebar() {
   const location = useLocation();
   return <div className={cn("flex flex-col border-r bg-white transition-all duration-300", collapsed ? "w-16" : "w-64")}>
       <div className="flex h-16 items-center justify-center border-b px-4">
-        {!collapsed ? <h2 className="text-lg font-semibold text-clinic-800">EIBS</h2> : <span className="text-xl font-bold text-clinic-800">EIBS</span>}
+        {!collapsed ? (
+          <div className="flex items-center">
+            <img 
+              src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
+              alt="EIBS Logo" 
+              className="h-10 w-10 mr-2" 
+            />
+            <h2 className="text-lg font-semibold text-clinic-800">EIBS</h2>
+          </div>
+        ) : (
+          <img 
+            src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
+            alt="EIBS Logo" 
+            className="h-10 w-10" 
+          />
+        )}
       </div>
       
       <nav className="flex-1 space-y-1 px-2 py-4">
