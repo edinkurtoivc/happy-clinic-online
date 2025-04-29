@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,7 +83,7 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
         phone: form.phone,
         address: form.address || undefined,
         email: form.email || undefined,
-        gender: form.gender ? form.gender : undefined
+        gender: form.gender ? (form.gender as "M" | "F") : undefined
       };
       onSubmit(patient);
     }

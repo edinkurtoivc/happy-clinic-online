@@ -1,5 +1,8 @@
+
 import { isFileSystemAvailable, initializeFileSystem, readJsonData, writeJsonData, logAction, DATA_FILES, DEFAULT_DIRS, createPatientDirectory } from "@/utils/fileSystemUtils";
 import { v4 as uuidv4 } from "uuid";
+import type { Patient } from "@/types/patient";
+import type { Appointment } from "@/types/medical-report";
 
 class DataStorageService {
   private _basePath = '';
@@ -106,7 +109,7 @@ class DataStorageService {
   /**
    * Save patient data
    */
-  async savePatient(patient) {
+  async savePatient(patient: Patient) {
     try {
       // Ensure patient has an ID
       if (!patient.id) {
@@ -155,6 +158,77 @@ class DataStorageService {
       return true;
     } catch (error) {
       console.error("[DataStorage] Error saving patient:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Get appointments data
+   */
+  async getAppointments() {
+    if (this._fallbackToLocalStorage || !this.basePath) {
+      const localData = localStorage.getItem('appointments');
+      return localData ? JSON.parse(localData) : [];
+    }
+    
+    try {
+      const appointmentsPath = `${this.basePath}${DATA_FILES.APPOINTMENTS}`;
+      const data = await readJsonData(appointmentsPath, { appointments: [] });
+      return data.appointments || [];
+    } catch (error) {
+      console.error("[DataStorage] Error reading appointments:", error);
+      // Fallback to localStorage
+      const localData = localStorage.getItem('appointments');
+      return localData ? JSON.parse(localData) : [];
+    }
+  }
+  
+  /**
+   * Save appointments data
+   */
+  async saveAppointments(appointments: Appointment[]) {
+    try {
+      // Always update localStorage for compatibility
+      localStorage.setItem('appointments', JSON.stringify(appointments));
+      
+      // If file system is not available, we're done
+      if (this._fallbackToLocalStorage || !this.basePath) {
+        return true;
+      }
+      
+      // Save to file system
+      const appointmentsPath = `${this.basePath}${DATA_FILES.APPOINTMENTS}`;
+      await writeJsonData(appointmentsPath, {
+        appointments,
+        lastUpdated: new Date().toISOString()
+      });
+      
+      // Log the action
+      await logAction(this.basePath, `Updated appointments: ${appointments.length} appointments total`);
+      
+      return true;
+    } catch (error) {
+      console.error("[DataStorage] Error saving appointments:", error);
+      return false;
+    }
+  }
+  
+  /**
+   * Add a new appointment
+   */
+  async addAppointment(appointment: Appointment) {
+    try {
+      // Ensure appointment has an ID
+      if (!appointment.id) {
+        appointment.id = uuidv4();
+      }
+      
+      const currentAppointments = await this.getAppointments();
+      const updatedAppointments = [...currentAppointments, appointment];
+      
+      return await this.saveAppointments(updatedAppointments);
+    } catch (error) {
+      console.error("[DataStorage] Error adding appointment:", error);
       return false;
     }
   }

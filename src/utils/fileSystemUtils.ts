@@ -22,6 +22,7 @@ export const DATA_FILES = {
   SETTINGS: `${DEFAULT_DIRS.SETTINGS}/clinic-info.json`,
   EXAMINATION_TYPES: `${DEFAULT_DIRS.SETTINGS}/examination-types.json`,
   SYSTEM_LOG: `${DEFAULT_DIRS.LOGS}/system-log.json`,
+  REPORTS_INDEX: `${DEFAULT_DIRS.REPORTS}/index.json`,
 };
 
 /**
@@ -49,7 +50,7 @@ export const initializeFileSystem = async (basePath: string): Promise<boolean> =
       if (dir === DEFAULT_DIRS.ROOT) continue; // Skip root dir
       
       const dirPath = basePath + dir;
-      const dirExists = await window.electron.checkIfExists(dirPath);
+      const dirExists = await window.electron.fileExists(dirPath);
       
       if (!dirExists) {
         const created = await window.electron.createDirectory(dirPath);
@@ -81,11 +82,12 @@ const createEmptyJsonFiles = async (basePath: string): Promise<void> => {
     { path: DATA_FILES.SETTINGS, data: { name: '', address: '', phone: '' } },
     { path: DATA_FILES.EXAMINATION_TYPES, data: { types: [] } },
     { path: DATA_FILES.SYSTEM_LOG, data: { logs: [] } },
+    { path: DATA_FILES.REPORTS_INDEX, data: { reports: [] } },
   ];
   
   for (const file of files) {
     const filePath = basePath + file.path;
-    const exists = await window.electron.checkIfExists(filePath);
+    const exists = await window.electron.fileExists(filePath);
     
     if (!exists) {
       await writeJsonData(filePath, file.data);
@@ -102,7 +104,7 @@ export const readJsonData = async <T>(filePath: string, defaultData: T | null): 
       throw new Error('File system access not available');
     }
     
-    const exists = await window.electron.checkIfExists(filePath);
+    const exists = await window.electron.fileExists(filePath);
     
     if (!exists) {
       if (defaultData === null) {
@@ -177,7 +179,7 @@ export const createFolderIfNotExists = async (path: string): Promise<boolean> =>
   if (!isFileSystemAvailable()) return false;
   
   try {
-    const exists = await window.electron.checkIfExists(path);
+    const exists = await window.electron.fileExists(path);
     
     if (!exists) {
       return await window.electron.createDirectory(path);
@@ -292,7 +294,7 @@ export const createBackup = async (basePath: string): Promise<string | null> => 
  * Save a medical report to the file system
  */
 export const saveMedicalReport = async (basePath: string, patientId: string, report: any): Promise<boolean> => {
-  if (!isFileSystemAvailable() || !basePath) return false;
+  if (!isFileSystemAvailable() || !this.basePath) return false;
   
   try {
     // Find patient directory

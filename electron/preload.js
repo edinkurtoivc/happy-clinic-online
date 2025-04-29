@@ -59,9 +59,9 @@ contextBridge.exposeInMainWorld(
       }
     },
     
-    writeTextFile: async (filePath, data) => {
+    writeTextFile: async (filePath, data, encoding = 'utf8') => {
       try {
-        await ipcRenderer.invoke('fs:writeTextFile', filePath, data);
+        await ipcRenderer.invoke('fs:writeTextFile', filePath, data, encoding);
         return true;
       } catch (error) {
         console.error('Failed to write text file:', error);
