@@ -294,7 +294,7 @@ export const createBackup = async (basePath: string): Promise<string | null> => 
  * Save a medical report to the file system
  */
 export const saveMedicalReport = async (basePath: string, patientId: string, report: any): Promise<boolean> => {
-  if (!isFileSystemAvailable() || !this.basePath) return false;
+  if (!isFileSystemAvailable() || !basePath) return false;
   
   try {
     // Find patient directory
@@ -336,31 +336,33 @@ export const saveMedicalReport = async (basePath: string, patientId: string, rep
     await writeJsonData(metaPath, meta);
     
     // Also update the global reports index
-    const reportsIndexPath = `${basePath}${DATA_FILES.REPORTS_INDEX}`;
-    const reportsIndex = await readJsonData<{ reports: any[] }>(reportsIndexPath, { reports: [] });
-    
-    // Add or update report in the global index
-    const globalIndex = reportsIndex.reports.findIndex(r => r.id === report.id);
-    if (globalIndex >= 0) {
-      reportsIndex.reports[globalIndex] = {
-        id: report.id,
-        patientId,
-        date: report.date,
-        type: report.type,
-        doctor: report.doctor
-      };
-    } else {
-      reportsIndex.reports.push({
-        id: report.id,
-        patientId,
-        date: report.date,
-        type: report.type,
-        doctor: report.doctor
-      });
+    if (DATA_FILES.REPORTS_INDEX) {
+      const reportsIndexPath = `${basePath}${DATA_FILES.REPORTS_INDEX}`;
+      const reportsIndex = await readJsonData<{ reports: any[] }>(reportsIndexPath, { reports: [] });
+      
+      // Add or update report in the global index
+      const globalIndex = reportsIndex.reports.findIndex(r => r.id === report.id);
+      if (globalIndex >= 0) {
+        reportsIndex.reports[globalIndex] = {
+          id: report.id,
+          patientId,
+          date: report.date,
+          type: report.type,
+          doctor: report.doctor
+        };
+      } else {
+        reportsIndex.reports.push({
+          id: report.id,
+          patientId,
+          date: report.date,
+          type: report.type,
+          doctor: report.doctor
+        });
+      }
+      
+      // Write updated global index
+      await writeJsonData(reportsIndexPath, reportsIndex);
     }
-    
-    // Write updated global index
-    await writeJsonData(reportsIndexPath, reportsIndex);
     
     await logAction(basePath, `Saved medical report: ${report.id} for patient: ${patientId}`);
     return true;

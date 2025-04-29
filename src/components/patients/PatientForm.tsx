@@ -76,7 +76,7 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
     if (validateForm()) {
       // Create the patient object with proper typing
       const patient: Patient = {
-        id: uuidv4(),
+        id: parseInt(uuidv4().replace(/-/g, '').substring(0, 8), 16), // Convert UUID to a number
         name: form.name,
         dob: form.dob,
         jmbg: form.jmbg,

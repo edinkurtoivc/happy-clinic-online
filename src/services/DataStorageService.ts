@@ -113,7 +113,8 @@ class DataStorageService {
     try {
       // Ensure patient has an ID
       if (!patient.id) {
-        patient.id = uuidv4();
+        // Generate a numeric ID from UUID
+        patient.id = parseInt(uuidv4().replace(/-/g, '').substring(0, 8), 16);
       }
       
       // Always update localStorage for compatibility
