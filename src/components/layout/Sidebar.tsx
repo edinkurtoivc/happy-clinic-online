@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -42,13 +43,13 @@ export default function Sidebar() {
           <img 
             src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
             alt="EIBS Logo" 
-            className="h-14 w-14" 
+            className="h-16 w-16" 
           />
         ) : (
           <img 
             src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
             alt="EIBS Logo" 
-            className="h-12 w-12" 
+            className="h-14 w-14" 
           />
         )}
       </div>
