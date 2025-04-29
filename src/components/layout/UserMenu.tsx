@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
 export function UserMenu() {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const navigate = useNavigate();
 
   if (!user) return null;
@@ -24,6 +24,7 @@ export function UserMenu() {
       case 'admin': return 'Administrator';
       case 'doctor': return 'Doktor';
       case 'nurse': return 'Tehničar';
+      case 'technician': return 'Tehničar';
       default: return role;
     }
   };
@@ -33,6 +34,7 @@ export function UserMenu() {
       case 'admin': return 'destructive' as const;
       case 'doctor': return 'default' as const;
       case 'nurse': return 'secondary' as const;
+      case 'technician': return 'secondary' as const;
       default: return 'outline' as const;
     }
   };
@@ -62,7 +64,7 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        {user.role === 'admin' && (
+        {hasPermission('admin') && (
           <>
             <DropdownMenuItem onClick={() => navigate("/users")}>
               <ClipboardList className="mr-2 h-4 w-4" />
@@ -75,7 +77,7 @@ export function UserMenu() {
           </>
         )}
 
-        {user.role === 'admin' && (
+        {hasPermission('admin') && (
           <DropdownMenuItem onClick={() => navigate("/settings")}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Podešavanja</span>
