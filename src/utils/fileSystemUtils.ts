@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for file system operations in Electron environment
  */
@@ -34,34 +35,55 @@ export function isFileSystemAvailable(): boolean {
 }
 
 /**
+ * Create a directory if it doesn't exist
+ * @param basePath - Base directory
+ * @param relativePath - Relative path to create
+ */
+export async function createFolderIfNotExists(basePath: string, relativePath: string = ""): Promise<boolean> {
+  if (!isFileSystemAvailable() || !basePath) return false;
+  
+  try {
+    const fullPath = relativePath ? `${basePath}${relativePath}` : basePath;
+    await window.electron.createDirectory(fullPath);
+    return true;
+  } catch (error) {
+    console.error(`[FileSystem] Error creating directory ${relativePath}:`, error);
+    return false;
+  }
+}
+
+/**
  * Initialize the file system structure
- * @param basePath - Root directory for EIBS data
+ * @param basePath - Root directory for data
  */
 export async function initializeFileSystem(basePath: string): Promise<boolean> {
   if (!isFileSystemAvailable() || !basePath) return false;
 
   try {
+    console.log(`[FileSystem] Initializing file system at: ${basePath}`);
+    
     // Create all required directories
-    await window.electron.createDirectory(basePath);
+    await createFolderIfNotExists(basePath);
     for (const dir of Object.values(DEFAULT_DIRS)) {
       if (dir) {
-        await window.electron.createDirectory(`${basePath}${dir}`);
+        await createFolderIfNotExists(basePath, dir);
       }
     }
 
     // Initialize empty data files if they don't exist
-    const filesToInit = [
-      DATA_FILES.USERS,
-      DATA_FILES.APPOINTMENTS,
-      DATA_FILES.REPORTS_INDEX,
-      DATA_FILES.EXAMINATION_TYPES,
-      DATA_FILES.SETTINGS,
+    const initialFiles = [
+      { path: DATA_FILES.PATIENTS_INDEX, data: { patients: [] } },
+      { path: DATA_FILES.USERS, data: { users: [] } },
+      { path: DATA_FILES.APPOINTMENTS, data: { appointments: [] } },
+      { path: DATA_FILES.REPORTS_INDEX, data: { reports: [] } },
+      { path: DATA_FILES.EXAMINATION_TYPES, data: { types: [] } },
+      { path: DATA_FILES.SETTINGS, data: { name: "", address: "", city: "", canton: "", phone: "", email: "" } },
     ];
 
-    for (const file of filesToInit) {
-      const exists = await window.electron.fileExists(`${basePath}${file}`);
+    for (const file of initialFiles) {
+      const exists = await window.electron.fileExists(`${basePath}${file.path}`);
       if (!exists) {
-        await window.electron.writeJsonFile(`${basePath}${file}`, {});
+        await writeJsonData(`${basePath}${file.path}`, file.data);
       }
     }
 
@@ -72,6 +94,9 @@ export async function initializeFileSystem(basePath: string): Promise<boolean> {
         `${basePath}${DATA_FILES.LOG}`,
         `EIBS System Log\nInitialized: ${new Date().toISOString()}\n`
       );
+    } else {
+      // Append initialization entry to existing log
+      await logAction(basePath, "File system structure re-initialized");
     }
 
     return true;
@@ -83,8 +108,9 @@ export async function initializeFileSystem(basePath: string): Promise<boolean> {
 
 /**
  * Create a patient directory and initialize required files
- * @param basePath - Root directory for EIBS data
- * @param patientId - Patient identifier
+ * @param basePath - Root directory for data
+ * @param patientName - Patient name
+ * @param patientJmbg - Patient identification number
  * @param patientData - Initial patient data
  */
 export async function createPatientDirectory(
@@ -92,8 +118,11 @@ export async function createPatientDirectory(
   patientName: string,
   patientJmbg: string,
   patientData: any
-): Promise<string | null> {
-  if (!isFileSystemAvailable() || !basePath) return null;
+): Promise<string> {
+  if (!isFileSystemAvailable() || !basePath) {
+    console.error("[FileSystem] File system not available or no base path");
+    return "";
+  }
 
   try {
     // Create safe directory name
@@ -101,28 +130,28 @@ export async function createPatientDirectory(
     const patientDir = `${basePath}${DEFAULT_DIRS.PATIENTS}/${dirName}`;
 
     // Create patient directory and subdirectories
-    await window.electron.createDirectory(patientDir);
-    await window.electron.createDirectory(`${patientDir}/nalazi`);
-    await window.electron.createDirectory(`${patientDir}/slike`);
+    await createFolderIfNotExists(patientDir);
+    await createFolderIfNotExists(`${patientDir}/nalazi`);
+    await createFolderIfNotExists(`${patientDir}/slike`);
 
     // Initialize patient files
-    await window.electron.writeJsonFile(`${patientDir}/karton.json`, patientData);
-    await window.electron.writeJsonFile(`${patientDir}/historija.json`, { visits: [] });
-    await window.electron.writeJsonFile(`${patientDir}/nalazi/meta.json`, { reports: [] });
+    await writeJsonData(`${patientDir}/karton.json`, patientData);
+    await writeJsonData(`${patientDir}/historija.json`, { visits: [] });
+    await writeJsonData(`${patientDir}/nalazi/meta.json`, { reports: [] });
 
     // Log the action
     await logAction(basePath, `Created new patient directory: ${dirName}`);
 
-    return patientDir;
+    return dirName;
   } catch (error) {
     console.error("[FileSystem] Error creating patient directory:", error);
-    return null;
+    return "";
   }
 }
 
 /**
  * Log an action to the system log
- * @param basePath - Root directory for EIBS data
+ * @param basePath - Root directory for data
  * @param message - Message to log
  */
 export async function logAction(basePath: string, message: string): Promise<void> {
@@ -178,7 +207,7 @@ export async function writeJsonData<T>(filePath: string, data: T): Promise<boole
 
 /**
  * Read all patient directories
- * @param basePath - Root directory for EIBS data
+ * @param basePath - Root directory for data
  */
 export async function readAllPatientDirectories(basePath: string): Promise<string[]> {
   if (!isFileSystemAvailable() || !basePath) return [];
@@ -195,7 +224,7 @@ export async function readAllPatientDirectories(basePath: string): Promise<strin
 
 /**
  * Get patient data from patient directory
- * @param basePath - Root directory for EIBS data
+ * @param basePath - Root directory for data
  * @param patientDir - Patient directory name
  */
 export async function getPatientData(basePath: string, patientDir: string): Promise<any> {
@@ -236,7 +265,7 @@ export async function migrateData(oldPath: string, newPath: string): Promise<boo
 
 /**
  * Create a backup of all data
- * @param basePath - Root directory for EIBS data
+ * @param basePath - Root directory for data
  */
 export async function createBackup(basePath: string): Promise<string | null> {
   if (!isFileSystemAvailable() || !basePath) return null;
@@ -253,5 +282,89 @@ export async function createBackup(basePath: string): Promise<string | null> {
   } catch (error) {
     console.error("[FileSystem] Error creating backup:", error);
     return null;
+  }
+}
+
+/**
+ * Save a medical report to the file system
+ * @param basePath - Root directory for data
+ * @param patientId - Patient identifier
+ * @param report - Report data to save
+ */
+export async function saveMedicalReport(basePath: string, patientId: string, report: any): Promise<boolean> {
+  if (!isFileSystemAvailable() || !basePath) return false;
+  
+  try {
+    // Find patient directory
+    const allDirs = await readAllPatientDirectories(basePath);
+    const patientDir = allDirs.find(dir => dir.includes(patientId));
+    
+    if (!patientDir) {
+      console.error(`[FileSystem] Cannot find patient directory for ID: ${patientId}`);
+      return false;
+    }
+    
+    // Save report to patient's directory
+    const reportPath = `${basePath}${DEFAULT_DIRS.PATIENTS}/${patientDir}/nalazi/${report.id}.json`;
+    await writeJsonData(reportPath, report);
+    
+    // Update meta file
+    const metaPath = `${basePath}${DEFAULT_DIRS.PATIENTS}/${patientDir}/nalazi/meta.json`;
+    const meta = await readJsonData<{ reports: any[] }>(metaPath, { reports: [] });
+    
+    // Add or update report reference
+    const existingIndex = meta.reports.findIndex(r => r.id === report.id);
+    if (existingIndex >= 0) {
+      meta.reports[existingIndex] = {
+        id: report.id,
+        date: report.date,
+        type: report.type,
+        doctor: report.doctor
+      };
+    } else {
+      meta.reports.push({
+        id: report.id,
+        date: report.date,
+        type: report.type,
+        doctor: report.doctor
+      });
+    }
+    
+    // Write updated meta file
+    await writeJsonData(metaPath, meta);
+    
+    // Also update the global reports index
+    const reportsIndexPath = `${basePath}${DATA_FILES.REPORTS_INDEX}`;
+    const reportsIndex = await readJsonData<{ reports: any[] }>(reportsIndexPath, { reports: [] });
+    
+    // Add or update report in the global index
+    const globalIndex = reportsIndex.reports.findIndex(r => r.id === report.id);
+    if (globalIndex >= 0) {
+      reportsIndex.reports[globalIndex] = {
+        id: report.id,
+        patientId,
+        date: report.date,
+        type: report.type,
+        doctor: report.doctor
+      };
+    } else {
+      reportsIndex.reports.push({
+        id: report.id,
+        patientId,
+        date: report.date,
+        type: report.type,
+        doctor: report.doctor
+      });
+    }
+    
+    // Write updated global index
+    await writeJsonData(reportsIndexPath, reportsIndex);
+    
+    await logAction(basePath, `Saved medical report: ${report.id} for patient: ${patientId}`);
+    return true;
+    
+  } catch (error) {
+    console.error("[FileSystem] Error saving medical report:", error);
+    return false;
   }
 }

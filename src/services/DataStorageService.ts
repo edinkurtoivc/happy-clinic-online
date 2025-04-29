@@ -1,9 +1,19 @@
 
-import { isFileSystemAvailable, initializeFileSystem, readJsonData, writeJsonData, logAction, DATA_FILES, DEFAULT_DIRS } from "@/utils/fileSystemUtils";
+import { 
+  isFileSystemAvailable, 
+  initializeFileSystem, 
+  readJsonData, 
+  writeJsonData, 
+  logAction, 
+  DATA_FILES, 
+  DEFAULT_DIRS,
+  createPatientDirectory
+} from "@/utils/fileSystemUtils";
 import { Patient } from "@/types/patient";
 import { Appointment } from "@/types/medical-report";
 import { User } from "@/types/user";
 import { ExaminationType } from "@/types/medical-report";
+import { v4 as uuidv4 } from "uuid";
 
 interface ClinicSettings {
   name: string;
@@ -107,7 +117,8 @@ class DataStorageService {
     
     try {
       const patientsPath = `${this.basePath}${DATA_FILES.PATIENTS_INDEX}`;
-      return await readJsonData<Patient[]>(patientsPath, []);
+      const data = await readJsonData<{ patients: Patient[] }>(patientsPath, { patients: [] });
+      return data.patients || [];
     } catch (error) {
       console.error("[DataStorage] Error reading patients:", error);
       
@@ -122,41 +133,45 @@ class DataStorageService {
    */
   async savePatient(patient: Patient): Promise<boolean> {
     try {
-      // Always update localStorage for compatibility
-      const localData = localStorage.getItem('patients') || '[]';
-      let patients = JSON.parse(localData) as Patient[];
-      
-      const existingIndex = patients.findIndex(p => p.id === patient.id);
-      if (existingIndex >= 0) {
-        patients[existingIndex] = patient;
-      } else {
-        patients.push(patient);
+      // Ensure patient has an ID
+      if (!patient.id) {
+        patient.id = uuidv4();
       }
       
-      localStorage.setItem('patients', JSON.stringify(patients));
+      // Always update localStorage for compatibility
+      const existingPatients = await this.getPatients();
+      const existingIndex = existingPatients.findIndex(p => p.id === patient.id);
+      
+      let updatedPatients: Patient[];
+      if (existingIndex >= 0) {
+        updatedPatients = existingPatients.map(p => p.id === patient.id ? patient : p);
+      } else {
+        updatedPatients = [...existingPatients, patient];
+      }
+      
+      localStorage.setItem('patients', JSON.stringify(updatedPatients));
       
       // If file system is not available, we're done
       if (this._fallbackToLocalStorage || !this.basePath) {
         return true;
       }
       
-      // Save to file system
+      // Save to file system - first update the index
       const patientsIndexPath = `${this.basePath}${DATA_FILES.PATIENTS_INDEX}`;
-      await writeJsonData(patientsIndexPath, patients);
+      await writeJsonData(patientsIndexPath, { 
+        patients: updatedPatients,
+        lastUpdated: new Date().toISOString() 
+      });
       
       // Create or update patient directory
-      const patientDir = `${this.basePath}${DEFAULT_DIRS.PATIENTS}/${patient.name.replace(/\s+/g, '_')}_${patient.jmbg}`;
-      await window.electron.createDirectory(patientDir);
-      await window.electron.createDirectory(`${patientDir}/nalazi`);
-      await window.electron.createDirectory(`${patientDir}/slike`);
-      
-      // Save patient data
-      await writeJsonData(`${patientDir}/karton.json`, patient);
-      
-      // Check if historija.json exists, create if not
-      const historyExists = await window.electron.fileExists(`${patientDir}/historija.json`);
-      if (!historyExists) {
-        await writeJsonData(`${patientDir}/historija.json`, { visits: [] });
+      const folderName = existingIndex >= 0 ? 
+        `${patient.name.replace(/\s+/g, '_')}_${patient.jmbg}` : 
+        await createPatientDirectory(this.basePath, patient.name, patient.jmbg, patient);
+        
+      // If new patient was created, we're done as createPatientDirectory already writes the files
+      if (existingIndex >= 0 && folderName) {
+        const patientDir = `${this.basePath}${DEFAULT_DIRS.PATIENTS}/${folderName}`;
+        await writeJsonData(`${patientDir}/karton.json`, patient);
       }
       
       // Log the action
@@ -223,6 +238,11 @@ class DataStorageService {
    */
   async addAppointment(appointment: Appointment): Promise<boolean> {
     try {
+      // Ensure appointment has an ID
+      if (!appointment.id) {
+        appointment.id = uuidv4();
+      }
+      
       const currentAppointments = await this.getAppointments();
       const updatedAppointments = [...currentAppointments, appointment];
       return await this.saveAppointments(updatedAppointments);
@@ -341,7 +361,8 @@ class DataStorageService {
     
     try {
       const settingsPath = `${this.basePath}${DATA_FILES.SETTINGS}`;
-      return await readJsonData<ClinicSettings | null>(settingsPath, null);
+      const data = await readJsonData<ClinicSettings | null>(settingsPath, null);
+      return data;
     } catch (error) {
       console.error("[DataStorage] Error reading clinic settings:", error);
       
@@ -374,7 +395,7 @@ class DataStorageService {
         
         // Convert base64 to binary and save
         const base64Data = settings.logo.replace(/^data:image\/png;base64,/, "");
-        await window.electron.writeTextFile(logoPath, base64Data);
+        await window.electron.writeTextFile(logoPath, base64Data, "base64");
       }
       
       // Log the action
@@ -386,9 +407,36 @@ class DataStorageService {
       return false;
     }
   }
+  
+  /**
+   * Create a backup of all data
+   */
+  async createBackup(): Promise<string | null> {
+    if (this._fallbackToLocalStorage || !this.basePath) {
+      console.warn("[DataStorage] Cannot create backup - no file system access");
+      return null;
+    }
+    
+    try {
+      const date = new Date().toISOString().split('T')[0];
+      const backupFileName = `backup_${date}.zip`;
+      const backupPath = `${this.basePath}${DEFAULT_DIRS.BACKUPS}/${backupFileName}`;
+      
+      await window.electron.createZipArchive(this.basePath, backupPath, [DEFAULT_DIRS.BACKUPS]);
+      
+      await logAction(this.basePath, `Created backup: ${backupFileName}`);
+      return backupPath;
+    } catch (error) {
+      console.error("[DataStorage] Error creating backup:", error);
+      return null;
+    }
+  }
 }
 
 // Export a singleton instance
-export const dataStorageService = new DataStorageService();
+const dataStorageService = new DataStorageService();
+
+// Add uuid dependency for generating unique IDs
+export { dataStorageService };
 
 export default dataStorageService;

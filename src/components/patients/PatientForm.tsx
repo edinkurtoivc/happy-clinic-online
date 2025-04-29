@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import type { Patient } from "@/types/patient";
+import { v4 as uuidv4 } from "uuid";
 
 interface PatientFormProps {
   onSubmit: (patient: Omit<Patient, "id">) => void;
@@ -71,7 +72,9 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
     e.preventDefault();
     
     if (validateForm()) {
+      // Assign unique ID to ensure proper folder creation
       onSubmit({
+        id: uuidv4(), // Pre-assign ID for new patients
         name: form.name,
         dob: form.dob,
         jmbg: form.jmbg,

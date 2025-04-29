@@ -8,22 +8,19 @@ import {
   FolderOpen, 
   Check, 
   HardDrive, 
-  Save,
-  WifiOff,
-  Cloud,
-  CloudOff,
-  RefreshCw
+  RefreshCw,
+  FolderSync,
+  Info
 } from "lucide-react";
-import { AutoSaveIndicator } from "@/components/ui/auto-save-indicator";
-import dataStorageService from "@/services/DataStorageService";
 import { initializeFileSystem, migrateData } from "@/utils/fileSystemUtils";
+import dataStorageService from "@/services/DataStorageService";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function DataFolderSelect() {
   const { toast } = useToast();
   const [dataPath, setDataPath] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isOnlineMode, setIsOnlineMode] = useState(false);
   const [folderSizeInfo, setFolderSizeInfo] = useState({
     usedSpace: "0 MB",
     totalSpace: "500 GB",
@@ -32,6 +29,7 @@ export default function DataFolderSelect() {
   const [isMigrating, setIsMigrating] = useState(false);
   const [showMigrationDialog, setShowMigrationDialog] = useState(false);
   const [migrationNewPath, setMigrationNewPath] = useState("");
+  const [isInitializing, setIsInitializing] = useState(false);
   
   const isElectron = typeof window !== 'undefined' && window.electron?.isElectron;
   
@@ -100,23 +98,36 @@ export default function DataFolderSelect() {
     setDataPath(path);
     localStorage.setItem('dataFolderPath', path);
     
+    setIsInitializing(true);
     // Initialize file structure
-    const initialized = await initializeFileSystem(path);
-    
-    if (initialized) {
-      dataStorageService.basePath = path;
-      updateFolderInfo(path);
+    try {
+      const initialized = await initializeFileSystem(path);
       
-      toast({
-        title: "Folder odabran",
-        description: "Nova lokacija je postavljena za spremanje podataka."
-      });
-    } else {
+      if (initialized) {
+        dataStorageService.basePath = path;
+        await dataStorageService.initialize(path);
+        updateFolderInfo(path);
+        
+        toast({
+          title: "Folder odabran",
+          description: "Nova lokacija je postavljena za spremanje podataka."
+        });
+      } else {
+        toast({
+          title: "Greška",
+          description: "Nije moguće inicijalizirati strukturu foldera.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error initializing folder structure:", error);
       toast({
         title: "Greška",
         description: "Nije moguće inicijalizirati strukturu foldera.",
         variant: "destructive"
       });
+    } finally {
+      setIsInitializing(false);
     }
   };
   
@@ -173,13 +184,16 @@ export default function DataFolderSelect() {
     try {
       // Initialize file structure if needed
       if (isElectron) {
+        setIsInitializing(true);
         const initialized = await initializeFileSystem(dataPath);
         
         if (initialized) {
           dataStorageService.basePath = dataPath;
+          await dataStorageService.initialize(dataPath);
         } else {
           throw new Error("Nije moguće inicijalizirati strukturu foldera.");
         }
+        setIsInitializing(false);
       }
       
       // Save the path to localStorage
@@ -201,14 +215,47 @@ export default function DataFolderSelect() {
     }
   };
   
-  const toggleMode = () => {
-    setIsOnlineMode(!isOnlineMode);
-    toast({
-      title: isOnlineMode ? "Offline način rada" : "Online način rada",
-      description: isOnlineMode 
-        ? "Podatci će biti spremljeni lokalno" 
-        : "Podatci će biti sinkronizirani s serverom",
-    });
+  const handleForceReinitialization = async () => {
+    if (!dataPath) {
+      toast({
+        title: "Greška",
+        description: "Prvo odaberite folder za podatke.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsInitializing(true);
+    
+    try {
+      const initialized = await initializeFileSystem(dataPath);
+      
+      if (initialized) {
+        dataStorageService.basePath = dataPath;
+        await dataStorageService.initialize(dataPath);
+        updateFolderInfo(dataPath);
+        
+        toast({
+          title: "Uspješno",
+          description: "Struktura foldera je uspješno reinicijalizirana.",
+        });
+      } else {
+        toast({
+          title: "Greška",
+          description: "Nije moguće reinicijalizirati strukturu foldera.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error reinitializing folder structure:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće reinicijalizirati strukturu foldera.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsInitializing(false);
+    }
   };
 
   return (
@@ -219,27 +266,15 @@ export default function DataFolderSelect() {
             <div>
               <h2 className="text-xl font-semibold">Lokacija podataka</h2>
               <p className="text-muted-foreground">
-                Odaberite gdje želite da se vaši podaci spremaju {isElectron ? "na računaru" : ""}
+                Odaberite gdje želite da se vaši podaci spremaju lokalno
               </p>
             </div>
-            <Button
-              variant="outline" 
-              size="sm" 
-              onClick={toggleMode}
-              className="flex items-center gap-2"
-            >
-              {isOnlineMode ? (
-                <>
-                  <Cloud className="h-4 w-4" />
-                  Online način
-                </>
-              ) : (
-                <>
-                  <CloudOff className="h-4 w-4" />
-                  Offline način
-                </>
-              )}
-            </Button>
+            {dataPath && dataStorageService.isInitialized && (
+              <Alert variant="success" className="max-w-fit bg-green-50 text-green-800 border-green-200 p-2">
+                <Check className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-xs">Lokalno spremanje aktivno</AlertDescription>
+              </Alert>
+            )}
           </div>
         </div>
 
@@ -273,20 +308,44 @@ export default function DataFolderSelect() {
               <Button 
                 variant="outline" 
                 onClick={handleSelectFolder}
+                disabled={isInitializing}
               >
                 <FolderOpen className="mr-2 h-4 w-4" />
                 Odaberi folder
               </Button>
             </div>
             
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+              <Button 
+                variant="outline"
+                onClick={handleForceReinitialization} 
+                disabled={isInitializing || !dataPath}
+              >
+                {isInitializing ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Reinicijalizacija...
+                  </>
+                ) : (
+                  <>
+                    <FolderSync className="mr-2 h-4 w-4" />
+                    Reinicijaliziraj strukturu
+                  </>
+                )}
+              </Button>
+              
               <Button 
                 onClick={handleSaveLocation} 
-                disabled={isSaving || !dataPath}
+                disabled={isSaving || !dataPath || isInitializing}
               >
                 <Check className="mr-2 h-4 w-4" />
                 {isSaving ? "Spremanje..." : "Spremi lokaciju"}
               </Button>
+            </div>
+            
+            <div className="mt-2 flex items-center text-xs text-muted-foreground">
+              <Info className="h-3 w-3 mr-1" />
+              <span>Svi podaci će biti spremljeni lokalno u odabranom folderu</span>
             </div>
           </div>
           
