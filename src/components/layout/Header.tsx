@@ -17,10 +17,9 @@ export default function Header({
           <img 
             src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
             alt="EIBS Logo" 
-            className="h-8 w-8 mr-2" 
+            className="h-12 w-12" 
           />
         )}
-        <h1 className="text-lg font-semibold text-clinic-800 md:text-xl">{title}</h1>
       </div>
     </div>
   );

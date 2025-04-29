@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -40,19 +39,16 @@ export default function Sidebar() {
   return <div className={cn("flex flex-col border-r bg-white transition-all duration-300", collapsed ? "w-16" : "w-64")}>
       <div className="flex h-16 items-center justify-center border-b px-4">
         {!collapsed ? (
-          <div className="flex items-center">
-            <img 
-              src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
-              alt="EIBS Logo" 
-              className="h-10 w-10 mr-2" 
-            />
-            <h2 className="text-lg font-semibold text-clinic-800">EIBS</h2>
-          </div>
+          <img 
+            src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
+            alt="EIBS Logo" 
+            className="h-14 w-14" 
+          />
         ) : (
           <img 
             src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
             alt="EIBS Logo" 
-            className="h-10 w-10" 
+            className="h-12 w-12" 
           />
         )}
       </div>
