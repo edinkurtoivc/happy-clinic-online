@@ -81,7 +81,6 @@ export default function Login() {
               className="h-24 w-24" 
             />
           </div>
-          <CardTitle className="text-2xl text-center">Klinički informacioni sistem</CardTitle>
           <CardDescription className="text-center">Prijava</CardDescription>
         </CardHeader>
         <CardContent>
