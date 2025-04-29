@@ -10,10 +10,6 @@ export default function Users() {
     <div className="flex h-full flex-col">
       <HeaderWithUserMenu 
         title="Upravljanje korisnicima" 
-        action={{
-          label: "Dodaj korisnika",
-          onClick: () => setIsFormOpen(true)
-        }}
       />
       <div className="page-container">
         <UsersManagement />
