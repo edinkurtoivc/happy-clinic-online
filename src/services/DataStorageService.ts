@@ -436,7 +436,5 @@ class DataStorageService {
 // Export a singleton instance
 const dataStorageService = new DataStorageService();
 
-// Add uuid dependency for generating unique IDs
 export { dataStorageService };
-
 export default dataStorageService;

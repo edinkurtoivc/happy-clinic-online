@@ -8,7 +8,7 @@ import type { Patient } from "@/types/patient";
 import { v4 as uuidv4 } from "uuid";
 
 interface PatientFormProps {
-  onSubmit: (patient: Omit<Patient, "id">) => void;
+  onSubmit: (patient: Patient) => void;
   onCancel: () => void;
 }
 
@@ -74,7 +74,7 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
     if (validateForm()) {
       // Assign unique ID to ensure proper folder creation
       onSubmit({
-        id: uuidv4(), // Pre-assign ID for new patients
+        id: uuidv4(),
         name: form.name,
         dob: form.dob,
         jmbg: form.jmbg,

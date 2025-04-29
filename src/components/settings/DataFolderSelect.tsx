@@ -270,7 +270,7 @@ export default function DataFolderSelect() {
               </p>
             </div>
             {dataPath && dataStorageService.isInitialized && (
-              <Alert variant="success" className="max-w-fit bg-green-50 text-green-800 border-green-200 p-2">
+              <Alert variant="default" className="max-w-fit bg-green-50 text-green-800 border-green-200 p-2">
                 <Check className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-xs">Lokalno spremanje aktivno</AlertDescription>
               </Alert>

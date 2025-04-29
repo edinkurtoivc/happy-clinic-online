@@ -67,13 +67,9 @@ export default function Patients() {
     }
   };
   
-  const handleAddPatient = async (newPatient: Omit<Patient, "id">) => {
+  const handleAddPatient = async (newPatient: Patient) => {
     try {
-      // Generate a new ID for the patient
-      const id = Date.now();
-      const patientWithId = { ...newPatient, id };
-      
-      const success = await dataStorageService.savePatient(patientWithId);
+      const success = await dataStorageService.savePatient(newPatient);
       
       if (success) {
         // Refresh patients list
@@ -82,12 +78,12 @@ export default function Patients() {
         
         toast({
           title: "Uspješno",
-          description: `Pacijent ${patientWithId.name} je uspješno dodan.`,
+          description: `Pacijent ${newPatient.name} je uspješno dodan.`,
         });
         
         console.log('[Patients] Patient added:', {
-          patientId: patientWithId.id,
-          name: patientWithId.name,
+          patientId: newPatient.id,
+          name: newPatient.name,
           timestamp: new Date().toISOString(),
         });
       } else {
