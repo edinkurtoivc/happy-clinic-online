@@ -11,12 +11,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, ShieldAlert } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
 const loginSchema = z.object({
   email: z.string().email("Unesite ispravnu email adresu"),
   password: z.string().min(1, "Šifra je obavezna")
 });
-
 export default function Login() {
   const {
     login,
@@ -75,11 +73,7 @@ export default function Login() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
-            <img 
-              src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
-              alt="EIBS Logo" 
-              className="h-24 w-24" 
-            />
+            <img src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" alt="EIBS Logo" className="h-32 w-32" />
           </div>
           <CardDescription className="text-center">Prijava</CardDescription>
         </CardHeader>
