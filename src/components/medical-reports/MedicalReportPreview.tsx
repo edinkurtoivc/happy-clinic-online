@@ -1,10 +1,20 @@
 
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Printer, Save, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
+
+interface ClinicInfo {
+  name: string;
+  address: string;
+  city: string;
+  canton: string;
+  phone: string;
+  email: string;
+  logo?: string;
+}
 
 interface MedicalReportPreviewProps {
   patient?: any;
@@ -36,6 +46,30 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     appointmentType,
     doctorName
   }, ref) => {
+    const [clinicInfo, setClinicInfo] = useState<ClinicInfo>({
+      name: "Spark Studio",
+      address: "Ozimice 1",
+      city: "Bihać",
+      canton: "",
+      phone: "387 61 123 456",
+      email: "spark.studio.dev@gmail.com",
+    });
+
+    // Load clinic info from localStorage on component mount
+    useEffect(() => {
+      const savedInfo = localStorage.getItem('clinicInfo');
+      
+      if (savedInfo) {
+        try {
+          const parsedInfo = JSON.parse(savedInfo);
+          setClinicInfo(parsedInfo);
+          console.log("[MedicalReportPreview] Loaded clinic info:", parsedInfo);
+        } catch (error) {
+          console.error("[MedicalReportPreview] Error parsing clinic info:", error);
+        }
+      }
+    }, []);
+
     const formatDate = (dateString?: string) => {
       if (!dateString) return "";
       
@@ -77,19 +111,27 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
         <Card className="p-6 font-['Open_Sans'] text-sm flex-1 overflow-auto mx-auto max-w-[210mm]" ref={ref}>
           <div className="flex justify-between items-start mb-6 px-6">
             <div className="flex-shrink-0">
-              <img 
-                src="/placeholder.svg" 
-                alt="Clinic Logo" 
-                className="h-14 mb-2"
-              />
+              {clinicInfo.logo ? (
+                <img 
+                  src={clinicInfo.logo} 
+                  alt={`${clinicInfo.name} Logo`} 
+                  className="h-14 mb-2 object-contain"
+                />
+              ) : (
+                <img 
+                  src="/placeholder.svg" 
+                  alt="Clinic Logo" 
+                  className="h-14 mb-2"
+                />
+              )}
             </div>
             
             <div className="text-right">
-              <h2 className="font-semibold text-lg text-emerald-600">Spark Studio</h2>
+              <h2 className="font-semibold text-lg text-emerald-600">{clinicInfo.name}</h2>
               <p className="text-muted-foreground">
-                Ozimice 1, Bihać<br />
-                spark.studio.dev@gmail.com<br />
-                387 61 123 456
+                {clinicInfo.address}, {clinicInfo.city}<br />
+                {clinicInfo.email}<br />
+                {clinicInfo.phone}
               </p>
             </div>
           </div>
@@ -180,3 +222,4 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
 MedicalReportPreview.displayName = "MedicalReportPreview";
 
 export default MedicalReportPreview;
+
