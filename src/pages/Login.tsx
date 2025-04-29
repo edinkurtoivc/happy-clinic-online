@@ -1,34 +1,30 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, ShieldAlert } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
 const loginSchema = z.object({
   email: z.string().email("Unesite ispravnu email adresu"),
-  password: z.string().min(1, "Šifra je obavezna"),
+  password: z.string().min(1, "Šifra je obavezna")
 });
-
 export default function Login() {
-  const { login, isAuthenticated, isLoadingAuth } = useAuth();
+  const {
+    login,
+    isAuthenticated,
+    isLoadingAuth
+  } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
@@ -39,22 +35,18 @@ export default function Login() {
       navigate('/');
     }
   }, [isAuthenticated, navigate, isLoadingAuth]);
-
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
-      password: "",
-    },
+      password: ""
+    }
   });
-
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
       console.log("Login attempt with:", values.email);
-      
       const success = await login(values.email, values.password);
-      
       if (success) {
         navigate('/');
       } else {
@@ -66,94 +58,57 @@ export default function Login() {
       toast({
         title: "Greška",
         description: "Došlo je do greške prilikom prijave",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   };
-
   if (isLoadingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-lg">Učitavanje...</div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+  return <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">Klinički informacioni sistem</CardTitle>
-          <CardDescription className="text-center">
-            Prijavite se sa vašim kredensijalima
-          </CardDescription>
+          <CardDescription className="text-center">Prijava</CardDescription>
         </CardHeader>
         <CardContent>
-          {loginAttempts > 2 && (
-            <Alert variant="destructive" className="mb-4">
+          {loginAttempts > 2 && <Alert variant="destructive" className="mb-4">
               <ShieldAlert className="h-4 w-4 mr-2" />
               <AlertDescription>
                 Previše neuspješnih pokušaja. Molimo kontaktirajte administratora ako ne možete pristupiti svom računu.
               </AlertDescription>
-            </Alert>
-          )}
+            </Alert>}
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="email" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="email" 
-                        placeholder="vasa.email@adresa.com" 
-                        autoComplete="username"
-                        {...field} 
-                      />
+                      <Input type="email" placeholder="vasa.email@adresa.com" autoComplete="username" {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
 
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="password" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Šifra</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          autoComplete="current-password"
-                          {...field}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-2 top-1/2 -translate-y-1/2"
-                          onClick={() => setShowPassword(!showPassword)}
-                          aria-label={showPassword ? "Sakrij šifru" : "Prikaži šifru"}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
+                        <Input type={showPassword ? "text" : "password"} autoComplete="current-password" {...field} />
+                        <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Sakrij šifru" : "Prikaži šifru"}>
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
                       </div>
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Prijava u toku..." : "Prijavi se"}
@@ -173,6 +128,5 @@ export default function Login() {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 }
