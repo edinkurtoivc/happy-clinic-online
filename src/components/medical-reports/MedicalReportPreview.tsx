@@ -1,10 +1,10 @@
-
 import { forwardRef, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Printer, Save, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ClinicInfo {
   name: string;
@@ -46,6 +46,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     appointmentType,
     doctorName
   }, ref) => {
+    const { user } = useAuth();
     const [clinicInfo, setClinicInfo] = useState<ClinicInfo>({
       name: "Spark Studio",
       address: "Ozimice 1",
@@ -69,6 +70,9 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
         }
       }
     }, []);
+
+    // Get the doctor name from the context if available, otherwise use the prop
+    const displayedDoctorName = user ? `${user.firstName} ${user.lastName}` : (doctorName || "potpis doktora");
 
     const formatDate = (dateString?: string) => {
       if (!dateString) return "";
@@ -199,7 +203,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                     <div className="text-center">
                       <div className="border-b border-black w-32 mb-1"></div>
                       <p className="text-xs text-gray-600">
-                        {doctorName || "potpis doktora"}
+                        {displayedDoctorName}
                       </p>
                     </div>
                   )}
@@ -222,4 +226,3 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
 MedicalReportPreview.displayName = "MedicalReportPreview";
 
 export default MedicalReportPreview;
-
