@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import type { Patient } from "@/types/patient";
 import { v4 as uuidv4 } from "uuid";
+import type { Patient } from "@/types/patient";
 
 interface PatientFormProps {
   onSubmit: (patient: Patient) => void;
@@ -27,11 +26,14 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
     
     // Clear error when field is edited
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -68,12 +70,11 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
     return Object.keys(newErrors).length === 0;
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
     if (validateForm()) {
-      // Assign unique ID to ensure proper folder creation
-      onSubmit({
+      // Create the patient object with proper typing
+      const patient: Patient = {
         id: uuidv4(),
         name: form.name,
         dob: form.dob,
@@ -81,8 +82,9 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
         phone: form.phone,
         address: form.address || undefined,
         email: form.email || undefined,
-        gender: form.gender ? (form.gender as 'M' | 'F') : undefined,
-      });
+        gender: form.gender ? form.gender : undefined
+      };
+      onSubmit(patient);
     }
   };
   

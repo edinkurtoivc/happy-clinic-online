@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import * as bcrypt from 'bcryptjs';
 import type { User, UserRole } from "@/types/user";
+import dataStorageService from "@/services/DataStorageService";
 
 // Define the auth context type
 type AuthContextType = {
@@ -108,46 +109,70 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Initialize users and load current user from localStorage on mount
   useEffect(() => {
-    // Check if users exist in localStorage
-    const storedUsers = localStorage.getItem("users");
-    
-    // If no users in localStorage, set default users
-    if (!storedUsers) {
-      localStorage.setItem("users", JSON.stringify(defaultUsers));
-      console.log("[AuthContext] Initialized default users");
-    }
-    
-    // Load current user from localStorage if exists
-    const currentUserData = localStorage.getItem("currentUser");
-    if (currentUserData) {
+    const initializeAuth = async () => {
+      setIsLoadingAuth(true);
+      
       try {
-        const parsedUser = JSON.parse(currentUserData);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-        console.log("[AuthContext] Loaded user from localStorage:", parsedUser.email);
-        logUserActivity(parsedUser, "se prijavio u aplikaciju (nastavak sesije)");
+        // Check if users exist in dataStorageService or localStorage
+        let users = await dataStorageService.getUsers();
+        
+        // If no users in dataStorage, check localStorage
+        if (!users || users.length === 0) {
+          const storedUsers = localStorage.getItem("users");
+          users = storedUsers ? JSON.parse(storedUsers) : [];
+        }
+        
+        // If still no users, set default users
+        if (!users || users.length === 0) {
+          await dataStorageService.saveUsers(defaultUsers);
+          localStorage.setItem("users", JSON.stringify(defaultUsers));
+          console.log("[AuthContext] Initialized default users");
+        }
+        
+        // Load current user from localStorage if exists
+        const currentUserData = localStorage.getItem("currentUser");
+        if (currentUserData) {
+          try {
+            const parsedUser = JSON.parse(currentUserData);
+            setUser(parsedUser);
+            setIsAuthenticated(true);
+            console.log("[AuthContext] Loaded user from localStorage:", parsedUser.email);
+            logUserActivity(parsedUser, "se prijavio u aplikaciju (nastavak sesije)");
+          } catch (error) {
+            console.error("[AuthContext] Error parsing current user:", error);
+          }
+        }
       } catch (error) {
-        console.error("[AuthContext] Error parsing current user:", error);
+        console.error("[AuthContext] Error initializing auth:", error);
+      } finally {
+        setIsLoadingAuth(false);
       }
-    }
+    };
     
-    setIsLoadingAuth(false);
+    initializeAuth();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoadingAuth(true);
-      const usersString = localStorage.getItem("users");
-      if (!usersString) {
-        toast({
-          title: "Greška",
-          description: "Nema registrovanih korisnika",
-          variant: "destructive",
-        });
-        return false;
+      
+      // Try to get users from dataStorage first
+      let users = await dataStorageService.getUsers();
+      
+      // If no users in dataStorage, fall back to localStorage
+      if (!users || users.length === 0) {
+        const usersString = localStorage.getItem("users");
+        if (!usersString) {
+          toast({
+            title: "Greška",
+            description: "Nema registrovanih korisnika",
+            variant: "destructive",
+          });
+          return false;
+        }
+        users = JSON.parse(usersString);
       }
 
-      const users = JSON.parse(usersString);
       const user = users.find((u: User) => u.email === email);
 
       if (!user) {
@@ -218,10 +243,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem("currentUser");
+    
     toast({
       title: "Odjavili ste se",
       description: "Uspješno ste se odjavili iz sistema",
     });
+    
     navigate("/login");
   };
   

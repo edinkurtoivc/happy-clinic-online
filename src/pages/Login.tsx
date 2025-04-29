@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const loginSchema = z.object({
   email: z.string().email("Unesite ispravnu email adresu"),
@@ -18,11 +18,7 @@ const loginSchema = z.object({
 });
 
 export default function Login() {
-  const {
-    login,
-    isAuthenticated,
-    isLoadingAuth
-  } = useAuth();
+  const { login, isAuthenticated, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
@@ -70,41 +66,67 @@ export default function Login() {
       </div>;
   }
 
-  return <div className="min-h-screen flex items-center justify-center bg-gray-50">
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
             <img src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" alt="EIBS Logo" className="h-32 w-32" />
           </div>
-          <CardDescription className="text-center text-3xl text-slate-600">Prijava</CardDescription>
+          <CardTitle className="text-center text-2xl">Prijava u sistem</CardTitle>
+          <CardDescription className="text-center">Unesite svoje podatke za pristup</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField control={form.control} name="email" render={({
-              field
-            }) => <FormItem>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="vasa.email@adresa.com" autoComplete="username" {...field} />
+                      <Input 
+                        type="email" 
+                        placeholder="vasa.email@adresa.com" 
+                        autoComplete="username" 
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )}
+              />
 
-              <FormField control={form.control} name="password" render={({
-              field
-            }) => <FormItem>
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Šifra</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input type={showPassword ? "text" : "password"} autoComplete="current-password" {...field} />
-                        <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Sakrij šifru" : "Prikaži šifru"}>
+                        <Input 
+                          type={showPassword ? "text" : "password"} 
+                          autoComplete="current-password" 
+                          {...field} 
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-2 top-1/2 -translate-y-1/2"
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? "Sakrij šifru" : "Prikaži šifru"}
+                        >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
                       </div>
                     </FormControl>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )}
+              />
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Prijava u toku..." : "Prijavi se"}
@@ -112,6 +134,12 @@ export default function Login() {
             </form>
           </Form>
         </CardContent>
+        <CardFooter className="text-center">
+          <p className="text-sm text-muted-foreground w-full">
+            Sistem kliničke evidencije | v1.0.0
+          </p>
+        </CardFooter>
       </Card>
-    </div>;
+    </div>
+  );
 }
