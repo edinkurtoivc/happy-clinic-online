@@ -13,7 +13,7 @@ export function HeaderWithUserMenu({ title }: HeaderWithUserMenuProps) {
         <img 
           src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
           alt="EIBS Logo" 
-          className="h-16 w-16 hidden md:block" 
+          className="h-22 w-22 hidden md:block" 
         />
         <Header title={title} />
       </div>
