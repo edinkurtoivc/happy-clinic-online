@@ -43,13 +43,13 @@ export default function Sidebar() {
           <img 
             src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
             alt="EIBS Logo" 
-            className="h-16 w-16" 
+            className="h-18 w-18" 
           />
         ) : (
           <img 
             src="/lovable-uploads/44afc1d2-0672-4a2d-acdd-3d4de4007dbb.png" 
             alt="EIBS Logo" 
-            className="h-14 w-14" 
+            className="h-18 w-18" 
           />
         )}
       </div>
