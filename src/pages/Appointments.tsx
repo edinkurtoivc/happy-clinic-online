@@ -6,6 +6,7 @@ import AppointmentForm from "@/components/appointments/AppointmentForm";
 import type { Appointment } from "@/types/medical-report";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import dataStorageService from "@/services/DataStorageService";
 
 export default function Appointments() {
   const [isCreating, setIsCreating] = useState(false);
@@ -14,32 +15,49 @@ export default function Appointments() {
   
   // Učitaj termine pri inicijalnom renderiranju
   useEffect(() => {
-    const savedAppointments = localStorage.getItem('appointments');
-    if (savedAppointments) {
-      try {
-        const parsed = JSON.parse(savedAppointments);
-        setAppointments(parsed);
-        console.log("[Appointments] Loaded appointments:", parsed);
-      } catch (error) {
-        console.error("[Appointments] Error parsing appointments:", error);
-      }
-    }
+    loadAppointments();
   }, []);
+  
+  const loadAppointments = async () => {
+    try {
+      const loadedAppointments = await dataStorageService.getAppointments();
+      setAppointments(loadedAppointments);
+      console.log("[Appointments] Loaded appointments:", loadedAppointments);
+    } catch (error) {
+      console.error("[Appointments] Error loading appointments:", error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška pri učitavanju termina.",
+        variant: "destructive"
+      });
+    }
+  };
 
-  const handleSaveAppointment = (appointment: Appointment) => {
-    const newAppointments = [...appointments, appointment];
-    setAppointments(newAppointments);
-    
-    // Spremi termine u localStorage
-    localStorage.setItem('appointments', JSON.stringify(newAppointments));
-    
-    toast({
-      title: "Termin spremljen",
-      description: "Termin je uspješno spremljen"
-    });
-    
-    console.log("[Appointments] Saved new appointment:", appointment);
-    console.log("[Appointments] All appointments:", newAppointments);
+  const handleSaveAppointment = async (appointment: Appointment) => {
+    try {
+      const success = await dataStorageService.addAppointment(appointment);
+      
+      if (success) {
+        // Refresh appointments list
+        await loadAppointments();
+        
+        toast({
+          title: "Termin spremljen",
+          description: "Termin je uspješno spremljen"
+        });
+        
+        console.log("[Appointments] Saved new appointment:", appointment);
+      } else {
+        throw new Error("Nije moguće spremiti termin");
+      }
+    } catch (error) {
+      console.error("[Appointments] Error saving appointment:", error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška pri spremanju termina.",
+        variant: "destructive"
+      });
+    }
   };
   
   return (

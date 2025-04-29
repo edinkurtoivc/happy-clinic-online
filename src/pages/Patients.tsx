@@ -7,6 +7,7 @@ import PatientForm from "@/components/patients/PatientForm";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { Patient } from "@/types/patient";
+import dataStorageService from "@/services/DataStorageService";
 
 export default function Patients() {
   const { toast } = useToast();
@@ -14,50 +15,48 @@ export default function Patients() {
   const [isCreating, setIsCreating] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   
-  // Load patients from localStorage
+  // Load patients on initial render
   useEffect(() => {
-    try {
-      const savedPatients = localStorage.getItem('patients');
-      if (savedPatients) {
-        const parsedPatients = JSON.parse(savedPatients);
-        setPatients(parsedPatients);
-        console.log("[Patients] Loaded patients from localStorage:", parsedPatients);
-      } else {
-        // If no patients in localStorage, initialize with empty array
-        localStorage.setItem('patients', JSON.stringify([]));
-      }
-    } catch (error) {
-      console.error("[Patients] Error loading patients:", error);
-    }
+    loadPatients();
   }, []);
   
-  const handleUpdatePatient = (updatedPatient: Patient) => {
+  const loadPatients = async () => {
     try {
-      // Load current patients
-      const savedPatients = localStorage.getItem('patients') || '[]';
-      const currentPatients = JSON.parse(savedPatients);
-      
-      // Find and update patient
-      const updatedPatients = currentPatients.map((p: Patient) => 
-        p.id === updatedPatient.id ? updatedPatient : p
-      );
-      
-      // Save updated patients
-      localStorage.setItem('patients', JSON.stringify(updatedPatients));
-      setPatients(updatedPatients);
-      setSelectedPatient(updatedPatient);
-      
+      const loadedPatients = await dataStorageService.getPatients();
+      setPatients(loadedPatients);
+      console.log("[Patients] Loaded patients:", loadedPatients);
+    } catch (error) {
+      console.error("[Patients] Error loading patients:", error);
       toast({
-        title: "Uspješno",
-        description: "Informacije o pacijentu su uspješno ažurirane.",
+        title: "Greška",
+        description: "Dogodila se greška pri učitavanju pacijenata.",
+        variant: "destructive"
       });
+    }
+  };
+  
+  const handleUpdatePatient = async (updatedPatient: Patient) => {
+    try {
+      const success = await dataStorageService.savePatient(updatedPatient);
       
-      // Log event
-      console.log('[Patients] Patient updated:', {
-        patientId: updatedPatient.id,
-        updatedBy: 'Trenutni korisnik', 
-        timestamp: new Date().toISOString(),
-      });
+      if (success) {
+        // Refresh patients list
+        await loadPatients();
+        setSelectedPatient(updatedPatient);
+        
+        toast({
+          title: "Uspješno",
+          description: "Informacije o pacijentu su uspješno ažurirane.",
+        });
+        
+        console.log('[Patients] Patient updated:', {
+          patientId: updatedPatient.id,
+          updatedBy: 'Trenutni korisnik', 
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        throw new Error("Nije moguće ažurirati pacijenta");
+      }
     } catch (error) {
       console.error("[Patients] Error updating patient:", error);
       toast({
@@ -68,35 +67,32 @@ export default function Patients() {
     }
   };
   
-  const handleAddPatient = (newPatient: Omit<Patient, "id">) => {
+  const handleAddPatient = async (newPatient: Omit<Patient, "id">) => {
     try {
       // Generate a new ID for the patient
       const id = Date.now();
       const patientWithId = { ...newPatient, id };
       
-      // Get current patients from localStorage
-      const savedPatients = localStorage.getItem('patients') || '[]';
-      const currentPatients = JSON.parse(savedPatients);
+      const success = await dataStorageService.savePatient(patientWithId);
       
-      // Add new patient to the list
-      const updatedPatients = [...currentPatients, patientWithId];
-      
-      // Save updated patients list
-      localStorage.setItem('patients', JSON.stringify(updatedPatients));
-      setPatients(updatedPatients);
-      setIsCreating(false);
-      
-      toast({
-        title: "Uspješno",
-        description: `Pacijent ${patientWithId.name} je uspješno dodan.`,
-      });
-      
-      // Log event
-      console.log('[Patients] Patient added:', {
-        patientId: patientWithId.id,
-        name: patientWithId.name,
-        timestamp: new Date().toISOString(),
-      });
+      if (success) {
+        // Refresh patients list
+        await loadPatients();
+        setIsCreating(false);
+        
+        toast({
+          title: "Uspješno",
+          description: `Pacijent ${patientWithId.name} je uspješno dodan.`,
+        });
+        
+        console.log('[Patients] Patient added:', {
+          patientId: patientWithId.id,
+          name: patientWithId.name,
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        throw new Error("Nije moguće dodati pacijenta");
+      }
     } catch (error) {
       console.error("[Patients] Error adding patient:", error);
       toast({

@@ -9,6 +9,12 @@
     "dist/**/*",
     "electron/**/*"
   ],
+  "extraResources": [
+    {
+      "from": "resources",
+      "to": "resources"
+    }
+  ],
   "mac": {
     "category": "public.app-category.medical",
     "target": "dmg"

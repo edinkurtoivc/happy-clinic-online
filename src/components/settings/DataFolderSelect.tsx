@@ -14,50 +14,41 @@ import {
   CloudOff,
   RefreshCw
 } from "lucide-react";
-import { useSaveData } from "@/hooks/useSaveData";
 import { AutoSaveIndicator } from "@/components/ui/auto-save-indicator";
+import dataStorageService from "@/services/DataStorageService";
+import { initializeFileSystem, migrateData } from "@/utils/fileSystemUtils";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function DataFolderSelect() {
   const { toast } = useToast();
   const [dataPath, setDataPath] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isOnlineMode, setIsOnlineMode] = useState(true);
+  const [isOnlineMode, setIsOnlineMode] = useState(false);
   const [folderSizeInfo, setFolderSizeInfo] = useState({
     usedSpace: "0 MB",
     totalSpace: "500 GB",
     percentage: 0,
   });
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [showMigrationDialog, setShowMigrationDialog] = useState(false);
+  const [migrationNewPath, setMigrationNewPath] = useState("");
+  
   const isElectron = typeof window !== 'undefined' && window.electron?.isElectron;
   
-  const { isSaving: autoSaving, isOffline, saveStatus, lastSaved, forceSave } = useSaveData({
-    data: { path: dataPath },
-    key: "data-folder-config",
-    onSave: async (data) => {
-      console.log("[DataFolderSelect] Saving data folder config:", data);
-      localStorage.setItem('dataFolderPath', data.path);
-      return Promise.resolve();
-    },
-    condition: !!dataPath,
-    onDataLoaded: (loadedData) => {
-      if (loadedData.path) {
-        console.log("[DataFolderSelect] Loaded data path from auto-save:", loadedData.path);
-        setDataPath(loadedData.path);
-        if (isElectron && loadedData.path) {
-          updateFolderInfo(loadedData.path);
-        }
-      }
-    }
-  });
-
-  useEffect(() => {
-    const savedPath = localStorage.getItem('dataFolderPath');
+  const loadInitialData = async () => {
+    const savedPath = localStorage.getItem('dataFolderPath') || "";
     console.log("[DataFolderSelect] Initial data path from storage:", savedPath);
+    
     if (savedPath) {
       setDataPath(savedPath);
       if (isElectron) {
         updateFolderInfo(savedPath);
       }
     }
+  };
+  
+  useEffect(() => {
+    loadInitialData();
   }, []);
 
   const updateFolderInfo = async (path: string) => {
@@ -72,40 +63,98 @@ export default function DataFolderSelect() {
   };
 
   const handleSelectFolder = async () => {
-    if (isElectron) {
-      try {
-        const selectedPath = await window.electron.openDirectory();
-        if (selectedPath) {
-          setDataPath(selectedPath);
-          localStorage.setItem('dataFolderPath', selectedPath);
-          updateFolderInfo(selectedPath);
-          
-          toast({
-            title: "Folder odabran",
-            description: "Nova lokacija je postavljena za spremanje podataka."
-          });
+    if (!isElectron) {
+      toast({
+        title: "Greška",
+        description: "Ova funkcija je dostupna samo u desktop verziji aplikacije.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      const selectedPath = await window.electron.openDirectory();
+      if (selectedPath) {
+        // Check if we need to migrate data
+        if (dataPath && dataPath !== selectedPath) {
+          // Show migration dialog
+          setMigrationNewPath(selectedPath);
+          setShowMigrationDialog(true);
+          return;
         }
-      } catch (error) {
-        console.error("Error selecting folder:", error);
-        toast({
-          title: "Greška",
-          description: "Nije moguće odabrati folder.",
-          variant: "destructive"
-        });
+        
+        // Set the new path directly if no previous path
+        await setFolderPath(selectedPath);
       }
-    } else {
-      // Fallback for web version
-      const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
-      const newPath = `/Users/Documents/MedicalData_${timestamp}`;
-      setDataPath(newPath);
-      
-      localStorage.setItem('dataFolderPath', newPath);
-      console.log("[DataFolderSelect] Selected new folder path:", newPath);
+    } catch (error) {
+      console.error("Error selecting folder:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće odabrati folder.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const setFolderPath = async (path: string) => {
+    setDataPath(path);
+    localStorage.setItem('dataFolderPath', path);
+    
+    // Initialize file structure
+    const initialized = await initializeFileSystem(path);
+    
+    if (initialized) {
+      dataStorageService.basePath = path;
+      updateFolderInfo(path);
       
       toast({
         title: "Folder odabran",
         description: "Nova lokacija je postavljena za spremanje podataka."
       });
+    } else {
+      toast({
+        title: "Greška",
+        description: "Nije moguće inicijalizirati strukturu foldera.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleMigrateData = async () => {
+    if (!dataPath || !migrationNewPath || dataPath === migrationNewPath) {
+      setShowMigrationDialog(false);
+      return;
+    }
+    
+    setIsMigrating(true);
+    
+    try {
+      const migrated = await migrateData(dataPath, migrationNewPath);
+      
+      if (migrated) {
+        await setFolderPath(migrationNewPath);
+        
+        toast({
+          title: "Uspješno",
+          description: "Podaci su uspješno premješteni na novu lokaciju."
+        });
+      } else {
+        toast({
+          title: "Greška",
+          description: "Nije moguće premjestiti podatke na novu lokaciju.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error migrating data:", error);
+      toast({
+        title: "Greška",
+        description: "Došlo je do greške pri premještanju podataka.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsMigrating(false);
+      setShowMigrationDialog(false);
     }
   };
   
@@ -122,11 +171,19 @@ export default function DataFolderSelect() {
     setIsSaving(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Initialize file structure if needed
+      if (isElectron) {
+        const initialized = await initializeFileSystem(dataPath);
+        
+        if (initialized) {
+          dataStorageService.basePath = dataPath;
+        } else {
+          throw new Error("Nije moguće inicijalizirati strukturu foldera.");
+        }
+      }
       
+      // Save the path to localStorage
       localStorage.setItem('dataFolderPath', dataPath);
-      
-      await forceSave();
       
       toast({
         title: "Uspješno",
@@ -155,114 +212,163 @@ export default function DataFolderSelect() {
   };
 
   return (
-    <Card className="p-6">
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold">Lokacija podataka</h2>
-            <p className="text-muted-foreground">
-              Odaberite gdje želite da se vaši podaci spremaju {isElectron ? "na računaru" : ""}
+    <>
+      <Card className="p-6">
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Lokacija podataka</h2>
+              <p className="text-muted-foreground">
+                Odaberite gdje želite da se vaši podaci spremaju {isElectron ? "na računaru" : ""}
+              </p>
+            </div>
+            <Button
+              variant="outline" 
+              size="sm" 
+              onClick={toggleMode}
+              className="flex items-center gap-2"
+            >
+              {isOnlineMode ? (
+                <>
+                  <Cloud className="h-4 w-4" />
+                  Online način
+                </>
+              ) : (
+                <>
+                  <CloudOff className="h-4 w-4" />
+                  Offline način
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <label className="text-sm font-medium block">Struktura podataka</label>
+            <div className="bg-muted p-3 rounded-md text-sm">
+              <p className="mb-2">Vaši podaci će biti organizovani u sljedećoj strukturi:</p>
+              <pre className="text-xs overflow-x-auto">
+{`📂 [Lokacija]
+├── 📂 Pacijenti/
+├── 📂 Korisnici/
+├── 📂 Termini/
+├── 📂 Nalazi/
+├── 📂 VrstePregleda/
+├── 📂 Postavke/
+├── 📂 SigurnosneKopije/
+└── log.txt`}
+              </pre>
+            </div>
+            
+            <label className="text-sm font-medium block mt-4">Trenutna lokacija podataka</label>
+            
+            <div className="flex gap-3">
+              <Input 
+                value={dataPath} 
+                onChange={(e) => setDataPath(e.target.value)}
+                placeholder={isElectron ? "Odaberite folder klikom na gumb" : "/putanja/do/vašeg/foldera"}
+                className="flex-1"
+              />
+              <Button 
+                variant="outline" 
+                onClick={handleSelectFolder}
+              >
+                <FolderOpen className="mr-2 h-4 w-4" />
+                Odaberi folder
+              </Button>
+            </div>
+            
+            <div className="flex justify-end">
+              <Button 
+                onClick={handleSaveLocation} 
+                disabled={isSaving || !dataPath}
+              >
+                <Check className="mr-2 h-4 w-4" />
+                {isSaving ? "Spremanje..." : "Spremi lokaciju"}
+              </Button>
+            </div>
+          </div>
+          
+          {dataPath && (
+            <div className="border-t pt-6">
+              <div className="flex items-center gap-3 mb-4">
+                <HardDrive className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-medium">Informacije o prostoru</h3>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Iskorišteno:</span>
+                  <span className="font-medium">{folderSizeInfo.usedSpace}</span>
+                </div>
+                
+                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-clinic-600 rounded-full"
+                    style={{ width: `${folderSizeInfo.percentage}%` }}
+                  ></div>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {folderSizeInfo.percentage.toFixed(2)}% iskorišteno
+                  </span>
+                  <span className="text-muted-foreground">
+                    Ukupno: {folderSizeInfo.totalSpace}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+      
+      <Dialog open={showMigrationDialog} onOpenChange={setShowMigrationDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Premještanje podataka</DialogTitle>
+            <DialogDescription>
+              Želite li premjestiti postojeće podatke na novu lokaciju?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="text-sm mb-4">
+              Trenutna lokacija: <span className="font-medium">{dataPath}</span>
+            </p>
+            <p className="text-sm mb-4">
+              Nova lokacija: <span className="font-medium">{migrationNewPath}</span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Ova akcija će kopirati sve podatke sa trenutne lokacije na novu lokaciju.
             </p>
           </div>
-          <Button
-            variant="outline" 
-            size="sm" 
-            onClick={toggleMode}
-            className="flex items-center gap-2"
-          >
-            {isOnlineMode ? (
-              <>
-                <Cloud className="h-4 w-4" />
-                Online način
-              </>
-            ) : (
-              <>
-                <CloudOff className="h-4 w-4" />
-                Offline način
-              </>
-            )}
-          </Button>
-        </div>
-        
-        {isOffline && (
-          <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md flex items-center gap-2 text-sm text-amber-800">
-            <WifiOff className="h-4 w-4" />
-            Internet konekcija nije dostupna. Podaci će biti spremljeni lokalno.
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-6">
-        <div className="space-y-4">
-          <label className="text-sm font-medium">Trenutna lokacija podataka</label>
           
-          <div className="flex gap-3">
-            <Input 
-              value={dataPath} 
-              onChange={(e) => setDataPath(e.target.value)}
-              placeholder={isElectron ? "Odaberite folder klikom na gumb" : "/putanja/do/vašeg/foldera"}
-              className="flex-1"
-            />
-            <Button 
-              variant="outline" 
-              onClick={handleSelectFolder}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowMigrationDialog(false)}
+              disabled={isMigrating}
             >
-              <FolderOpen className="mr-2 h-4 w-4" />
-              Odaberi folder
+              Odustani
             </Button>
-          </div>
-          
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2 text-sm">
-              <AutoSaveIndicator 
-                status={isOffline ? "offline" : saveStatus as "idle" | "saving" | "saved" | "error" | "offline" | "pending"}
-                lastSaved={lastSaved} 
-                onRetry={forceSave}
-              />
-            </div>
-            
             <Button 
-              onClick={handleSaveLocation} 
-              disabled={isSaving || !dataPath}
+              onClick={handleMigrateData} 
+              disabled={isMigrating}
             >
-              <Check className="mr-2 h-4 w-4" />
-              {isSaving ? "Spremanje..." : "Spremi lokaciju"}
+              {isMigrating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Premještanje...
+                </>
+              ) : (
+                "Premjesti podatke"
+              )}
             </Button>
-          </div>
-        </div>
-        
-        {dataPath && (
-          <div className="border-t pt-6">
-            <div className="flex items-center gap-3 mb-4">
-              <HardDrive className="h-5 w-5 text-muted-foreground" />
-              <h3 className="font-medium">Informacije o prostoru</h3>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Iskorišteno:</span>
-                <span className="font-medium">{folderSizeInfo.usedSpace}</span>
-              </div>
-              
-              <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-clinic-600 rounded-full"
-                  style={{ width: `${folderSizeInfo.percentage}%` }}
-                ></div>
-              </div>
-              
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {folderSizeInfo.percentage.toFixed(2)}% iskorišteno
-                </span>
-                <span className="text-muted-foreground">
-                  Ukupno: {folderSizeInfo.totalSpace}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </Card>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
