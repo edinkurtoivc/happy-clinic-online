@@ -1,8 +1,10 @@
+
 import { forwardRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Printer, Save, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
+import { Separator } from "@/components/ui/separator";
 
 interface MedicalReportPreviewProps {
   patient?: any;
@@ -72,13 +74,13 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
           </div>
         </div>
         
-        <Card className="p-6 font-[Inter] text-sm flex-1 overflow-auto" ref={ref}>
-          <div className="flex justify-between items-start mb-8">
+        <Card className="p-6 font-['Open_Sans'] text-sm flex-1 overflow-auto mx-auto max-w-[210mm]" ref={ref}>
+          <div className="flex justify-between items-start mb-6 px-6">
             <div className="flex-shrink-0">
               <img 
                 src="/placeholder.svg" 
                 alt="Clinic Logo" 
-                className="h-12 mb-2"
+                className="h-14 mb-2"
               />
             </div>
             
@@ -92,32 +94,44 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             </div>
           </div>
 
-          <div className="mb-8">
-            <p className="font-bold">Ime i Prezime: {patient ? patient.name : ""}</p>
-            <p>Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
-            <p>Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
-            <p>JMBG: {patient ? patient.jmbg : ""}</p>
-            <p className="mt-4">Datum ispisa nalaza: {today}</p>
-            {appointmentType && (
-              <p className="mt-2 font-medium text-emerald-700">
-                Vrsta pregleda: {appointmentType}
-              </p>
-            )}
+          <div className="mb-6 px-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <p className="font-bold">Ime i Prezime: {patient ? patient.name : ""}</p>
+                <p>Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
+                <p>Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
+                <p>JMBG: {patient ? patient.jmbg : ""}</p>
+                <p className="mt-2">Datum ispisa nalaza: {today}</p>
+              </div>
+              {appointmentType && (
+                <div className="flex items-center justify-end">
+                  <p className="font-medium text-emerald-700 text-right">
+                    Vrsta pregleda: {appointmentType}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-6">
+          <Separator className="mb-6 mx-6" />
+
+          <div className="space-y-6 px-6 leading-relaxed">
             <div>
-              <h3 className="font-semibold mb-2">Nalaz</h3>
-              <p className="whitespace-pre-wrap min-h-[100px] border-l-2 border-emerald-200 pl-2">
-                {reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}
-              </p>
+              <h3 className="font-bold text-base mb-3">Nalaz</h3>
+              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[100px]">
+                <p className="whitespace-pre-wrap leading-relaxed">
+                  {reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}
+                </p>
+              </div>
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2">Terapija i preporuke</h3>
-              <p className="whitespace-pre-wrap min-h-[100px] border-l-2 border-emerald-200 pl-2">
-                {therapyText || "Ovdje će biti prikazana terapija i preporuke..."}
-              </p>
+              <h3 className="font-bold text-base mb-3">Terapija i preporuke</h3>
+              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[100px]">
+                <p className="whitespace-pre-wrap leading-relaxed">
+                  {therapyText || "Ovdje će biti prikazana terapija i preporuke..."}
+                </p>
+              </div>
             </div>
             
             {isSaved && (
@@ -137,7 +151,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             )}
             
             {(showSignature || showStamp) && (
-              <div className="mt-12 pt-8 text-right">
+              <div className="mt-16 pt-8 text-right">
                 <div className="flex justify-end items-end space-x-4">
                   {showSignature && (
                     <div className="text-center">
