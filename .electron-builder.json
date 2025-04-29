@@ -1,7 +1,7 @@
 
 {
-  "appId": "com.happyclinic.app",
-  "productName": "Happy Clinic",
+  "appId": "com.eibs.app",
+  "productName": "EIBS",
   "directories": {
     "output": "release"
   },
