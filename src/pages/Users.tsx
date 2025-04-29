@@ -1,10 +1,16 @@
 
-import { useState } from "react";
 import HeaderWithUserMenu from "@/components/layout/HeaderWithUserMenu";
 import UsersManagement from "@/components/users/UsersManagement";
+import { useAuth } from "@/contexts/AuthContext";
+import { Navigate } from "react-router-dom";
 
 export default function Users() {
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const { hasPermission } = useAuth();
+  
+  // Only admins can access this page
+  if (!hasPermission('admin')) {
+    return <Navigate to="/" />;
+  }
   
   return (
     <div className="flex h-full flex-col">

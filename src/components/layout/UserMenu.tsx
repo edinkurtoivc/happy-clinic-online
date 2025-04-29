@@ -9,14 +9,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User as UserIcon, Settings } from "lucide-react";
+import { LogOut, User as UserIcon, Settings, FileText, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
 export function UserMenu() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   if (!user) return null;
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Administrator';
+      case 'doctor': return 'Doktor';
+      case 'nurse': return 'Tehničar';
+      default: return role;
+    }
+  };
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'admin': return 'destructive' as const;
+      case 'doctor': return 'default' as const;
+      case 'nurse': return 'secondary' as const;
+      default: return 'outline' as const;
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -36,13 +55,34 @@ export function UserMenu() {
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
+            <Badge variant={getRoleBadgeVariant(user.role)} className="mt-2 w-fit">
+              {getRoleLabel(user.role)}
+            </Badge>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => navigate("/settings")}>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Podešavanja</span>
-        </DropdownMenuItem>
+
+        {user.role === 'admin' && (
+          <>
+            <DropdownMenuItem onClick={() => navigate("/users")}>
+              <ClipboardList className="mr-2 h-4 w-4" />
+              <span>Korisnici</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/audit-logs")}>
+              <FileText className="mr-2 h-4 w-4" />
+              <span>Evidencija aktivnosti</span>
+            </DropdownMenuItem>
+          </>
+        )}
+
+        {user.role === 'admin' && (
+          <DropdownMenuItem onClick={() => navigate("/settings")}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Podešavanja</span>
+          </DropdownMenuItem>
+        )}
+        
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Odjava</span>

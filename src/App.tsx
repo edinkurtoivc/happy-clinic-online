@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { Spinner } from "@/components/ui/spinner";
 import Sidebar from "@/components/layout/Sidebar";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -16,19 +17,38 @@ import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import Statistics from "./pages/Statistics";
 import NotFound from "./pages/NotFound";
+import AuditLogViewer from "./components/settings/AuditLogViewer";
+import { UserRole } from "./types/user";
 
 const queryClient = new QueryClient();
 
-// Protected Route component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+// Protected Route component with role-based access
+const ProtectedRoute = ({ 
+  children, 
+  allowedRoles 
+}: { 
+  children: React.ReactNode;
+  allowedRoles?: UserRole | UserRole[];
+}) => {
+  const { isAuthenticated, hasPermission, isLoadingAuth } = useAuth();
   
-  useEffect(() => {
-    console.log("Protected route check, authenticated:", isAuthenticated);
-  }, [isAuthenticated]);
+  // Show loading state while checking authentication
+  if (isLoadingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
   
+  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+  
+  // Check role-based permissions if roles are specified
+  if (allowedRoles && !hasPermission(allowedRoles)) {
+    return <Navigate to="/" replace />;
   }
   
   return (
@@ -43,59 +63,45 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 // App Router with Auth Provider
 const AppRoutes = () => {
-  useEffect(() => {
-    // Initialize default users if none exist
-    const usersString = localStorage.getItem('users');
-    if (!usersString) {
-      const defaultUsers = [
-        {
-          id: "1",
-          email: "dr.smith@klinika.com",
-          firstName: "Adnan",
-          lastName: "Hadžić",
-          role: "doctor",
-          specialization: "Kardiologija",
-          phone: "+38761123456",
-          password: "doctor123",
-          active: true,
-        },
-        {
-          id: "2",
-          email: "admin@klinika.com",
-          firstName: "Amina",
-          lastName: "Selimović",
-          role: "admin",
-          phone: "+38761654321",
-          password: "admin123",
-          active: true,
-        },
-        {
-          id: "3",
-          email: "superadmin@klinika.com",
-          firstName: "Super",
-          lastName: "Admin",
-          role: "admin",
-          phone: "+38761111111",
-          password: "superadmin123",
-          active: true,
-        }
-      ];
-      
-      localStorage.setItem('users', JSON.stringify(defaultUsers));
-      console.log("Default users initialized");
-    }
-  }, []);
-
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-      <Route path="/patients" element={<ProtectedRoute><Patients /></ProtectedRoute>} />
-      <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
-      <Route path="/medical-reports" element={<ProtectedRoute><MedicalReports /></ProtectedRoute>} />
-      <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-      <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
+      <Route path="/patients" element={
+        <ProtectedRoute allowedRoles={["admin", "doctor", "nurse"]}>
+          <Patients />
+        </ProtectedRoute>
+      } />
+      <Route path="/appointments" element={
+        <ProtectedRoute allowedRoles={["admin", "doctor", "nurse"]}>
+          <Appointments />
+        </ProtectedRoute>
+      } />
+      <Route path="/medical-reports" element={
+        <ProtectedRoute allowedRoles={["admin", "doctor"]}>
+          <MedicalReports />
+        </ProtectedRoute>
+      } />
+      <Route path="/users" element={
+        <ProtectedRoute allowedRoles="admin">
+          <Users />
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute allowedRoles="admin">
+          <Settings />
+        </ProtectedRoute>
+      } />
+      <Route path="/statistics" element={
+        <ProtectedRoute allowedRoles={["admin", "doctor"]}>
+          <Statistics />
+        </ProtectedRoute>
+      } />
+      <Route path="/audit-logs" element={
+        <ProtectedRoute allowedRoles="admin">
+          <AuditLogViewer />
+        </ProtectedRoute>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
