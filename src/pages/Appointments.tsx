@@ -5,6 +5,7 @@ import AppointmentsList from "@/components/appointments/AppointmentsList";
 import AppointmentForm from "@/components/appointments/AppointmentForm";
 import type { Appointment } from "@/types/medical-report";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 export default function Appointments() {
   const [isCreating, setIsCreating] = useState(false);
@@ -43,13 +44,7 @@ export default function Appointments() {
   
   return (
     <div className="flex h-full flex-col">
-      <Header 
-        title="Termini"
-        action={{
-          label: "Zakaži",
-          onClick: () => setIsCreating(true),
-        }}
-      />
+      <Header title="Termini" />
       <div className="page-container">
         {isCreating ? (
           <AppointmentForm 
@@ -57,7 +52,10 @@ export default function Appointments() {
             onSave={handleSaveAppointment}
           />
         ) : (
-          <AppointmentsList initialAppointments={appointments} />
+          <div className="mb-4">
+            <Button onClick={() => setIsCreating(true)}>Zakaži</Button>
+            <AppointmentsList initialAppointments={appointments} />
+          </div>
         )}
       </div>
     </div>

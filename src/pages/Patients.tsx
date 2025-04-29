@@ -109,13 +109,7 @@ export default function Patients() {
   
   return (
     <div className="flex h-full flex-col">
-      <Header 
-        title="Pacijenti"
-        action={{
-          label: "Dodaj pacijenta",
-          onClick: () => setIsCreating(true),
-        }}
-      />
+      <Header title="Pacijenti" />
       <div className="page-container">
         {selectedPatient ? (
           <PatientCard 
@@ -131,7 +125,12 @@ export default function Patients() {
             <PatientForm onSubmit={handleAddPatient} onCancel={() => setIsCreating(false)} />
           </div>
         ) : (
-          <PatientsList patients={patients} onSelectPatient={setSelectedPatient} />
+          <div>
+            <Button onClick={() => setIsCreating(true)} className="mb-4">
+              Dodaj pacijenta
+            </Button>
+            <PatientsList patients={patients} onSelectPatient={setSelectedPatient} />
+          </div>
         )}
       </div>
     </div>
