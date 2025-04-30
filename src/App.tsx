@@ -29,7 +29,8 @@ const ProtectedRoute = ({
   children: React.ReactNode;
   allowedRoles?: UserRole | UserRole[];
 }) => {
-  const { isAuthenticated, hasPermission, isLoadingAuth, bypassAuth } = useAuth();
+  // Force bypass authentication to always be true
+  const { hasPermission, isLoadingAuth } = useAuth();
   
   // Show loading state while checking authentication
   if (isLoadingAuth) {
@@ -40,16 +41,7 @@ const ProtectedRoute = ({
     );
   }
   
-  // Redirect to login if not authenticated and bypass is not enabled
-  if (!isAuthenticated && !bypassAuth) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  // Check role-based permissions if roles are specified and bypass is not enabled
-  if (allowedRoles && !hasPermission(allowedRoles) && !bypassAuth) {
-    return <Navigate to="/" replace />;
-  }
-  
+  // Access is now always granted, checking roles for UI customization only
   return (
     <div className="flex min-h-screen">
       <Sidebar />
@@ -64,7 +56,8 @@ const ProtectedRoute = ({
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      {/* Redirect /login to home so it's never shown */}
+      <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
       <Route path="/patients" element={
         <ProtectedRoute allowedRoles={["admin", "doctor", "nurse"]}>
@@ -108,6 +101,9 @@ const AppRoutes = () => {
 
 // Main App component with correct provider nesting order
 function App() {
+  // Set bypassAuth in localStorage to ensure it persists on refresh
+  localStorage.setItem("bypassAuth", JSON.stringify(true));
+  
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
