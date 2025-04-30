@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import HeaderWithUserMenu from "@/components/layout/HeaderWithUserMenu";
+import Header from "@/components/layout/Header";
 import { Card } from "@/components/ui/card";
 import DoctorsStatistics from "@/components/statistics/DoctorsStatistics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +9,7 @@ import TopExaminationTypes from "@/components/statistics/TopExaminationTypes";
 export default function Statistics() {
   return (
     <div className="flex h-full flex-col">
-      <HeaderWithUserMenu title="Statistika" />
+      <Header title="Statistika" />
       <div className="page-container">
         <Tabs defaultValue="doctors" className="w-full">
           <TabsList className="mb-6">

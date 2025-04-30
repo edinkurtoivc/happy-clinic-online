@@ -16,7 +16,7 @@ export function HeaderWithUserMenu({ title }: HeaderWithUserMenuProps) {
         />
         <h1 className="text-xl font-bold">{title}</h1>
       </div>
-      {/* UserMenu is already included in Header component, so we don't need it here */}
+      {/* We need to include the user menu here */}
     </div>
   );
 }
