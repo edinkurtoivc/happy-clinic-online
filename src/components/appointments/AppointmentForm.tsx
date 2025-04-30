@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,9 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [selectedAppointmentType, setSelectedAppointmentType] = useState<string>("");
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [doctors, setDoctors] = useState<User[]>([]);
   const [isLoadingPatients, setIsLoadingPatients] = useState(false);
+  const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
 
   // Fetch patients from DataStorageService
   useEffect(() => {
@@ -56,16 +59,33 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
     loadPatients();
   }, [toast]);
 
-  const loadDoctors = (): User[] => {
-    try {
-      const savedDoctors = localStorage.getItem('doctors');
-      if (savedDoctors) {
-        return JSON.parse(savedDoctors);
+  // Fetch doctors from DataStorageService
+  useEffect(() => {
+    const loadDoctors = async () => {
+      setIsLoadingDoctors(true);
+      try {
+        const allUsers = await dataStorageService.getUsers();
+        const activeDoctors = allUsers.filter(user => user.role === 'doctor' && user.active);
+        setDoctors(activeDoctors);
+        console.log("[AppointmentForm] Loaded doctors:", activeDoctors.length);
+      } catch (error) {
+        console.error("[AppointmentForm] Error loading doctors:", error);
+        toast({
+          title: "Greška",
+          description: "Dogodila se greška pri učitavanju doktora.",
+          variant: "destructive"
+        });
+        // Fallback to default doctors if error
+        setDoctors(getDefaultDoctors());
+      } finally {
+        setIsLoadingDoctors(false);
       }
-    } catch (error) {
-      console.error("[AppointmentForm] Error loading doctors:", error);
-    }
-    
+    };
+
+    loadDoctors();
+  }, [toast]);
+  
+  const getDefaultDoctors = (): User[] => {
     return [
       { 
         id: "1", 
@@ -109,7 +129,6 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
     ];
   };
   
-  const doctors = loadDoctors();
   const appointmentTypes = loadAppointmentTypes();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -220,14 +239,20 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
             <Label htmlFor="doctor">Doktor</Label>
             <Select onValueChange={setSelectedDoctorId}>
               <SelectTrigger id="doctor">
-                <SelectValue placeholder="Odaberi doktora" />
+                <SelectValue placeholder={isLoadingDoctors ? "Učitavanje doktora..." : "Odaberi doktora"} />
               </SelectTrigger>
               <SelectContent>
-                {doctors.filter(d => d.role === 'doctor' && d.active).map(doctor => (
-                  <SelectItem key={doctor.id} value={doctor.id}>
-                    {doctor.firstName} {doctor.lastName} - {doctor.specialization}
-                  </SelectItem>
-                ))}
+                {isLoadingDoctors ? (
+                  <SelectItem value="loading" disabled>Učitavanje doktora...</SelectItem>
+                ) : doctors.length > 0 ? (
+                  doctors.filter(d => d.role === 'doctor' && d.active).map(doctor => (
+                    <SelectItem key={doctor.id} value={doctor.id}>
+                      {doctor.firstName} {doctor.lastName} - {doctor.specialization || 'Opća praksa'}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-doctors" disabled>Nema dostupnih doktora</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
