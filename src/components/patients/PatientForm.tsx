@@ -14,7 +14,8 @@ interface PatientFormProps {
 
 export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
   const [form, setForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     dob: "",
     jmbg: "",
     phone: "",
@@ -45,8 +46,12 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!form.name.trim()) {
-      newErrors.name = "Ime je obavezno";
+    if (!form.firstName.trim()) {
+      newErrors.firstName = "Ime je obavezno";
+    }
+    
+    if (!form.lastName.trim()) {
+      newErrors.lastName = "Prezime je obavezno";
     }
     
     if (!form.dob) {
@@ -77,7 +82,8 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
       // Create the patient object with proper typing
       const patient: Patient = {
         id: parseInt(uuidv4().replace(/-/g, '').substring(0, 8), 16), // Convert UUID to a number
-        name: form.name,
+        firstName: form.firstName,
+        lastName: form.lastName,
         dob: form.dob,
         jmbg: form.jmbg,
         phone: form.phone,
@@ -93,16 +99,30 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
     <Card className="p-6">
       <h2 className="text-xl font-semibold mb-6">Dodaj novog pacijenta</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <Label htmlFor="name">Ime i prezime *</Label>
-          <Input
-            id="name"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            className={errors.name ? "border-red-500" : ""}
-          />
-          {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="firstName">Ime *</Label>
+            <Input
+              id="firstName"
+              name="firstName"
+              value={form.firstName}
+              onChange={handleChange}
+              className={errors.firstName ? "border-red-500" : ""}
+            />
+            {errors.firstName && <p className="text-sm text-red-500 mt-1">{errors.firstName}</p>}
+          </div>
+          
+          <div>
+            <Label htmlFor="lastName">Prezime *</Label>
+            <Input
+              id="lastName"
+              name="lastName"
+              value={form.lastName}
+              onChange={handleChange}
+              className={errors.lastName ? "border-red-500" : ""}
+            />
+            {errors.lastName && <p className="text-sm text-red-500 mt-1">{errors.lastName}</p>}
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

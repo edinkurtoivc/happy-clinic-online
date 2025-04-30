@@ -27,6 +27,28 @@ export function PatientDetailsForm({
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <div>
+        <Label className="text-sm font-medium text-muted-foreground">Ime</Label>
+        {isEditing ? (
+          <Input 
+            value={editedPatient.firstName} 
+            onChange={(e) => setEditedPatient({...editedPatient, firstName: e.target.value})}
+          />
+        ) : (
+          <p>{patient.firstName}</p>
+        )}
+      </div>
+      <div>
+        <Label className="text-sm font-medium text-muted-foreground">Prezime</Label>
+        {isEditing ? (
+          <Input 
+            value={editedPatient.lastName} 
+            onChange={(e) => setEditedPatient({...editedPatient, lastName: e.target.value})}
+          />
+        ) : (
+          <p>{patient.lastName}</p>
+        )}
+      </div>
+      <div>
         <Label className="text-sm font-medium text-muted-foreground">Datum rođenja</Label>
         {isEditing ? (
           <Input 

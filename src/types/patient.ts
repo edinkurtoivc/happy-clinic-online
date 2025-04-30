@@ -1,7 +1,8 @@
 
 export interface Patient {
   id: number;
-  name: string;
+  firstName: string;
+  lastName: string;
   dob: string;
   jmbg: string;
   phone: string;

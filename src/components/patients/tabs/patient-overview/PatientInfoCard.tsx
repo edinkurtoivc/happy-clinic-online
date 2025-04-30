@@ -37,14 +37,23 @@ export function PatientInfoCard({
         </div>
         <div>
           {isEditing ? (
-            <Input 
-              value={editedPatient.name} 
-              onChange={(e) => setEditedPatient({...editedPatient, name: e.target.value})}
-              className="font-semibold text-lg"
-            />
+            <div className="flex space-x-2">
+              <Input 
+                value={editedPatient.firstName} 
+                onChange={(e) => setEditedPatient({...editedPatient, firstName: e.target.value})}
+                className="font-semibold text-lg w-1/2"
+                placeholder="Ime"
+              />
+              <Input 
+                value={editedPatient.lastName} 
+                onChange={(e) => setEditedPatient({...editedPatient, lastName: e.target.value})}
+                className="font-semibold text-lg w-1/2"
+                placeholder="Prezime"
+              />
+            </div>
           ) : (
             <>
-              <h3 className="text-xl font-semibold text-clinic-800">{patient.name}</h3>
+              <h3 className="text-xl font-semibold text-clinic-800">{patient.firstName} {patient.lastName}</h3>
               <p className="text-sm text-muted-foreground">
                 {calculateAge(patient.dob)} godina · JMBG: {patient.jmbg}
               </p>
