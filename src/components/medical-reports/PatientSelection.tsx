@@ -1,8 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, UserPlus } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import dataStorageService from "@/services/DataStorageService";
 import type { Patient } from "@/types/patient";
 
 interface PatientSelectionProps {
@@ -11,25 +14,43 @@ interface PatientSelectionProps {
   onVisitTypeChange?: (visitType: string) => void;
 }
 
-const mockPatients = [
-  { id: 1, name: "Ana Marković", dob: "1985-04-12", gender: "F" as const, jmbg: "1204985123456", phone: "064-123-4567" },
-  { id: 2, name: "Nikola Jovanović", dob: "1976-08-30", gender: "M" as const, jmbg: "3008976123456", phone: "065-234-5678" },
-  { id: 3, name: "Milica Petrović", dob: "1990-11-15", gender: "F" as const, jmbg: "1511990123456", phone: "063-345-6789" },
-  { id: 4, name: "Stefan Nikolić", dob: "1982-02-22", gender: "M" as const, jmbg: "2202982123456", phone: "062-456-7890" },
-  { id: 5, name: "Jelena Stojanović", dob: "1995-07-08", gender: "F" as const, jmbg: "0807995123456", phone: "061-567-8901" },
-];
-
 export default function PatientSelection({ selectedPatient, onSelectPatient, onVisitTypeChange }: PatientSelectionProps) {
+  const { toast } = useToast();
   const [showPatientsDropdown, setShowPatientsDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [visitType, setVisitType] = useState<string | undefined>();
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const filteredPatients = mockPatients.filter(patient => {
+  // Load patients from DataStorageService
+  useEffect(() => {
+    const loadPatients = async () => {
+      setIsLoading(true);
+      try {
+        const loadedPatients = await dataStorageService.getPatients();
+        setPatients(loadedPatients);
+        console.log("[PatientSelection] Loaded patients:", loadedPatients);
+      } catch (error) {
+        console.error("[PatientSelection] Error loading patients:", error);
+        toast({
+          title: "Greška",
+          description: "Dogodila se greška pri učitavanju pacijenata.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPatients();
+  }, [toast]);
+
+  const filteredPatients = patients.filter(patient => {
     const searchLower = searchTerm.toLowerCase();
     return (
       patient.name.toLowerCase().includes(searchLower) ||
-      patient.jmbg.includes(searchTerm) ||
-      patient.dob.includes(searchTerm)
+      (patient.jmbg && patient.jmbg.includes(searchTerm)) ||
+      (patient.dob && patient.dob.includes(searchTerm))
     );
   });
 
@@ -72,32 +93,41 @@ export default function PatientSelection({ selectedPatient, onSelectPatient, onV
               />
             </div>
 
-            {filteredPatients.length > 0 ? (
-              <>
-                <div className="max-h-[300px] overflow-y-auto">
-                  {filteredPatients.map(patient => (
-                    <div 
-                      key={patient.id} 
-                      className="p-2 hover:bg-gray-100 cursor-pointer flex flex-col"
-                      onClick={() => handleSelectPatient(patient)}
-                    >
-                      <span className="font-medium">{patient.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        JMBG: {patient.jmbg} · Rođen: {patient.dob}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="p-2 hover:bg-gray-100 cursor-pointer flex border-t">
-                  <span className="text-emerald-600">+</span>
-                  <span className="ml-2">Dodaj novog pacijenta</span>
-                </div>
-              </>
+            {isLoading ? (
+              <div className="p-4 text-center text-muted-foreground">Učitavanje pacijenata...</div>
+            ) : filteredPatients.length > 0 ? (
+              <div className="max-h-[300px] overflow-y-auto">
+                {filteredPatients.map(patient => (
+                  <div 
+                    key={patient.id} 
+                    className="p-2 hover:bg-gray-100 cursor-pointer flex flex-col"
+                    onClick={() => handleSelectPatient(patient)}
+                  >
+                    <span className="font-medium">{patient.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {patient.jmbg ? `JMBG: ${patient.jmbg} · ` : ''}
+                      {patient.dob ? `Rođen: ${patient.dob}` : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="p-4 text-center text-muted-foreground">
-                {searchTerm ? "Nema pronađenih pacijenata." : "Učitavanje pacijenata..."}
+                {searchTerm ? "Nema pronađenih pacijenata." : "Nema pacijenata u bazi."}
               </div>
             )}
+            
+            <a 
+              href="/patients"
+              className="p-2 hover:bg-gray-100 cursor-pointer flex border-t text-emerald-600"
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.href = '/patients';
+              }}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              <span>Dodaj novog pacijenta</span>
+            </a>
           </div>
         )}
       </div>
