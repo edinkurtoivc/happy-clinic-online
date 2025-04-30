@@ -1,6 +1,5 @@
 
 import Header from "@/components/layout/Header";
-import UserMenu from "@/components/layout/UserMenu";
 
 type HeaderWithUserMenuProps = {
   title: string;
@@ -15,11 +14,9 @@ export function HeaderWithUserMenu({ title }: HeaderWithUserMenuProps) {
           alt="EIBS Logo" 
           className="h-16 w-16 hidden md:block" 
         />
-        <Header title={title} />
+        <h1 className="text-xl font-bold">{title}</h1>
       </div>
-      <div className="ml-auto">
-        <UserMenu />
-      </div>
+      {/* UserMenu is already included in Header component, so we don't need it here */}
     </div>
   );
 }
