@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,6 @@ import { X } from "lucide-react";
 import AppointmentForm from "@/components/appointments/AppointmentForm";
 import { PatientOverview } from "./tabs/PatientOverview";
 import { MedicalReports } from "./tabs/MedicalReports";
-import { PatientHistory } from "./tabs/PatientHistory";
 import { AuditLogTab } from "./tabs/AuditLog";
 import type { Patient, PatientHistory as PatientHistoryType, AuditLog } from "@/types/patient";
 
@@ -73,7 +71,6 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
           <TabsList className="mb-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="reports">Medical Reports</TabsTrigger>
-            <TabsTrigger value="history">Visit History</TabsTrigger>
             <TabsTrigger value="audit">Audit Log</TabsTrigger>
           </TabsList>
           
@@ -92,10 +89,6 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
           
           <TabsContent value="reports">
             <MedicalReports reports={reports} />
-          </TabsContent>
-          
-          <TabsContent value="history">
-            <PatientHistory patientHistory={patientHistory} />
           </TabsContent>
           
           <TabsContent value="audit">
