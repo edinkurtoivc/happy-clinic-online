@@ -194,6 +194,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       setIsLoadingAuth(true);
+      console.log("Login attempt with credentials:", { email }); // Log attempt without password
       
       // Try to get users from dataStorage first
       let users = await dataStorageService.getUsers();
@@ -202,19 +203,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!users || users.length === 0) {
         const usersString = localStorage.getItem("users");
         if (!usersString) {
-          toast({
-            title: "Greška",
-            description: "Nema registrovanih korisnika",
-            variant: "destructive",
-          });
-          return false;
+          console.log("No users found in localStorage");
+          // Initialize with default users if none exist
+          await dataStorageService.saveUsers(defaultUsers);
+          localStorage.setItem("users", JSON.stringify(defaultUsers));
+          users = defaultUsers;
+        } else {
+          users = JSON.parse(usersString);
         }
-        users = JSON.parse(usersString);
       }
 
+      console.log("Found users:", users.length);
+      
       const user = users.find((u: User) => u.email === email);
 
       if (!user) {
+        console.log("User not found:", email);
         toast({
           title: "Greška",
           description: "Pogrešan email ili šifra",
@@ -222,6 +226,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         return false;
       }
+      
+      console.log("User found:", user.email, "Has password:", !!user.password);
       
       // If user is not active
       if (!user.active) {
@@ -233,8 +239,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
+      // Ensure password exists before comparison
+      if (!user.password) {
+        console.error("User has no password defined");
+        toast({
+          title: "Greška",
+          description: "Problem s korisničkim računom. Kontaktirajte administratora.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
       // Verify password with bcrypt
       const isPasswordValid = await bcrypt.compare(password, user.password);
+      console.log("Password validation result:", isPasswordValid);
       
       if (isPasswordValid) {
         // Create a clean user object without the password

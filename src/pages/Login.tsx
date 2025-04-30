@@ -27,6 +27,8 @@ export default function Login() {
 
   // Superadmin credentials info box
   const [showCredentials, setShowCredentials] = useState(true);
+  // Admin credentials info box
+  const [showAdminCredentials, setShowAdminCredentials] = useState(true);
 
   // Check if already authenticated or bypass is enabled
   useEffect(() => {
@@ -93,6 +95,26 @@ export default function Login() {
                   variant="outline" 
                   size="sm" 
                   onClick={() => setShowCredentials(false)}
+                  className="mt-2 text-xs"
+                >
+                  Sakrij
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {showAdminCredentials && (
+            <Alert className="bg-blue-50 border-blue-200">
+              <AlertDescription className="space-y-2">
+                <div className="font-medium">Admin kredencijali:</div>
+                <div className="text-sm">
+                  <div><strong>Email:</strong> admin@klinika.com</div>
+                  <div><strong>Šifra:</strong> admin123</div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowAdminCredentials(false)}
                   className="mt-2 text-xs"
                 >
                   Sakrij

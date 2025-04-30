@@ -1,4 +1,3 @@
-
 import { isFileSystemAvailable, initializeFileSystem, readJsonData, writeJsonData, logAction, DATA_FILES, DEFAULT_DIRS, createPatientDirectory } from "@/utils/fileSystemUtils";
 import { v4 as uuidv4 } from "uuid";
 import type { Patient } from "@/types/patient";
@@ -240,7 +239,17 @@ class DataStorageService {
   async getUsers() {
     if (this._fallbackToLocalStorage || !this.basePath) {
       const localData = localStorage.getItem('users');
-      return localData ? JSON.parse(localData) : [];
+      const users = localData ? JSON.parse(localData) : [];
+      
+      // If no users in localStorage, initialize with default users from AuthContext
+      if (users.length === 0) {
+        // We can't directly import from AuthContext due to circular dependencies
+        // Instead, we'll retrieve from a known location or create basic defaults
+        console.log("No users found in localStorage, attempting to initialize");
+        return [];
+      }
+      
+      return users;
     }
     
     try {
@@ -262,6 +271,7 @@ class DataStorageService {
     try {
       // Always update localStorage for compatibility
       localStorage.setItem('users', JSON.stringify(users));
+      console.log("[DataStorage] Saved users to localStorage:", users.length);
       
       // If file system is not available, we're done
       if (this._fallbackToLocalStorage || !this.basePath) {
