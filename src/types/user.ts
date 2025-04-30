@@ -4,10 +4,11 @@ export type UserRole = 'admin' | 'doctor' | 'nurse' | 'technician';
 export interface User {
   id: string;
   email: string;
-  password: string; // Added password field
+  password: string; 
   firstName: string;
   lastName: string;
   role: UserRole;
+  permissions?: string[]; // Added permissions array
   specialization?: string;
   phone?: string;
   birthDate?: string;

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +12,7 @@ type AuthContextType = {
   logout: () => void;
   isAuthenticated: boolean;
   hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
+  hasSpecificPermission: (permission: string) => boolean;
   isLoadingAuth: boolean;
   bypassAuth: boolean;
   toggleBypassAuth: () => void;
@@ -312,6 +312,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return user.role === requiredRole;
   };
 
+  // New function to check specific permissions
+  const hasSpecificPermission = (permission: string): boolean => {
+    // If bypass is enabled, grant all permissions
+    if (bypassAuth) return true;
+    
+    if (!user) return false;
+    
+    // Admin has all permissions
+    if (user.role === 'admin') return true;
+    
+    // Check if the user has the specific permission
+    return user.permissions?.includes(permission) || false;
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -319,6 +333,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logout, 
       isAuthenticated, 
       hasPermission,
+      hasSpecificPermission,
       isLoadingAuth,
       bypassAuth,
       toggleBypassAuth

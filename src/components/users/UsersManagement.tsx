@@ -50,6 +50,7 @@ export default function UsersManagement() {
         specialization: "Kardiologija",
         phone: "+38761123456",
         password: "doctor123",
+        permissions: ["view_reports", "create_patients"],
         active: true,
       },
       {
@@ -60,6 +61,7 @@ export default function UsersManagement() {
         role: "admin",
         phone: "+38761654321",
         password: "admin123",
+        permissions: ["view_reports", "create_patients", "delete_users"],
         active: true,
       },
       {
@@ -70,6 +72,7 @@ export default function UsersManagement() {
         role: "admin",
         phone: "+38761111111",
         password: "superadmin123",
+        permissions: ["view_reports", "create_patients", "delete_users"],
         active: true,
       }
     ];
@@ -97,6 +100,16 @@ export default function UsersManagement() {
       // Hash the password before storing it
       const hashedPassword = await bcrypt.hash(data.password, 10);
       
+      // Set default permissions based on role
+      let permissions: string[] = [];
+      if (data.role === "admin") {
+        permissions = ["view_reports", "create_patients", "delete_users"];
+      } else if (data.role === "doctor") {
+        permissions = ["view_reports", "create_patients"];
+      } else if (data.role === "nurse") {
+        permissions = ["create_patients"];
+      }
+      
       const newUser: User = {
         id: `user-${Date.now()}`,
         email: data.email,
@@ -106,6 +119,7 @@ export default function UsersManagement() {
         role: data.role,
         specialization: data.specialization,
         phone: data.phone,
+        permissions,
         active: true,
       };
       
@@ -137,9 +151,21 @@ export default function UsersManagement() {
         ? await bcrypt.hash(data.password, 10)
         : selectedUser.password;
       
+      // Update permissions based on role if they don't exist or role has changed
+      let permissions = selectedUser.permissions || [];
+      if (!permissions.length || selectedUser.role !== data.role) {
+        if (data.role === "admin") {
+          permissions = ["view_reports", "create_patients", "delete_users"];
+        } else if (data.role === "doctor") {
+          permissions = ["view_reports", "create_patients"];
+        } else if (data.role === "nurse") {
+          permissions = ["create_patients"];
+        }
+      }
+      
       const updatedUsers = users.map(user => 
         user.id === selectedUser.id 
-          ? { ...user, ...data, password }
+          ? { ...user, ...data, password, permissions }
           : user
       );
       
