@@ -2,7 +2,9 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Link } from "react-router-dom";
 
 interface HeaderProps {
   title: string;
@@ -29,16 +31,20 @@ export default function Header({
       
       {user && (
         <div className="flex items-center space-x-2">
-          <span className="hidden md:inline text-sm text-muted-foreground">
-            {user.firstName} {user.lastName} ({user.role === 'doctor' ? 'Doktor' : user.role === 'admin' ? 'Administrator' : 'Tehničar'})
-          </span>
+          <Link to="/settings">
+            <Avatar className="h-9 w-9 border-2 border-clinic-500 hover:border-clinic-600 transition-all cursor-pointer">
+              <AvatarFallback className="bg-clinic-100 text-clinic-700 font-medium">
+                {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={logout} 
             title="Odjava"
           >
-            <LogOut className="h-4 w-4 mr-1" />
+            <LogOut className="h-4 w-4 md:mr-1" />
             <span className="hidden md:inline">Odjava</span>
           </Button>
         </div>
