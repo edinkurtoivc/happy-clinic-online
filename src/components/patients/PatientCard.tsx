@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,12 +27,6 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
     { id: 1, patientId: patient.id, date: "2023-10-15", type: "General Checkup", doctor: "Dr. Marija Popović" },
     { id: 2, patientId: patient.id, date: "2023-08-22", type: "Blood Test", doctor: "Dr. Petar Petrović" },
     { id: 3, patientId: patient.id, date: "2023-05-07", type: "Vaccination", doctor: "Dr. Marija Popović" },
-  ];
-  
-  // Mock data for medical reports
-  const reports = [
-    { id: "rep1", patientId: patient.id, date: "2023-10-15", title: "General Checkup", doctor: "Dr. Marija Popović", status: "final" },
-    { id: "rep2", patientId: patient.id, date: "2023-08-22", title: "Blood Test Results", doctor: "Dr. Petar Petrović", status: "final" },
   ];
   
   // Mock data for audit log
@@ -88,7 +83,7 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
           </TabsContent>
           
           <TabsContent value="reports">
-            <MedicalReports reports={reports} />
+            <MedicalReports patient={patient} />
           </TabsContent>
           
           <TabsContent value="audit">

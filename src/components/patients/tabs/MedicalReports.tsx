@@ -3,12 +3,12 @@ import { FileText, Eye, Edit, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { MedicalReport } from "@/types/medical-report";
 
 interface MedicalReportsProps {
-  reports: Array<{
+  reports?: Array<{
     id: string;
     patientId: number;
     date: string;
@@ -16,11 +16,43 @@ interface MedicalReportsProps {
     doctor: string;
     status: string;
   }>;
+  patient: { id: number };
 }
 
-export function MedicalReports({ reports }: MedicalReportsProps) {
+export function MedicalReports({ patient }: MedicalReportsProps) {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [reports, setReports] = useState<MedicalReport[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  useEffect(() => {
+    const loadReports = () => {
+      setIsLoading(true);
+      try {
+        // Get stored reports from localStorage
+        const savedReports = localStorage.getItem('medicalReports');
+        if (savedReports) {
+          const allReports: MedicalReport[] = JSON.parse(savedReports);
+          // Filter reports to only show those for the current patient
+          const patientReports = allReports.filter(report => 
+            report.patientId === patient.id.toString()
+          );
+          setReports(patientReports);
+        } else {
+          setReports([]);
+        }
+      } catch (error) {
+        console.error("[MedicalReports] Error loading reports:", error);
+        setReports([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (patient?.id) {
+      loadReports();
+    }
+  }, [patient?.id]);
   
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('bs-BA', {
@@ -30,12 +62,12 @@ export function MedicalReports({ reports }: MedicalReportsProps) {
     });
   };
 
-  const filteredReports = reports.filter(report => {
+  const displayReports = reports.filter(report => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      report.title.toLowerCase().includes(searchLower) ||
-      report.doctor.toLowerCase().includes(searchLower) ||
-      formatDate(report.date).includes(searchTerm)
+      (report.appointmentType?.toLowerCase().includes(searchLower) || 
+      report.doctorInfo?.fullName?.toLowerCase().includes(searchLower) ||
+      formatDate(report.date).includes(searchTerm))
     );
   });
 
@@ -74,9 +106,13 @@ export function MedicalReports({ reports }: MedicalReportsProps) {
         />
       </div>
       
-      {filteredReports.length > 0 ? (
+      {isLoading ? (
+        <div className="text-center p-4">
+          <p className="text-muted-foreground">Učitavanje nalaza...</p>
+        </div>
+      ) : displayReports.length > 0 ? (
         <div className="space-y-3">
-          {reports.map((report) => (
+          {displayReports.map((report) => (
             <div key={report.id} className="rounded-md border p-4 hover:bg-muted/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -84,9 +120,9 @@ export function MedicalReports({ reports }: MedicalReportsProps) {
                     <FileText className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="font-medium">{report.title}</p>
+                    <p className="font-medium">{report.appointmentType || "Medicinski nalaz"}</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatDate(report.date)} · {report.doctor}
+                      {formatDate(report.date)} · {report.doctorInfo?.fullName || "Doktor"}
                     </p>
                   </div>
                 </div>
@@ -135,4 +171,3 @@ export function MedicalReports({ reports }: MedicalReportsProps) {
     </div>
   );
 }
-
