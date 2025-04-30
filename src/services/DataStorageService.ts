@@ -1,7 +1,9 @@
+
 import { isFileSystemAvailable, initializeFileSystem, readJsonData, writeJsonData, logAction, DATA_FILES, DEFAULT_DIRS, createPatientDirectory } from "@/utils/fileSystemUtils";
 import { v4 as uuidv4 } from "uuid";
 import type { Patient } from "@/types/patient";
 import type { Appointment } from "@/types/medical-report";
+import type { User } from "@/types/user";
 
 class DataStorageService {
   private _basePath = '';
@@ -236,18 +238,11 @@ class DataStorageService {
   /**
    * Get users data
    */
-  async getUsers() {
+  async getUsers(): Promise<User[]> {
     if (this._fallbackToLocalStorage || !this.basePath) {
       const localData = localStorage.getItem('users');
       const users = localData ? JSON.parse(localData) : [];
-      
-      // If no users in localStorage, initialize with default users from AuthContext
-      if (users.length === 0) {
-        // We can't directly import from AuthContext due to circular dependencies
-        // Instead, we'll retrieve from a known location or create basic defaults
-        console.log("No users found in localStorage, attempting to initialize");
-        return [];
-      }
+      console.log("[DataStorage] getUsers from localStorage, found:", users.length);
       
       return users;
     }
@@ -255,20 +250,30 @@ class DataStorageService {
     try {
       const usersPath = `${this.basePath}${DATA_FILES.USERS}`;
       const data = await readJsonData(usersPath, { users: [] });
+      console.log("[DataStorage] getUsers from file, found:", data.users?.length || 0);
       return data.users || [];
     } catch (error) {
       console.error("[DataStorage] Error reading users:", error);
       // Fallback to localStorage
       const localData = localStorage.getItem('users');
-      return localData ? JSON.parse(localData) : [];
+      const users = localData ? JSON.parse(localData) : [];
+      console.log("[DataStorage] getUsers fallback to localStorage, found:", users.length);
+      return users;
     }
   }
   
   /**
    * Save users data
    */
-  async saveUsers(users) {
+  async saveUsers(users: User[]): Promise<boolean> {
     try {
+      // Check if passwords are properly saved
+      for (const user of users) {
+        if (!user.password) {
+          console.warn("[DataStorage] User missing password during save:", user.email);
+        }
+      }
+      
       // Always update localStorage for compatibility
       localStorage.setItem('users', JSON.stringify(users));
       console.log("[DataStorage] Saved users to localStorage:", users.length);
@@ -286,7 +291,7 @@ class DataStorageService {
       });
       
       // Log the action
-      await logAction(this.basePath, `Updated users data`);
+      await logAction(this.basePath, `Updated users data: ${users.length} users`);
       
       return true;
     } catch (error) {

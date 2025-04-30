@@ -107,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
-  const [bypassAuth, setBypassAuth] = useState<boolean>(false); // Changed to false by default
+  const [bypassAuth, setBypassAuth] = useState<boolean>(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -117,20 +117,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoadingAuth(true);
       
       try {
+        // Check for bypassAuth in localStorage
+        const storedBypassAuth = localStorage.getItem("bypassAuth");
+        if (storedBypassAuth) {
+          setBypassAuth(JSON.parse(storedBypassAuth));
+        }
+
         // Check if users exist in dataStorageService or localStorage
         let users = await dataStorageService.getUsers();
+        
+        console.log("Users from dataStorage:", users ? users.length : 0);
         
         // If no users in dataStorage, check localStorage
         if (!users || users.length === 0) {
           const storedUsers = localStorage.getItem("users");
           users = storedUsers ? JSON.parse(storedUsers) : [];
+          console.log("Users from localStorage:", users ? users.length : 0);
         }
         
         // If still no users, set default users
         if (!users || users.length === 0) {
+          console.log("No users found, initializing default users");
+          // Make sure passwords are properly hashed and not lost during serialization
           await dataStorageService.saveUsers(defaultUsers);
           localStorage.setItem("users", JSON.stringify(defaultUsers));
           console.log("[AuthContext] Initialized default users");
+          users = defaultUsers;
+        } else {
+          // Verify that all users have passwords, if not, update them
+          const usersNeedUpdate = users.some(user => !user.password);
+          if (usersNeedUpdate) {
+            console.log("Some users missing passwords, updating from defaults");
+            // Update users that are missing passwords
+            users = users.map(user => {
+              const defaultUser = defaultUsers.find(du => du.email === user.email);
+              if (defaultUser && !user.password) {
+                return { ...user, password: defaultUser.password };
+              }
+              return user;
+            });
+            await dataStorageService.saveUsers(users);
+            localStorage.setItem("users", JSON.stringify(users));
+          }
         }
         
         // If bypassAuth is enabled, set default admin user
@@ -198,6 +226,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // Try to get users from dataStorage first
       let users = await dataStorageService.getUsers();
+      console.log("Users from dataStorage:", users ? users.length : 0);
       
       // If no users in dataStorage, fall back to localStorage
       if (!users || users.length === 0) {
@@ -211,6 +240,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } else {
           users = JSON.parse(usersString);
         }
+        console.log("Users from localStorage:", users.length);
       }
 
       console.log("Found users:", users.length);
@@ -242,12 +272,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Ensure password exists before comparison
       if (!user.password) {
         console.error("User has no password defined");
-        toast({
-          title: "Greška",
-          description: "Problem s korisničkim računom. Kontaktirajte administratora.",
-          variant: "destructive",
-        });
-        return false;
+        
+        // Try to repair the user by getting password from default users
+        const defaultUser = defaultUsers.find(du => du.email === user.email);
+        if (defaultUser && defaultUser.password) {
+          console.log("Repairing user with default password");
+          user.password = defaultUser.password;
+          
+          // Save the updated user
+          const updatedUsers = users.map(u => u.email === user.email ? user : u);
+          await dataStorageService.saveUsers(updatedUsers);
+          localStorage.setItem("users", JSON.stringify(updatedUsers));
+          
+          console.log("User repaired, password restored");
+        } else {
+          toast({
+            title: "Greška",
+            description: "Problem s korisničkim računom. Kontaktirajte administratora.",
+            variant: "destructive",
+          });
+          return false;
+        }
       }
 
       // Verify password with bcrypt
