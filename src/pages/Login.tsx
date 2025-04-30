@@ -25,6 +25,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Superadmin credentials info box
+  const [showCredentials, setShowCredentials] = useState(true);
+
   // Check if already authenticated or bypass is enabled
   useEffect(() => {
     if ((isAuthenticated || bypassAuth) && !isLoadingAuth) {
@@ -78,6 +81,26 @@ export default function Login() {
           <CardDescription className="text-center">Unesite svoje podatke za pristup</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {showCredentials && (
+            <Alert className="bg-blue-50 border-blue-200">
+              <AlertDescription className="space-y-2">
+                <div className="font-medium">Superadmin kredencijali:</div>
+                <div className="text-sm">
+                  <div><strong>Email:</strong> superadmin@klinika.com</div>
+                  <div><strong>Šifra:</strong> superadmin123</div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowCredentials(false)}
+                  className="mt-2 text-xs"
+                >
+                  Sakrij
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {bypassAuth && (
             <Alert className="bg-green-50 border-green-200">
               <AlertDescription>

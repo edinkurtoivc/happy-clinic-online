@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -106,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
-  const [bypassAuth, setBypassAuth] = useState<boolean>(true); // Default to bypass authentication
+  const [bypassAuth, setBypassAuth] = useState<boolean>(false); // Changed to false by default
   const { toast } = useToast();
   const navigate = useNavigate();
 
