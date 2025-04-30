@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import { cn } from "@/lib/utils";
 import type { Patient } from "@/types/patient";
 import type { Appointment } from "@/types/medical-report";
 import type { User } from "@/types/user";
+import dataStorageService from "@/services/DataStorageService";
 
 interface AppointmentFormProps {
   onCancel: () => void;
@@ -30,6 +30,31 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [selectedAppointmentType, setSelectedAppointmentType] = useState<string>("");
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [isLoadingPatients, setIsLoadingPatients] = useState(false);
+
+  // Fetch patients from DataStorageService
+  useEffect(() => {
+    const loadPatients = async () => {
+      setIsLoadingPatients(true);
+      try {
+        const loadedPatients = await dataStorageService.getPatients();
+        setPatients(loadedPatients);
+        console.log("[AppointmentForm] Loaded patients:", loadedPatients);
+      } catch (error) {
+        console.error("[AppointmentForm] Error loading patients:", error);
+        toast({
+          title: "Greška",
+          description: "Dogodila se greška pri učitavanju pacijenata.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoadingPatients(false);
+      }
+    };
+
+    loadPatients();
+  }, [toast]);
 
   const loadDoctors = (): User[] => {
     try {
@@ -49,7 +74,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
         lastName: "Hadžić",
         role: "doctor",
         specialization: "Kardiologija",
-        password: "doctor123", // Added password field
+        password: "doctor123", 
         active: true 
       },
       { 
@@ -59,29 +84,9 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
         lastName: "Petrović",
         role: "doctor",
         specialization: "Neurologija",
-        password: "doctor123", // Added password field
+        password: "doctor123",
         active: true 
       },
-    ];
-  };
-  
-  const loadPatients = () => {
-    try {
-      const savedPatients = localStorage.getItem('patients');
-      if (savedPatients) {
-        const patients = JSON.parse(savedPatients);
-        return patients.map((p: any) => ({ id: p.id.toString(), name: `${p.firstName} ${p.lastName}` }));
-      }
-    } catch (error) {
-      console.error("[AppointmentForm] Error loading patients:", error);
-    }
-    
-    return [
-      { id: "1", name: "Ana Marković" },
-      { id: "2", name: "Nikola Jovanović" },
-      { id: "3", name: "Milica Petrović" },
-      { id: "4", name: "Stefan Nikolić" },
-      { id: "5", name: "Jelena Stojanović" },
     ];
   };
   
@@ -105,7 +110,6 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   };
   
   const doctors = loadDoctors();
-  const patients = loadPatients();
   const appointmentTypes = loadAppointmentTypes();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -120,7 +124,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       return;
     }
     
-    const selectedPatient = patients.find(p => p.id === selectedPatientId);
+    const selectedPatient = patients.find(p => p.id.toString() === selectedPatientId);
     const selectedDoctor = doctors.find(d => d.id === selectedDoctorId);
     const appointmentType = appointmentTypes.find(t => t.id === selectedAppointmentType)?.name;
     
@@ -194,14 +198,20 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
               disabled={!!preselectedPatient}
             >
               <SelectTrigger id="patient">
-                <SelectValue placeholder="Odaberi pacijenta" />
+                <SelectValue placeholder={isLoadingPatients ? "Učitavanje pacijenata..." : "Odaberi pacijenta"} />
               </SelectTrigger>
               <SelectContent>
-                {patients.map(patient => (
-                  <SelectItem key={patient.id} value={patient.id}>
-                    {patient.name}
-                  </SelectItem>
-                ))}
+                {isLoadingPatients ? (
+                  <SelectItem value="loading" disabled>Učitavanje pacijenata...</SelectItem>
+                ) : patients.length > 0 ? (
+                  patients.map(patient => (
+                    <SelectItem key={patient.id} value={patient.id.toString()}>
+                      {patient.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-patients" disabled>Nema dostupnih pacijenata</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
