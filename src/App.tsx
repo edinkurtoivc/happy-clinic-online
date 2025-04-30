@@ -29,7 +29,7 @@ const ProtectedRoute = ({
   children: React.ReactNode;
   allowedRoles?: UserRole | UserRole[];
 }) => {
-  const { isAuthenticated, hasPermission, isLoadingAuth } = useAuth();
+  const { isAuthenticated, hasPermission, isLoadingAuth, bypassAuth } = useAuth();
   
   // Show loading state while checking authentication
   if (isLoadingAuth) {
@@ -40,13 +40,13 @@ const ProtectedRoute = ({
     );
   }
   
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
+  // Redirect to login if not authenticated and bypass is not enabled
+  if (!isAuthenticated && !bypassAuth) {
     return <Navigate to="/login" replace />;
   }
   
-  // Check role-based permissions if roles are specified
-  if (allowedRoles && !hasPermission(allowedRoles)) {
+  // Check role-based permissions if roles are specified and bypass is not enabled
+  if (allowedRoles && !hasPermission(allowedRoles) && !bypassAuth) {
     return <Navigate to="/" replace />;
   }
   

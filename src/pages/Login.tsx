@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   email: z.string().email("Unesite ispravnu email adresu"),
@@ -18,18 +19,18 @@ const loginSchema = z.object({
 });
 
 export default function Login() {
-  const { login, isAuthenticated, isLoadingAuth } = useAuth();
+  const { login, isAuthenticated, isLoadingAuth, bypassAuth, toggleBypassAuth } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check if already authenticated
+  // Check if already authenticated or bypass is enabled
   useEffect(() => {
-    if (isAuthenticated && !isLoadingAuth) {
+    if ((isAuthenticated || bypassAuth) && !isLoadingAuth) {
       navigate('/');
     }
-  }, [isAuthenticated, navigate, isLoadingAuth]);
+  }, [isAuthenticated, navigate, isLoadingAuth, bypassAuth]);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -76,7 +77,15 @@ export default function Login() {
           <CardTitle className="text-center text-2xl">Prijava u sistem</CardTitle>
           <CardDescription className="text-center">Unesite svoje podatke za pristup</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {bypassAuth && (
+            <Alert className="bg-green-50 border-green-200">
+              <AlertDescription>
+                Autentifikacija je trenutno isključena. Možete pristupiti svim dijelovima aplikacije bez prijave.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -91,6 +100,7 @@ export default function Login() {
                         placeholder="vasa.email@adresa.com" 
                         autoComplete="username" 
                         {...field} 
+                        disabled={bypassAuth}
                       />
                     </FormControl>
                     <FormMessage />
@@ -109,7 +119,8 @@ export default function Login() {
                         <Input 
                           type={showPassword ? "text" : "password"} 
                           autoComplete="current-password" 
-                          {...field} 
+                          {...field}
+                          disabled={bypassAuth}
                         />
                         <Button
                           type="button"
@@ -118,6 +129,7 @@ export default function Login() {
                           className="absolute right-2 top-1/2 -translate-y-1/2"
                           onClick={() => setShowPassword(!showPassword)}
                           aria-label={showPassword ? "Sakrij šifru" : "Prikaži šifru"}
+                          disabled={bypassAuth}
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
@@ -128,11 +140,21 @@ export default function Login() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading || bypassAuth}>
                 {isLoading ? "Prijava u toku..." : "Prijavi se"}
               </Button>
             </form>
           </Form>
+          
+          <div className="flex justify-center mt-4 pt-4 border-t">
+            <Button 
+              variant={bypassAuth ? "destructive" : "outline"} 
+              onClick={toggleBypassAuth}
+              className="w-full"
+            >
+              {bypassAuth ? "Uključi autentifikaciju" : "Isključi autentifikaciju"}
+            </Button>
+          </div>
         </CardContent>
         <CardFooter className="text-center">
           <p className="text-sm text-muted-foreground w-full">

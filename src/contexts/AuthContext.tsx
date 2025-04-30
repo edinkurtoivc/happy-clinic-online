@@ -14,6 +14,8 @@ type AuthContextType = {
   isAuthenticated: boolean;
   hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
   isLoadingAuth: boolean;
+  bypassAuth: boolean;
+  toggleBypassAuth: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -104,6 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
+  const [bypassAuth, setBypassAuth] = useState<boolean>(true); // Default to bypass authentication
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -129,17 +132,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log("[AuthContext] Initialized default users");
         }
         
-        // Load current user from localStorage if exists
-        const currentUserData = localStorage.getItem("currentUser");
-        if (currentUserData) {
-          try {
-            const parsedUser = JSON.parse(currentUserData);
-            setUser(parsedUser);
-            setIsAuthenticated(true);
-            console.log("[AuthContext] Loaded user from localStorage:", parsedUser.email);
-            logUserActivity(parsedUser, "se prijavio u aplikaciju (nastavak sesije)");
-          } catch (error) {
-            console.error("[AuthContext] Error parsing current user:", error);
+        // If bypassAuth is enabled, set default admin user
+        if (bypassAuth) {
+          const adminUser = {...defaultUsers[1]};  // Using admin user
+          delete adminUser.password;
+          setUser(adminUser);
+          setIsAuthenticated(true);
+          console.log("[AuthContext] Bypass authentication enabled. Using admin user:", adminUser.email);
+        } else {
+          // Load current user from localStorage if exists
+          const currentUserData = localStorage.getItem("currentUser");
+          if (currentUserData) {
+            try {
+              const parsedUser = JSON.parse(currentUserData);
+              setUser(parsedUser);
+              setIsAuthenticated(true);
+              console.log("[AuthContext] Loaded user from localStorage:", parsedUser.email);
+              logUserActivity(parsedUser, "se prijavio u aplikaciju (nastavak sesije)");
+            } catch (error) {
+              console.error("[AuthContext] Error parsing current user:", error);
+            }
           }
         }
       } catch (error) {
@@ -150,9 +162,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     
     initializeAuth();
-  }, []);
+  }, [bypassAuth]);
+
+  // Toggle bypass authentication
+  const toggleBypassAuth = () => {
+    const newBypassValue = !bypassAuth;
+    setBypassAuth(newBypassValue);
+    localStorage.setItem("bypassAuth", JSON.stringify(newBypassValue));
+    
+    // If disabling bypass, logout current user
+    if (!newBypassValue) {
+      logout();
+    }
+    
+    toast({
+      title: newBypassValue ? "Autentifikacija isključena" : "Autentifikacija uključena",
+      description: newBypassValue ? "Možete koristiti aplikaciju bez prijave" : "Potrebno je prijaviti se za korištenje aplikacije",
+    });
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    // If bypass is enabled, auto login as admin
+    if (bypassAuth) {
+      const adminUser = {...defaultUsers[1]}; 
+      delete adminUser.password;
+      setUser(adminUser);
+      setIsAuthenticated(true);
+      return true;
+    }
+
     try {
       setIsLoadingAuth(true);
       
@@ -236,7 +274,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    if (user) {
+    if (user && !bypassAuth) {
       logUserActivity(user, "se odjavio iz aplikacije");
     }
     
@@ -244,16 +282,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated(false);
     localStorage.removeItem("currentUser");
     
-    toast({
-      title: "Odjavili ste se",
-      description: "Uspješno ste se odjavili iz sistema",
-    });
-    
-    navigate("/login");
+    // If bypass is enabled, don't navigate to login
+    if (!bypassAuth) {
+      toast({
+        title: "Odjavili ste se",
+        description: "Uspješno ste se odjavili iz sistema",
+      });
+      
+      navigate("/login");
+    }
   };
   
   // Helper function to check if user has permission based on role
   const hasPermission = (requiredRole: UserRole | UserRole[]): boolean => {
+    // If bypass is enabled, grant all permissions
+    if (bypassAuth) return true;
+    
     if (!user) return false;
     
     // Admin has access to everything
@@ -275,7 +319,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logout, 
       isAuthenticated, 
       hasPermission,
-      isLoadingAuth 
+      isLoadingAuth,
+      bypassAuth,
+      toggleBypassAuth
     }}>
       {children}
     </AuthContext.Provider>
