@@ -35,6 +35,11 @@ export default function Appointments() {
 
   const handleSaveAppointment = async (appointment: Appointment) => {
     try {
+      // Ensure appointment has status field set
+      if (!appointment.status) {
+        appointment.status = 'scheduled';
+      }
+      
       const success = await dataStorageService.addAppointment(appointment);
       
       if (success) {

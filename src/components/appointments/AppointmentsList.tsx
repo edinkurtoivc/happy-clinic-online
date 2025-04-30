@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -144,6 +145,11 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
         title: "Termin otkazan",
         description: "Termin je uspješno otkazan"
       });
+    } else if (newStatus === 'completed') {
+      toast({
+        title: "Termin završen",
+        description: "Termin je uspješno označen kao završen"
+      });
     }
   };
 
@@ -166,23 +172,19 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
         patientId: appointment.patientId,
         patientName: appointment.patientName, 
         appointmentId: appointment.id,
-        examinationType: appointment.examinationType
+        examinationType: appointment.examinationType,
+        doctorId: appointment.doctorId,
+        doctorName: appointment.doctorName
       } 
     });
   };
 
   const handleAppointmentClick = (appointment: Appointment) => {
     if (appointment.status === 'scheduled') {
-      navigate('/medical-reports', { 
-        state: { 
-          patientId: appointment.patientId,
-          patientName: appointment.patientName,
-          doctorId: appointment.doctorId,
-          doctorName: appointment.doctorName,
-          appointmentId: appointment.id,
-          examinationType: appointment.examinationType
-        } 
-      });
+      // Direct navigation to medical reports creation when clicking on a scheduled appointment
+      handleCreateReport(appointment);
+    } else if (appointment.status === 'completed' && appointment.reportId) {
+      navigate(`/medical-reports/${appointment.reportId}`);
     }
   };
 
@@ -195,6 +197,13 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
       default:
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">Zakazan</Badge>;
     }
+  };
+
+  const handleCompleteAppointment = (appointment: Appointment, e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleStatusChange(appointment.id, 'completed');
+    // After marking as completed, navigate to create a medical report
+    handleCreateReport(appointment);
   };
 
   return (
@@ -270,6 +279,14 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
                               }}
                             >
                               Kreiraj nalaz
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-green-600"
+                              onClick={(e) => handleCompleteAppointment(appointment, e)}
+                            >
+                              Završi termin
                             </Button>
                             <Button 
                               variant="ghost" 

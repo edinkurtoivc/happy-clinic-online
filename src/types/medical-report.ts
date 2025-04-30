@@ -73,4 +73,5 @@ export interface Appointment {
   status: 'scheduled' | 'completed' | 'cancelled';
   notes?: string;
   reportId?: string;
+  cancellationReason?: string;
 }
