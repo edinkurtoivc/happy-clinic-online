@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import type { PatientHistory } from "@/types/patient";
 import type { MedicalReport } from "@/types/medical-report";
+import type { Appointment } from "@/types/medical-report";
+import dataStorageService from "@/services/DataStorageService";
 
 interface RecentVisitsProps {
   patientHistory: PatientHistory[];
@@ -14,10 +16,11 @@ interface RecentVisitsProps {
 export function RecentVisits({ patientHistory, setIsScheduling }: RecentVisitsProps) {
   const navigate = useNavigate();
   const [reports, setReports] = useState<MedicalReport[]>([]);
+  const [completedAppointments, setCompletedAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const loadReports = () => {
+    const loadReports = async () => {
       setIsLoading(true);
       try {
         // Get stored reports from localStorage
@@ -31,8 +34,17 @@ export function RecentVisits({ patientHistory, setIsScheduling }: RecentVisitsPr
           );
           setReports(filteredReports);
         }
+        
+        // Get completed appointments
+        const appointments = await dataStorageService.getAppointments();
+        const patientIds = patientHistory.map(record => record.patientId.toString());
+        const filtered = appointments.filter(appointment => 
+          patientIds.includes(appointment.patientId) && 
+          appointment.status === 'completed'
+        );
+        setCompletedAppointments(filtered);
       } catch (error) {
-        console.error("[RecentVisits] Error loading medical reports:", error);
+        console.error("[RecentVisits] Error loading data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -49,10 +61,18 @@ export function RecentVisits({ patientHistory, setIsScheduling }: RecentVisitsPr
     });
   };
 
-  // Get the most recent visits (limit to 3)
-  const recentVisits = [...patientHistory].sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  ).slice(0, 3);
+  // Get the most recent completed visits (limit to 3)
+  const recentVisits = [...completedAppointments]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 3)
+    .map(appointment => ({
+      id: appointment.id,
+      patientId: parseInt(appointment.patientId),
+      date: `${appointment.date}T${appointment.time}`,
+      type: appointment.examinationType,
+      doctor: appointment.doctorName,
+      reportId: appointment.reportId
+    }));
 
   const handleViewReport = (reportId?: string) => {
     if (reportId) {
@@ -123,4 +143,3 @@ export function RecentVisits({ patientHistory, setIsScheduling }: RecentVisitsPr
     </div>
   );
 }
-
