@@ -1,5 +1,5 @@
 
-import HeaderWithUserMenu from "@/components/layout/HeaderWithUserMenu";
+import Header from "@/components/layout/Header";
 import UsersManagement from "@/components/users/UsersManagement";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
@@ -14,9 +14,7 @@ export default function Users() {
   
   return (
     <div className="flex h-full flex-col">
-      <HeaderWithUserMenu 
-        title="Upravljanje korisnicima" 
-      />
+      <Header title="Upravljanje korisnicima" />
       <div className="page-container">
         <UsersManagement />
       </div>

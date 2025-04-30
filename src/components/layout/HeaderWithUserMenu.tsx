@@ -1,11 +1,14 @@
 
-import Header from "@/components/layout/Header";
+import { useAuth } from "@/contexts/AuthContext";
+import UserMenu from "@/components/layout/UserMenu";
 
 type HeaderWithUserMenuProps = {
   title: string;
 };
 
 export function HeaderWithUserMenu({ title }: HeaderWithUserMenuProps) {
+  const { user } = useAuth();
+  
   return (
     <div className="flex items-center justify-between px-6 py-4 border-b">
       <div className="flex items-center">
@@ -16,7 +19,11 @@ export function HeaderWithUserMenu({ title }: HeaderWithUserMenuProps) {
         />
         <h1 className="text-xl font-bold">{title}</h1>
       </div>
-      {/* We need to include the user menu here */}
+      {user && (
+        <div className="flex items-center">
+          <UserMenu />
+        </div>
+      )}
     </div>
   );
 }
