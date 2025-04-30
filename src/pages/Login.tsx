@@ -24,6 +24,7 @@ export default function Login() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // Superadmin credentials info box
   const [showCredentials, setShowCredentials] = useState(true);
@@ -48,13 +49,20 @@ export default function Login() {
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
+      setLoginError(null);
       console.log("Login attempt with:", values.email);
+      
       const success = await login(values.email, values.password);
+      
       if (success) {
         navigate('/');
+      } else {
+        setLoginError("Prijava nije uspjela. Provjerite svoje podatke.");
       }
     } catch (error) {
       console.error('Login error:', error);
+      setLoginError("Došlo je do greške prilikom prijave. Pokušajte ponovo.");
+      
       toast({
         title: "Greška",
         description: "Došlo je do greške prilikom prijave",
@@ -83,6 +91,14 @@ export default function Login() {
           <CardDescription className="text-center">Unesite svoje podatke za pristup</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {loginError && (
+            <Alert className="bg-red-50 border-red-200">
+              <AlertDescription className="text-red-800">
+                {loginError}
+              </AlertDescription>
+            </Alert>
+          )}
+        
           {showCredentials && (
             <Alert className="bg-blue-50 border-blue-200">
               <AlertDescription className="space-y-2">
@@ -145,7 +161,7 @@ export default function Login() {
                         placeholder="vasa.email@adresa.com" 
                         autoComplete="username" 
                         {...field} 
-                        disabled={bypassAuth}
+                        disabled={bypassAuth || isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -165,7 +181,7 @@ export default function Login() {
                           type={showPassword ? "text" : "password"} 
                           autoComplete="current-password" 
                           {...field}
-                          disabled={bypassAuth}
+                          disabled={bypassAuth || isLoading}
                         />
                         <Button
                           type="button"
@@ -174,7 +190,7 @@ export default function Login() {
                           className="absolute right-2 top-1/2 -translate-y-1/2"
                           onClick={() => setShowPassword(!showPassword)}
                           aria-label={showPassword ? "Sakrij šifru" : "Prikaži šifru"}
-                          disabled={bypassAuth}
+                          disabled={bypassAuth || isLoading}
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
@@ -196,6 +212,7 @@ export default function Login() {
               variant={bypassAuth ? "destructive" : "outline"} 
               onClick={toggleBypassAuth}
               className="w-full"
+              disabled={isLoading}
             >
               {bypassAuth ? "Uključi autentifikaciju" : "Isključi autentifikaciju"}
             </Button>

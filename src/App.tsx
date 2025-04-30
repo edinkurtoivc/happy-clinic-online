@@ -60,57 +60,64 @@ const ProtectedRoute = ({
   );
 };
 
+// Routes that use AuthContext
+const AppRoutes = () => {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+      <Route path="/patients" element={
+        <ProtectedRoute allowedRoles={["admin", "doctor", "nurse"]}>
+          <Patients />
+        </ProtectedRoute>
+      } />
+      <Route path="/appointments" element={
+        <ProtectedRoute allowedRoles={["admin", "doctor", "nurse"]}>
+          <Appointments />
+        </ProtectedRoute>
+      } />
+      <Route path="/medical-reports" element={
+        <ProtectedRoute allowedRoles={["admin", "doctor"]}>
+          <MedicalReports />
+        </ProtectedRoute>
+      } />
+      <Route path="/users" element={
+        <ProtectedRoute allowedRoles="admin">
+          <Users />
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute allowedRoles="admin">
+          <Settings />
+        </ProtectedRoute>
+      } />
+      <Route path="/statistics" element={
+        <ProtectedRoute allowedRoles={["admin", "doctor"]}>
+          <Statistics />
+        </ProtectedRoute>
+      } />
+      <Route path="/audit-logs" element={
+        <ProtectedRoute allowedRoles="admin">
+          <AuditLogViewer />
+        </ProtectedRoute>
+      } />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
 // Main App component with correct provider nesting order
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          <TooltipProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/patients" element={
-                <ProtectedRoute allowedRoles={["admin", "doctor", "nurse"]}>
-                  <Patients />
-                </ProtectedRoute>
-              } />
-              <Route path="/appointments" element={
-                <ProtectedRoute allowedRoles={["admin", "doctor", "nurse"]}>
-                  <Appointments />
-                </ProtectedRoute>
-              } />
-              <Route path="/medical-reports" element={
-                <ProtectedRoute allowedRoles={["admin", "doctor"]}>
-                  <MedicalReports />
-                </ProtectedRoute>
-              } />
-              <Route path="/users" element={
-                <ProtectedRoute allowedRoles="admin">
-                  <Users />
-                </ProtectedRoute>
-              } />
-              <Route path="/settings" element={
-                <ProtectedRoute allowedRoles="admin">
-                  <Settings />
-                </ProtectedRoute>
-              } />
-              <Route path="/statistics" element={
-                <ProtectedRoute allowedRoles={["admin", "doctor"]}>
-                  <Statistics />
-                </ProtectedRoute>
-              } />
-              <Route path="/audit-logs" element={
-                <ProtectedRoute allowedRoles="admin">
-                  <AuditLogViewer />
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+        <TooltipProvider>
+          <AuthProvider>
+            <AppRoutes />
             <Toaster />
             <Sonner />
-          </TooltipProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </TooltipProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );

@@ -1,4 +1,3 @@
-
 import { isFileSystemAvailable, initializeFileSystem, readJsonData, writeJsonData, logAction, DATA_FILES, DEFAULT_DIRS, createPatientDirectory } from "@/utils/fileSystemUtils";
 import { v4 as uuidv4 } from "uuid";
 import type { Patient } from "@/types/patient";
@@ -236,62 +235,108 @@ class DataStorageService {
   }
 
   /**
-   * Get users data
+   * Get users data with comprehensive error handling and logging
    */
   async getUsers(): Promise<User[]> {
-    if (this._fallbackToLocalStorage || !this.basePath) {
-      const localData = localStorage.getItem('users');
-      const users = localData ? JSON.parse(localData) : [];
-      console.log("[DataStorage] getUsers from localStorage, found:", users.length);
-      
-      return users;
-    }
-    
     try {
-      const usersPath = `${this.basePath}${DATA_FILES.USERS}`;
-      const data = await readJsonData(usersPath, { users: [] });
-      console.log("[DataStorage] getUsers from file, found:", data.users?.length || 0);
-      return data.users || [];
-    } catch (error) {
-      console.error("[DataStorage] Error reading users:", error);
-      // Fallback to localStorage
+      // First try to get from file system if available
+      if (!this._fallbackToLocalStorage && this.basePath) {
+        try {
+          const usersPath = `${this.basePath}${DATA_FILES.USERS}`;
+          const data = await readJsonData(usersPath, { users: [] });
+          const usersFromFile = data.users || [];
+          
+          console.log("[DataStorage] Successfully loaded users from file system:", usersFromFile.length);
+          
+          // Check if passwords exist
+          const allHavePasswords = usersFromFile.every(user => !!user.password);
+          if (allHavePasswords) {
+            return usersFromFile;
+          } else {
+            console.warn("[DataStorage] Some users missing passwords in file system, trying localStorage");
+          }
+        } catch (error) {
+          console.error("[DataStorage] Error reading users from file system:", error);
+        }
+      }
+      
+      // Try localStorage as fallback
       const localData = localStorage.getItem('users');
-      const users = localData ? JSON.parse(localData) : [];
-      console.log("[DataStorage] getUsers fallback to localStorage, found:", users.length);
-      return users;
+      if (localData) {
+        try {
+          const localUsers = JSON.parse(localData);
+          console.log("[DataStorage] Successfully loaded users from localStorage:", localUsers.length);
+          
+          // Check if passwords exist
+          const allHavePasswords = localUsers.every(user => !!user.password);
+          if (!allHavePasswords) {
+            console.warn("[DataStorage] Some users missing passwords in localStorage");
+          }
+          
+          return localUsers;
+        } catch (error) {
+          console.error("[DataStorage] Error parsing users from localStorage:", error);
+        }
+      }
+      
+      // If we get here, no valid users were found
+      console.warn("[DataStorage] No users found in any storage");
+      return [];
+    } catch (error) {
+      console.error("[DataStorage] Unexpected error in getUsers:", error);
+      return [];
     }
   }
   
   /**
-   * Save users data
+   * Save users data with comprehensive error handling
    */
   async saveUsers(users: User[]): Promise<boolean> {
     try {
-      // Check if passwords are properly saved
-      for (const user of users) {
+      // Log users being saved
+      console.log("[DataStorage] Saving users:", users.length);
+      
+      // Validate users before saving
+      const validUsers = users.filter(user => {
+        if (!user.email || !user.role) {
+          console.warn("[DataStorage] Skipping invalid user:", user);
+          return false;
+        }
+        
         if (!user.password) {
           console.warn("[DataStorage] User missing password during save:", user.email);
+          return false;
         }
-      }
-      
-      // Always update localStorage for compatibility
-      localStorage.setItem('users', JSON.stringify(users));
-      console.log("[DataStorage] Saved users to localStorage:", users.length);
-      
-      // If file system is not available, we're done
-      if (this._fallbackToLocalStorage || !this.basePath) {
+        
         return true;
-      }
-      
-      // Save to file system
-      const usersPath = `${this.basePath}${DATA_FILES.USERS}`;
-      await writeJsonData(usersPath, {
-        users: users,
-        lastUpdated: new Date().toISOString()
       });
       
-      // Log the action
-      await logAction(this.basePath, `Updated users data: ${users.length} users`);
+      if (validUsers.length !== users.length) {
+        console.warn(`[DataStorage] Found ${users.length - validUsers.length} invalid users`);
+      }
+      
+      // Always update localStorage
+      localStorage.setItem('users', JSON.stringify(validUsers));
+      console.log("[DataStorage] Saved users to localStorage:", validUsers.length);
+      
+      // If file system is available, save there too
+      if (!this._fallbackToLocalStorage && this.basePath) {
+        try {
+          const usersPath = `${this.basePath}${DATA_FILES.USERS}`;
+          await writeJsonData(usersPath, {
+            users: validUsers,
+            lastUpdated: new Date().toISOString()
+          });
+          
+          console.log("[DataStorage] Saved users to file system:", validUsers.length);
+          
+          // Log the action
+          await logAction(this.basePath, `Updated users data: ${validUsers.length} users`);
+        } catch (error) {
+          console.error("[DataStorage] Error saving users to file system:", error);
+          return true; // Still return true since localStorage save succeeded
+        }
+      }
       
       return true;
     } catch (error) {
