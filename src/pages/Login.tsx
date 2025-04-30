@@ -33,7 +33,8 @@ export default function Login() {
 
   // Check if already authenticated or bypass is enabled
   useEffect(() => {
-    if ((isAuthenticated || bypassAuth) && !isLoadingAuth) {
+    // Only navigate if authenticated (not just bypassed)
+    if (isAuthenticated && !bypassAuth && !isLoadingAuth) {
       navigate('/');
     }
   }, [isAuthenticated, navigate, isLoadingAuth, bypassAuth]);
@@ -140,83 +141,95 @@ export default function Login() {
           )}
           
           {bypassAuth && (
-            <Alert className="bg-green-50 border-green-200">
-              <AlertDescription>
-                Autentifikacija je trenutno isključena. Možete pristupiti svim dijelovima aplikacije bez prijave.
+            <Alert className="bg-yellow-50 border-yellow-200">
+              <AlertDescription className="space-y-2">
+                <div className="font-medium">Autentifikacija je isključena!</div>
+                <p>Trenutno je aktiviran način rada bez prijave. Da biste koristili prijavu, morate isključiti ovu opciju ispod.</p>
+                <Button 
+                  variant="destructive" 
+                  onClick={toggleBypassAuth}
+                  className="mt-2 w-full"
+                >
+                  Isključi način rada bez prijave
+                </Button>
               </AlertDescription>
             </Alert>
           )}
           
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="email" 
-                        placeholder="vasa.email@adresa.com" 
-                        autoComplete="username" 
-                        {...field} 
-                        disabled={bypassAuth || isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Šifra</FormLabel>
-                    <FormControl>
-                      <div className="relative">
+          {!bypassAuth && (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
                         <Input 
-                          type={showPassword ? "text" : "password"} 
-                          autoComplete="current-password" 
-                          {...field}
-                          disabled={bypassAuth || isLoading}
+                          type="email" 
+                          placeholder="vasa.email@adresa.com" 
+                          autoComplete="username" 
+                          {...field} 
+                          disabled={isLoading}
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-2 top-1/2 -translate-y-1/2"
-                          onClick={() => setShowPassword(!showPassword)}
-                          aria-label={showPassword ? "Sakrij šifru" : "Prikaži šifru"}
-                          disabled={bypassAuth || isLoading}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <Button type="submit" className="w-full" disabled={isLoading || bypassAuth}>
-                {isLoading ? "Prijava u toku..." : "Prijavi se"}
-              </Button>
-            </form>
-          </Form>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Šifra</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            type={showPassword ? "text" : "password"} 
+                            autoComplete="current-password" 
+                            {...field}
+                            disabled={isLoading}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                            onClick={() => setShowPassword(!showPassword)}
+                            aria-label={showPassword ? "Sakrij šifru" : "Prikaži šifru"}
+                            disabled={isLoading}
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Prijava u toku..." : "Prijavi se"}
+                </Button>
+              </form>
+            </Form>
+          )}
           
-          <div className="flex justify-center mt-4 pt-4 border-t">
-            <Button 
-              variant={bypassAuth ? "destructive" : "outline"} 
-              onClick={toggleBypassAuth}
-              className="w-full"
-              disabled={isLoading}
-            >
-              {bypassAuth ? "Uključi autentifikaciju" : "Isključi autentifikaciju"}
-            </Button>
-          </div>
+          {!bypassAuth && (
+            <div className="flex justify-center mt-4 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={toggleBypassAuth}
+                className="w-full"
+                disabled={isLoading}
+              >
+                Uključi način rada bez prijave
+              </Button>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="text-center">
           <p className="text-sm text-muted-foreground w-full">
