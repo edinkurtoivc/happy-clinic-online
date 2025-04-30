@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import type { User } from "@/types/user";
@@ -35,6 +35,13 @@ export default function UserForm({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
+  // Convert permissions array to object format required by form
+  const permissionsObject = {
+    view_reports: defaultValues?.permissions?.includes('view_reports') || false,
+    create_patients: defaultValues?.permissions?.includes('create_patients') || false,
+    delete_users: defaultValues?.permissions?.includes('delete_users') || false,
+  };
+  
   const form = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -44,13 +51,44 @@ export default function UserForm({
       role: (defaultValues?.role as 'admin' | 'doctor' | 'nurse') || "doctor",
       specialization: defaultValues?.specialization || "",
       phone: defaultValues?.phone || "",
+      permissions: permissionsObject,
     },
   });
+
+  // Reset form when default values change (e.g. when editing a different user)
+  useEffect(() => {
+    if (defaultValues) {
+      const permissionsObj = {
+        view_reports: defaultValues?.permissions?.includes('view_reports') || false,
+        create_patients: defaultValues?.permissions?.includes('create_patients') || false,
+        delete_users: defaultValues?.permissions?.includes('delete_users') || false,
+      };
+      
+      form.reset({
+        email: defaultValues.email || "",
+        firstName: defaultValues.firstName || "",
+        lastName: defaultValues.lastName || "",
+        role: (defaultValues.role as 'admin' | 'doctor' | 'nurse') || "doctor",
+        specialization: defaultValues.specialization || "",
+        phone: defaultValues.phone || "",
+        permissions: permissionsObj,
+      });
+    }
+  }, [defaultValues, form]);
 
   const handleSubmit = async (data: UserFormData) => {
     try {
       setIsLoading(true);
-      await onSubmit(data);
+      
+      // Convert permissions object to array for API
+      const formattedData = {
+        ...data,
+        permissionsArray: Object.entries(data.permissions)
+          .filter(([_, isEnabled]) => isEnabled)
+          .map(([permission]) => permission)
+      };
+      
+      await onSubmit(formattedData as any);
       onOpenChange(false);
       form.reset();
       toast({
@@ -70,7 +108,7 @@ export default function UserForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle>
             {mode === 'create' ? 'Dodaj novog korisnika' : 'Uredi korisnika'}

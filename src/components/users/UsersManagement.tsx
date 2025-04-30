@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -87,28 +86,13 @@ export default function UsersManagement() {
     console.log("[UsersManagement] Saved users to localStorage:", updatedUsers);
   };
 
-  const handleAddUser = async (data: {
-    email: string;
-    firstName: string;
-    lastName: string;
-    password: string;
-    role: "admin" | "doctor" | "nurse";
-    specialization?: string;
-    phone?: string;
-  }) => {
+  const handleAddUser = async (data: any) => {
     try {
       // Hash the password before storing it
       const hashedPassword = await bcrypt.hash(data.password, 10);
       
-      // Set default permissions based on role
-      let permissions: string[] = [];
-      if (data.role === "admin") {
-        permissions = ["view_reports", "create_patients", "delete_users"];
-      } else if (data.role === "doctor") {
-        permissions = ["view_reports", "create_patients"];
-      } else if (data.role === "nurse") {
-        permissions = ["create_patients"];
-      }
+      // Extract permissions from form data
+      const permissions = data.permissionsArray || [];
       
       const newUser: User = {
         id: `user-${Date.now()}`,
@@ -134,15 +118,7 @@ export default function UsersManagement() {
     }
   };
 
-  const handleEditUser = async (data: {
-    email: string;
-    firstName: string;
-    lastName: string;
-    password: string;
-    role: "admin" | "doctor" | "nurse";
-    specialization?: string;
-    phone?: string;
-  }) => {
+  const handleEditUser = async (data: any) => {
     try {
       if (!selectedUser) return;
       
@@ -151,21 +127,22 @@ export default function UsersManagement() {
         ? await bcrypt.hash(data.password, 10)
         : selectedUser.password;
       
-      // Update permissions based on role if they don't exist or role has changed
-      let permissions = selectedUser.permissions || [];
-      if (!permissions.length || selectedUser.role !== data.role) {
-        if (data.role === "admin") {
-          permissions = ["view_reports", "create_patients", "delete_users"];
-        } else if (data.role === "doctor") {
-          permissions = ["view_reports", "create_patients"];
-        } else if (data.role === "nurse") {
-          permissions = ["create_patients"];
-        }
-      }
+      // Get permissions from form data
+      const permissions = data.permissionsArray || selectedUser.permissions || [];
       
       const updatedUsers = users.map(user => 
         user.id === selectedUser.id 
-          ? { ...user, ...data, password, permissions }
+          ? { 
+              ...user, 
+              email: data.email,
+              firstName: data.firstName,
+              lastName: data.lastName,
+              role: data.role,
+              specialization: data.specialization,
+              phone: data.phone,
+              permissions,
+              password 
+            }
           : user
       );
       
@@ -235,6 +212,7 @@ export default function UsersManagement() {
                 <TableHead>Uloga</TableHead>
                 <TableHead>Specijalizacija</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Dozvole</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Akcije</TableHead>
               </TableRow>
@@ -250,6 +228,20 @@ export default function UsersManagement() {
                   </TableCell>
                   <TableCell>{user.specialization || '-'}</TableCell>
                   <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {user.permissions?.map((permission) => (
+                        <span 
+                          key={permission} 
+                          className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+                        >
+                          {permission === 'view_reports' ? 'Izvještaji' : 
+                           permission === 'create_patients' ? 'Pacijenti' : 
+                           permission === 'delete_users' ? 'Brisanje' : permission}
+                        </span>
+                      ))}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                       user.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
