@@ -6,11 +6,13 @@ import PatientCard from "@/components/patients/PatientCard";
 import PatientForm from "@/components/patients/PatientForm";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import type { Patient } from "@/types/patient";
+import { useAuth } from "@/contexts/AuthContext";
+import type { Patient, AuditLog } from "@/types/patient";
 import dataStorageService from "@/services/DataStorageService";
 
 export default function Patients() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -34,12 +36,55 @@ export default function Patients() {
       });
     }
   };
+
+  // Function to log patient activities
+  const logPatientActivity = async (patientId: number, action: 'create' | 'update' | 'view', details: string) => {
+    if (!user) return;
+    
+    try {
+      const userName = `${user.firstName} ${user.lastName}`;
+      
+      const newLog: AuditLog = {
+        id: Date.now(),
+        action: action,
+        entityType: 'patient',
+        entityId: patientId,
+        performedBy: userName,
+        performedAt: new Date().toISOString(),
+        details: details
+      };
+      
+      // Get existing logs or initialize empty array
+      const existingLogs = localStorage.getItem('auditLogs');
+      const logs = existingLogs ? JSON.parse(existingLogs) : [];
+      
+      // Add new log
+      logs.push(newLog);
+      
+      // Save updated logs
+      localStorage.setItem('auditLogs', JSON.stringify(logs));
+      
+      console.log(`[Patients] Activity logged: ${action} on patient ${patientId} by ${userName}`);
+      
+      // In a real implementation, you would also save this to your file system
+      // await dataStorageService.saveAuditLog(newLog);
+    } catch (error) {
+      console.error("[Patients] Error logging activity:", error);
+    }
+  };
   
   const handleUpdatePatient = async (updatedPatient: Patient) => {
     try {
       const success = await dataStorageService.savePatient(updatedPatient);
       
       if (success) {
+        // Log this update activity
+        await logPatientActivity(
+          updatedPatient.id, 
+          'update', 
+          `Ažurirane informacije o pacijentu ${updatedPatient.name}`
+        );
+        
         // Refresh patients list
         await loadPatients();
         setSelectedPatient(updatedPatient);
@@ -51,7 +96,7 @@ export default function Patients() {
         
         console.log('[Patients] Patient updated:', {
           patientId: updatedPatient.id,
-          updatedBy: 'Trenutni korisnik', 
+          updatedBy: user ? `${user.firstName} ${user.lastName}` : 'Nepoznati korisnik', 
           timestamp: new Date().toISOString(),
         });
       } else {
@@ -72,6 +117,13 @@ export default function Patients() {
       const success = await dataStorageService.savePatient(newPatient);
       
       if (success) {
+        // Log this create activity
+        await logPatientActivity(
+          newPatient.id, 
+          'create', 
+          `Kreiran novi pacijent ${newPatient.name}`
+        );
+        
         // Refresh patients list
         await loadPatients();
         setIsCreating(false);
@@ -84,6 +136,7 @@ export default function Patients() {
         console.log('[Patients] Patient added:', {
           patientId: newPatient.id,
           name: newPatient.name,
+          createdBy: user ? `${user.firstName} ${user.lastName}` : 'Nepoznati korisnik',
           timestamp: new Date().toISOString(),
         });
       } else {
