@@ -15,4 +15,12 @@ export interface User {
   signatureImage?: string;
   stampImage?: string;
   active: boolean;
+  roleId?: number; // Added roleId to link users to defined roles
+}
+
+export interface Role {
+  id: number;
+  name: string;
+  description: string;
+  permissions: string;
 }

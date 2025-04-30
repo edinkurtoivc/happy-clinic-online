@@ -14,7 +14,7 @@ export const userFormSchema = z.object({
   lastName: z.string().min(2, {
     message: "Prezime mora imati najmanje 2 karaktera",
   }),
-  role: z.enum(["admin", "doctor", "nurse"]),
+  role: z.enum(["admin", "doctor", "nurse", "technician"]),
   specialization: z.string().optional(),
   phone: z.string().optional(),
   permissions: z.object({
@@ -26,6 +26,7 @@ export const userFormSchema = z.object({
     create_patients: false,
     delete_users: false,
   }),
+  roleId: z.number().optional(),
 });
 
 export type UserFormData = z.infer<typeof userFormSchema>;

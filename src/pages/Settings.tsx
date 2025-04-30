@@ -1,17 +1,18 @@
 
 import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ClinicInfo from "@/components/settings/ClinicInfo";
 import ExaminationTypes from "@/components/settings/ExaminationTypes";
 import UsersManagement from "@/components/users/UsersManagement";
 import DataFolderSelect from "@/components/settings/DataFolderSelect";
 import BackupRestore from "@/components/settings/BackupRestore";
 import AppearanceSettings from "@/components/settings/AppearanceSettings";
+import UserRoles from "@/components/settings/UserRoles";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Check, AlertCircle, HardDrive } from "lucide-react";
 import dataStorageService from "@/services/DataStorageService";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Settings() {
   const [dataFolderStatus, setDataFolderStatus] = useState<'initializing' | 'ready' | 'error'>('initializing');
@@ -79,13 +80,40 @@ export default function Settings() {
           <DataFolderSelect />
         </Card>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ClinicInfo />
-          <ExaminationTypes />
-          <UsersManagement />
-          <BackupRestore />
-          <AppearanceSettings />
-        </div>
+        <Tabs defaultValue="general" className="mb-6">
+          <TabsList>
+            <TabsTrigger value="general">Opće postavke</TabsTrigger>
+            <TabsTrigger value="users">Korisnici i dozvole</TabsTrigger>
+            <TabsTrigger value="data">Podaci i backup</TabsTrigger>
+            <TabsTrigger value="appearance">Izgled</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="general" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <ClinicInfo />
+              <ExaminationTypes />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="users" className="mt-6">
+            <div className="grid grid-cols-1 gap-6">
+              <UserRoles />
+              <UsersManagement />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="data" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <BackupRestore />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="appearance" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <AppearanceSettings />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
