@@ -5,7 +5,9 @@ export const userFormSchema = z.object({
   email: z.string().email({
     message: "Unesite važeći email",
   }),
-  password: z.string().optional(),
+  password: z.string().min(6, {
+    message: "Lozinka mora imati najmanje 6 karaktera",
+  }).optional().or(z.literal('')),
   firstName: z.string().min(2, {
     message: "Ime mora imati najmanje 2 karaktera",
   }),
