@@ -16,28 +16,89 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useToast } from "@/components/ui/use-toast";
+import { Role } from "@/types/user";
 
-// Define a proper interface for Role
-interface Role {
-  id: number;
-  name: string;
-  description: string;
-  permissions: string;
-}
+// Define available permissions
+const availablePermissions = [
+  {
+    id: "view_patients",
+    label: "Pregled pacijenata",
+    description: "Može pregledati kartone pacijenata"
+  },
+  {
+    id: "edit_patients",
+    label: "Uređivanje pacijenata",
+    description: "Može uređivati podatke o pacijentima"
+  },
+  {
+    id: "view_reports",
+    label: "Pregled nalaza",
+    description: "Može pregledati medicinske nalaze"
+  },
+  {
+    id: "create_reports",
+    label: "Kreiranje nalaza",
+    description: "Može kreirati nove medicinske nalaze"
+  },
+  {
+    id: "edit_reports",
+    label: "Uređivanje nalaza", 
+    description: "Može uređivati postojeće nalaze"
+  },
+  {
+    id: "view_appointments",
+    label: "Pregled termina",
+    description: "Može pregledati zakazane termine"
+  },
+  {
+    id: "manage_appointments",
+    label: "Upravljanje terminima",
+    description: "Može kreirati i uređivati termine"
+  },
+  {
+    id: "create_users",
+    label: "Kreiranje korisnika",
+    description: "Može kreirati nove korisnike sistema"
+  },
+  {
+    id: "edit_users",
+    label: "Uređivanje korisnika",
+    description: "Može uređivati postojeće korisnike"
+  },
+  {
+    id: "delete_users",
+    label: "Brisanje korisnika",
+    description: "Može brisati korisnike sistema"
+  },
+  {
+    id: "manage_settings",
+    label: "Upravljanje postavkama",
+    description: "Može mijenjati postavke sistema"
+  }
+];
+
+// Define the permissions schema
+const permissionsSchema = z.record(z.boolean()).refine((data) => {
+  // Ensure at least one permission is selected
+  return Object.values(data).some(val => val === true);
+}, {
+  message: "Mora biti odabrana najmanje jedna dozvola"
+});
 
 // Define the role schema
 const roleSchema = z.object({
   id: z.number().optional(),
   name: z.string().min(1, "Naziv role je obavezan"),
   description: z.string().min(1, "Opis role je obavezan"),
-  permissions: z.string().min(1, "Permisije su obavezne"),
+  permissions: permissionsSchema
 });
 
 type RoleFormData = z.infer<typeof roleSchema>;
@@ -45,9 +106,30 @@ type RoleFormData = z.infer<typeof roleSchema>;
 export default function UserRoles() {
   const { toast } = useToast();
   const [roles, setRoles] = useState<Role[]>([
-    { id: 1, name: "Administrator", description: "Potpuni pristup", permissions: "Sve" },
-    { id: 2, name: "Doktor", description: "Pregledi i nalazi", permissions: "Pacijenti, Nalazi" },
-    { id: 3, name: "Medicinska sestra", description: "Rezervacije termina", permissions: "Pacijenti, Termini" },
+    { 
+      id: 1, 
+      name: "Administrator", 
+      description: "Potpuni pristup", 
+      permissions: "view_patients,edit_patients,view_reports,create_reports,edit_reports,view_appointments,manage_appointments,create_users,edit_users,delete_users,manage_settings"
+    },
+    { 
+      id: 2, 
+      name: "Doktor", 
+      description: "Pregledi i nalazi", 
+      permissions: "view_patients,edit_patients,view_reports,create_reports,edit_reports,view_appointments"
+    },
+    { 
+      id: 3, 
+      name: "Medicinska sestra", 
+      description: "Rezervacije termina", 
+      permissions: "view_patients,view_appointments,manage_appointments"
+    },
+    { 
+      id: 4, 
+      name: "Tehničar", 
+      description: "Osnovna podrška", 
+      permissions: "view_patients,view_reports,view_appointments"
+    }
   ]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentRole, setCurrentRole] = useState<Role | null>(null);
@@ -58,7 +140,10 @@ export default function UserRoles() {
     defaultValues: {
       name: "",
       description: "",
-      permissions: "",
+      permissions: availablePermissions.reduce((acc, perm) => {
+        acc[perm.id] = false;
+        return acc;
+      }, {} as Record<string, boolean>)
     },
   });
 
@@ -66,7 +151,10 @@ export default function UserRoles() {
     form.reset({
       name: "",
       description: "",
-      permissions: "",
+      permissions: availablePermissions.reduce((acc, perm) => {
+        acc[perm.id] = false;
+        return acc;
+      }, {} as Record<string, boolean>)
     });
     setFormMode('create');
     setIsDialogOpen(true);
@@ -74,24 +162,38 @@ export default function UserRoles() {
 
   const openEditDialog = (role: Role) => {
     setCurrentRole(role);
+    
+    // Convert string permissions to checkbox state
+    const permissionArray = role.permissions.split(',');
+    const permissionsState = availablePermissions.reduce((acc, perm) => {
+      acc[perm.id] = permissionArray.includes(perm.id);
+      return acc;
+    }, {} as Record<string, boolean>);
+    
     form.reset({
       id: role.id,
       name: role.name,
       description: role.description,
-      permissions: role.permissions,
+      permissions: permissionsState
     });
+    
     setFormMode('edit');
     setIsDialogOpen(true);
   };
 
   const handleSubmit = (data: RoleFormData) => {
+    // Convert permissions object to comma-separated string
+    const permissionsString = Object.entries(data.permissions)
+      .filter(([_, value]) => value)
+      .map(([key, _]) => key)
+      .join(',');
+    
     if (formMode === 'create') {
-      // Ensure all required fields are provided
       const newRole: Role = {
         id: Math.max(0, ...roles.map(r => r.id)) + 1,
         name: data.name,
         description: data.description,
-        permissions: data.permissions,
+        permissions: permissionsString,
       };
       setRoles([...roles, newRole]);
       toast({
@@ -99,12 +201,11 @@ export default function UserRoles() {
         description: "Nova rola je uspješno dodana",
       });
     } else {
-      // Ensure all required fields are provided when updating
       setRoles(roles.map(r => (r.id === data.id ? {
         id: r.id,
         name: data.name,
         description: data.description,
-        permissions: data.permissions,
+        permissions: permissionsString,
       } : r)));
       toast({
         title: "Rola ažurirana",
@@ -120,6 +221,19 @@ export default function UserRoles() {
       title: "Rola obrisana",
       description: "Rola je uspješno obrisana",
     });
+  };
+
+  // Function to display permissions in a readable format
+  const formatPermissions = (permissionsStr: string) => {
+    const permArray = permissionsStr.split(',');
+    if (permArray.length <= 3) {
+      return permArray.map(p => {
+        const found = availablePermissions.find(ap => ap.id === p);
+        return found ? found.label : p;
+      }).join(', ');
+    } else {
+      return `${permArray.length} dozvola`;
+    }
   };
 
   return (
@@ -149,7 +263,7 @@ export default function UserRoles() {
               <TableRow key={role.id}>
                 <TableCell className="font-medium">{role.name}</TableCell>
                 <TableCell>{role.description}</TableCell>
-                <TableCell>{role.permissions}</TableCell>
+                <TableCell>{formatPermissions(role.permissions)}</TableCell>
                 <TableCell className="text-right space-x-2">
                   <Button variant="ghost" size="sm" onClick={() => openEditDialog(role)}>Uredi</Button>
                   <Button 
@@ -168,7 +282,7 @@ export default function UserRoles() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {formMode === 'create' ? 'Dodaj novu rolu' : 'Uredi rolu'}
@@ -200,22 +314,36 @@ export default function UserRoles() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="permissions"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Permisije</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="npr. Pacijenti, Nalazi, Termini" 
-                        className="resize-none"
-                        {...field} 
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+              
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-4">Dozvole</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {availablePermissions.map((permission) => (
+                    <FormField
+                      key={permission.id}
+                      control={form.control}
+                      name={`permissions.${permission.id}`}
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>{permission.label}</FormLabel>
+                            <FormDescription className="text-xs">
+                              {permission.description}
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+              
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Odustani

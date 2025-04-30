@@ -18,12 +18,60 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { UserFormData } from "@/schemas/userForm";
+import { useState, useEffect } from "react";
+import { type Role } from "@/types/user";
 
 interface UserFormFieldsProps {
   form: UseFormReturn<UserFormData>;
 }
 
 export function UserFormFields({ form }: UserFormFieldsProps) {
+  const [roles, setRoles] = useState<Role[]>([]);
+
+  // Load roles on component mount
+  useEffect(() => {
+    // Default roles if none are available
+    const defaultRoles: Role[] = [
+      { id: 1, name: "Administrator", description: "Potpuni pristup", permissions: "all" },
+      { id: 2, name: "Doktor", description: "Pregledi i nalazi", permissions: "patients,reports" },
+      { id: 3, name: "Medicinska sestra", description: "Rezervacije termina", permissions: "patients,appointments" },
+      { id: 4, name: "Tehničar", description: "Osnovna podrška", permissions: "view_only" }
+    ];
+
+    // Attempt to load roles from storage
+    const loadRoles = () => {
+      try {
+        const rolesData = localStorage.getItem('roles');
+        if (rolesData) {
+          setRoles(JSON.parse(rolesData));
+        } else {
+          // Use default roles if none found
+          setRoles(defaultRoles);
+          localStorage.setItem('roles', JSON.stringify(defaultRoles));
+        }
+      } catch (error) {
+        console.error("Failed to load roles:", error);
+        setRoles(defaultRoles);
+      }
+    };
+
+    loadRoles();
+  }, []);
+
+  // Update roleId when role changes
+  useEffect(() => {
+    const currentRole = form.getValues('role');
+    if (currentRole && roles.length > 0) {
+      const matchingRole = roles.find(r => 
+        r.name.toLowerCase() === currentRole.toLowerCase()
+      );
+      
+      if (matchingRole) {
+        form.setValue('roleId', matchingRole.id);
+      }
+    }
+  }, [roles, form]);
+
   return (
     <>
       <FormField
@@ -67,6 +115,7 @@ export function UserFormFields({ form }: UserFormFieldsProps) {
           </FormItem>
         )}
       />
+
       <FormField
         control={form.control}
         name="lastName"
@@ -80,6 +129,7 @@ export function UserFormFields({ form }: UserFormFieldsProps) {
           </FormItem>
         )}
       />
+
       <FormField
         control={form.control}
         name="role"
@@ -87,7 +137,14 @@ export function UserFormFields({ form }: UserFormFieldsProps) {
           <FormItem>
             <FormLabel>Uloga</FormLabel>
             <Select 
-              onValueChange={field.onChange} 
+              onValueChange={(value) => {
+                field.onChange(value);
+                // Update roleId based on selected role
+                const selectedRole = roles.find(r => r.name.toLowerCase() === value.toLowerCase());
+                if (selectedRole) {
+                  form.setValue('roleId', selectedRole.id);
+                }
+              }} 
               defaultValue={field.value}
             >
               <FormControl>
@@ -99,12 +156,45 @@ export function UserFormFields({ form }: UserFormFieldsProps) {
                 <SelectItem value="admin">Administrator</SelectItem>
                 <SelectItem value="doctor">Doktor</SelectItem>
                 <SelectItem value="nurse">Medicinski tehničar</SelectItem>
+                <SelectItem value="technician">Tehničar</SelectItem>
               </SelectContent>
             </Select>
             <FormMessage />
           </FormItem>
         )}
       />
+
+      <FormField
+        control={form.control}
+        name="roleId"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Detaljna uloga</FormLabel>
+            <Select
+              onValueChange={(value) => field.onChange(Number(value))}
+              value={field.value?.toString() || ""}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Odaberite definisanu ulogu" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {roles.map((role) => (
+                  <SelectItem key={role.id} value={role.id.toString()}>
+                    {role.name} - {role.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormDescription className="text-xs">
+              Odaberite detaljniju ulogu koja definira specifične dozvole korisnika
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <FormField
         control={form.control}
         name="specialization"
@@ -118,6 +208,7 @@ export function UserFormFields({ form }: UserFormFieldsProps) {
           </FormItem>
         )}
       />
+
       <FormField
         control={form.control}
         name="phone"
@@ -132,9 +223,12 @@ export function UserFormFields({ form }: UserFormFieldsProps) {
         )}
       />
 
-      {/* Permissions section */}
+      {/* Individual permissions section */}
       <div className="mt-6 border-t pt-4">
-        <h3 className="text-sm font-medium mb-3">Dozvole</h3>
+        <h3 className="text-sm font-medium mb-3">Pojedinačne dozvole</h3>
+        <FormDescription className="text-xs mb-4">
+          Ove dozvole će nadglasati one definirane ulogom
+        </FormDescription>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <FormField
