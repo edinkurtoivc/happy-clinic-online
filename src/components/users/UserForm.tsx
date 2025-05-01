@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { userFormSchema, type UserFormData } from "@/schemas/userForm";
 import { UserFormFields } from "./UserFormFields";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface UserFormProps {
   open: boolean;
@@ -100,8 +101,12 @@ export default function UserForm({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <UserFormFields form={form} />
-            <DialogFooter>
+            <ScrollArea className="h-[60vh] pr-4">
+              <div className="pb-4">
+                <UserFormFields form={form} />
+              </div>
+            </ScrollArea>
+            <DialogFooter className="mt-4">
               <Button type="submit" disabled={isLoading}>
                 {mode === 'create' ? 'Kreiraj korisnika' : 'Ažuriraj korisnika'}
               </Button>
