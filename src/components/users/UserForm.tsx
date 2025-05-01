@@ -34,13 +34,13 @@ export default function UserForm({
 }: UserFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-
-  // Convert permissions array to object format required by form
-  const permissionsObject = {
-    view_reports: defaultValues?.permissions?.includes('view_reports') || false,
-    create_patients: defaultValues?.permissions?.includes('create_patients') || false,
-    delete_users: defaultValues?.permissions?.includes('delete_users') || false,
-  };
+  
+  // Format permissions for form
+  const getPermissionsObject = (permissions?: string[]) => ({
+    view_reports: permissions?.includes('view_reports') || false,
+    create_patients: permissions?.includes('create_patients') || false,
+    delete_users: permissions?.includes('delete_users') || false,
+  });
   
   const form = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
@@ -51,19 +51,13 @@ export default function UserForm({
       role: (defaultValues?.role as 'admin' | 'doctor' | 'nurse') || "doctor",
       specialization: defaultValues?.specialization || "",
       phone: defaultValues?.phone || "",
-      permissions: permissionsObject,
+      permissions: getPermissionsObject(defaultValues?.permissions),
     },
   });
 
-  // Reset form when default values change (e.g. when editing a different user)
+  // Reset form when default values change
   useEffect(() => {
     if (defaultValues) {
-      const permissionsObj = {
-        view_reports: defaultValues?.permissions?.includes('view_reports') || false,
-        create_patients: defaultValues?.permissions?.includes('create_patients') || false,
-        delete_users: defaultValues?.permissions?.includes('delete_users') || false,
-      };
-      
       form.reset({
         email: defaultValues.email || "",
         firstName: defaultValues.firstName || "",
@@ -71,7 +65,7 @@ export default function UserForm({
         role: (defaultValues.role as 'admin' | 'doctor' | 'nurse') || "doctor",
         specialization: defaultValues.specialization || "",
         phone: defaultValues.phone || "",
-        permissions: permissionsObj,
+        permissions: getPermissionsObject(defaultValues?.permissions),
       });
     }
   }, [defaultValues, form]);
@@ -108,7 +102,7 @@ export default function UserForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {mode === 'create' ? 'Dodaj novog korisnika' : 'Uredi korisnika'}
