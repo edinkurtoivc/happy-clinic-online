@@ -17,8 +17,16 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 
+interface LogEntry {
+  timestamp?: string;
+  userId?: string;
+  role?: string;
+  action?: string;
+  raw: string;
+}
+
 const AuditLogViewer = () => {
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -58,7 +66,7 @@ const AuditLogViewer = () => {
   };
 
   const downloadLogs = () => {
-    const logsText = logs.join('\n');
+    const logsText = logs.map(log => typeof log === 'string' ? log : JSON.stringify(log)).join('\n');
     const blob = new Blob([logsText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     
@@ -74,6 +82,58 @@ const AuditLogViewer = () => {
       title: "Evidencija preuzeta",
       description: "Evidencija aktivnosti je uspješno preuzeta",
     });
+  };
+  
+  // Function to parse log entries, handling both string and object formats
+  const parseLogEntry = (log: any): LogEntry => {
+    // If log is a string, parse using regex
+    if (typeof log === 'string') {
+      const timestampMatch = log.match(/\[(.*?)\]/);
+      const userMatch = log.match(/\](.*?)\(/);
+      const roleMatch = log.match(/\((.*?)\)/);
+      const actionMatch = log.match(/\) (.*?)$/);
+      
+      return {
+        timestamp: timestampMatch ? timestampMatch[1] : "",
+        userId: userMatch ? userMatch[1].trim() : "",
+        role: roleMatch ? roleMatch[1] : "",
+        action: actionMatch ? actionMatch[1] : "",
+        raw: log
+      };
+    } 
+    // If log is an object with structured data
+    else if (log && typeof log === 'object') {
+      // Handle structured log object format
+      if (log.performedAt) {
+        // Format for structured audit logs
+        return {
+          timestamp: new Date(log.performedAt).toLocaleString(),
+          userId: log.performedBy || "",
+          role: log.entityType || "",
+          action: log.action || "",
+          raw: JSON.stringify(log)
+        };
+      } 
+      // Handle timestamp-based format
+      else if (log.timestamp) {
+        return {
+          timestamp: log.timestamp,
+          userId: log.userId || "",
+          role: log.role || "",
+          action: log.action || log.message || "",
+          raw: JSON.stringify(log)
+        };
+      }
+    }
+    
+    // Fallback for unknown formats
+    return {
+      timestamp: "",
+      userId: "",
+      role: "",
+      action: "Unknown log format",
+      raw: typeof log === 'string' ? log : JSON.stringify(log)
+    };
   };
 
   return (
@@ -133,27 +193,18 @@ const AuditLogViewer = () => {
                   </TableHeader>
                   <TableBody>
                     {logs.map((log, index) => {
-                      // Parse log entry: [timestamp] userId (role) action
-                      const timestampMatch = log.match(/\[(.*?)\]/);
-                      const userMatch = log.match(/\](.*?)\(/);
-                      const roleMatch = log.match(/\((.*?)\)/);
-                      const actionMatch = log.match(/\) (.*?)$/);
-                      
-                      const timestamp = timestampMatch ? timestampMatch[1] : "";
-                      const userId = userMatch ? userMatch[1].trim() : "";
-                      const role = roleMatch ? roleMatch[1] : "";
-                      const action = actionMatch ? actionMatch[1] : "";
+                      const parsedLog = parseLogEntry(log);
                       
                       return (
                         <TableRow key={index}>
-                          <TableCell className="font-mono text-sm">{timestamp}</TableCell>
+                          <TableCell className="font-mono text-sm">{parsedLog.timestamp}</TableCell>
                           <TableCell>
                             <div className="flex flex-col">
-                              <span>{userId}</span>
-                              <span className="text-xs text-muted-foreground">({role})</span>
+                              <span>{parsedLog.userId}</span>
+                              <span className="text-xs text-muted-foreground">({parsedLog.role})</span>
                             </div>
                           </TableCell>
-                          <TableCell>{action}</TableCell>
+                          <TableCell>{parsedLog.action}</TableCell>
                         </TableRow>
                       );
                     })}
