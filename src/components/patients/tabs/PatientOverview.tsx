@@ -8,6 +8,7 @@ import { PatientInfoCard } from "./patient-overview/PatientInfoCard";
 import { PatientDetailsForm } from "./patient-overview/PatientDetailsForm";
 import { EditActions } from "./patient-overview/EditActions";
 import type { Patient } from "@/types/patient";
+import { ensurePatient } from "@/types/patient";
 
 interface PatientOverviewProps {
   patient: Patient;
@@ -33,7 +34,10 @@ export function PatientOverview({
   const { toast } = useToast();
 
   const handleSaveChanges = () => {
-    if (!editedPatient.name || !editedPatient.jmbg) {
+    // Ensure patient has name getter
+    const typedEditedPatient = ensurePatient(editedPatient);
+    
+    if (!typedEditedPatient.firstName || !typedEditedPatient.jmbg) {
       toast({
         title: "Greška",
         description: "Ime i JMBG su obavezna polja.",
@@ -43,7 +47,7 @@ export function PatientOverview({
     }
     
     if (onUpdate) {
-      onUpdate(editedPatient);
+      onUpdate(typedEditedPatient);
     }
     
     toast({

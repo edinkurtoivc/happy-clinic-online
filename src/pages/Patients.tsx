@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Patient, AuditLog } from "@/types/patient";
+import { ensurePatient } from "@/types/patient";
 import dataStorageService from "@/services/DataStorageService";
 
 export default function Patients() {
@@ -25,8 +26,10 @@ export default function Patients() {
   const loadPatients = async () => {
     try {
       const loadedPatients = await dataStorageService.getPatients();
-      setPatients(loadedPatients);
-      console.log("[Patients] Loaded patients:", loadedPatients);
+      // Ensure all patients have the name getter
+      const patientsWithName = loadedPatients.map(patient => ensurePatient(patient));
+      setPatients(patientsWithName);
+      console.log("[Patients] Loaded patients:", patientsWithName);
     } catch (error) {
       console.error("[Patients] Error loading patients:", error);
       toast({
@@ -75,19 +78,21 @@ export default function Patients() {
   
   const handleUpdatePatient = async (updatedPatient: Patient) => {
     try {
-      const success = await dataStorageService.savePatient(updatedPatient);
+      // Ensure patient has name getter
+      const typedPatient = ensurePatient(updatedPatient);
+      const success = await dataStorageService.savePatient(typedPatient);
       
       if (success) {
         // Log this update activity
         await logPatientActivity(
-          updatedPatient.id, 
+          typedPatient.id, 
           'update', 
-          `Ažurirane informacije o pacijentu ${updatedPatient.name}`
+          `Ažurirane informacije o pacijentu ${typedPatient.name}`
         );
         
         // Refresh patients list
         await loadPatients();
-        setSelectedPatient(updatedPatient);
+        setSelectedPatient(typedPatient);
         
         toast({
           title: "Uspješno",
@@ -95,7 +100,7 @@ export default function Patients() {
         });
         
         console.log('[Patients] Patient updated:', {
-          patientId: updatedPatient.id,
+          patientId: typedPatient.id,
           updatedBy: user ? `${user.firstName} ${user.lastName}` : 'Nepoznati korisnik', 
           timestamp: new Date().toISOString(),
         });
@@ -114,14 +119,16 @@ export default function Patients() {
   
   const handleAddPatient = async (newPatient: Patient) => {
     try {
-      const success = await dataStorageService.savePatient(newPatient);
+      // Ensure patient has name getter
+      const typedPatient = ensurePatient(newPatient);
+      const success = await dataStorageService.savePatient(typedPatient);
       
       if (success) {
         // Log this create activity
         await logPatientActivity(
-          newPatient.id, 
+          typedPatient.id, 
           'create', 
-          `Kreiran novi pacijent ${newPatient.name}`
+          `Kreiran novi pacijent ${typedPatient.name}`
         );
         
         // Refresh patients list
@@ -130,12 +137,12 @@ export default function Patients() {
         
         toast({
           title: "Uspješno",
-          description: `Pacijent ${newPatient.name} je uspješno dodan.`,
+          description: `Pacijent ${typedPatient.name} je uspješno dodan.`,
         });
         
         console.log('[Patients] Patient added:', {
-          patientId: newPatient.id,
-          name: newPatient.name,
+          patientId: typedPatient.id,
+          name: typedPatient.name,
           createdBy: user ? `${user.firstName} ${user.lastName}` : 'Nepoznati korisnik',
           timestamp: new Date().toISOString(),
         });

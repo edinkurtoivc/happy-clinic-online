@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import dataStorageService from "@/services/DataStorageService";
 import type { Patient } from "@/types/patient";
+import { ensurePatient } from "@/types/patient";
 
 interface PatientSelectionProps {
   selectedPatient: Patient | null;
@@ -28,8 +29,10 @@ export default function PatientSelection({ selectedPatient, onSelectPatient, onV
       setIsLoading(true);
       try {
         const loadedPatients = await dataStorageService.getPatients();
-        setPatients(loadedPatients);
-        console.log("[PatientSelection] Loaded patients:", loadedPatients);
+        // Ensure all patients have the name getter
+        const patientsWithName = loadedPatients.map(patient => ensurePatient(patient));
+        setPatients(patientsWithName);
+        console.log("[PatientSelection] Loaded patients:", patientsWithName);
       } catch (error) {
         console.error("[PatientSelection] Error loading patients:", error);
         toast({
@@ -47,15 +50,18 @@ export default function PatientSelection({ selectedPatient, onSelectPatient, onV
 
   const filteredPatients = patients.filter(patient => {
     const searchLower = searchTerm.toLowerCase();
+    // Ensure the patient has the name getter before accessing it
+    const patientWithName = ensurePatient(patient);
     return (
-      patient.name.toLowerCase().includes(searchLower) ||
+      patientWithName.name.toLowerCase().includes(searchLower) ||
       (patient.jmbg && patient.jmbg.includes(searchTerm)) ||
       (patient.dob && patient.dob.includes(searchTerm))
     );
   });
 
   const handleSelectPatient = (patient: Patient) => {
-    onSelectPatient(patient);
+    // Ensure patient has name getter before passing it up
+    onSelectPatient(ensurePatient(patient));
     setShowPatientsDropdown(false);
     setSearchTerm("");
   };
@@ -70,7 +76,7 @@ export default function PatientSelection({ selectedPatient, onSelectPatient, onV
       <div className="relative">
         <div className="w-full relative">
           <Input 
-            placeholder={selectedPatient ? selectedPatient.name : "Odaberite pacijenta"}
+            placeholder={selectedPatient ? ensurePatient(selectedPatient).name : "Odaberite pacijenta"}
             className="w-full border rounded-md p-4"
             onClick={() => setShowPatientsDropdown(!showPatientsDropdown)}
             readOnly
@@ -97,19 +103,22 @@ export default function PatientSelection({ selectedPatient, onSelectPatient, onV
               <div className="p-4 text-center text-muted-foreground">Učitavanje pacijenata...</div>
             ) : filteredPatients.length > 0 ? (
               <div className="max-h-[300px] overflow-y-auto">
-                {filteredPatients.map(patient => (
-                  <div 
-                    key={patient.id} 
-                    className="p-2 hover:bg-gray-100 cursor-pointer flex flex-col"
-                    onClick={() => handleSelectPatient(patient)}
-                  >
-                    <span className="font-medium">{patient.name}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {patient.jmbg ? `JMBG: ${patient.jmbg} · ` : ''}
-                      {patient.dob ? `Rođen: ${patient.dob}` : ''}
-                    </span>
-                  </div>
-                ))}
+                {filteredPatients.map(patient => {
+                  const patientWithName = ensurePatient(patient);
+                  return (
+                    <div 
+                      key={patient.id} 
+                      className="p-2 hover:bg-gray-100 cursor-pointer flex flex-col"
+                      onClick={() => handleSelectPatient(patient)}
+                    >
+                      <span className="font-medium">{patientWithName.name}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {patient.jmbg ? `JMBG: ${patient.jmbg} · ` : ''}
+                        {patient.dob ? `Rođen: ${patient.dob}` : ''}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="p-4 text-center text-muted-foreground">

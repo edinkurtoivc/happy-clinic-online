@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import type { Patient } from "@/types/patient";
+import { ensurePatient } from "@/types/patient";
 
 interface PatientsListProps {
   patients: Patient[];
@@ -18,9 +19,11 @@ export default function PatientsList({ patients, onSelectPatient }: PatientsList
   });
 
   const filteredPatients = patients.filter(patient => {
+    // Ensure patient has name getter
+    const patientWithName = ensurePatient(patient);
     const searchLower = searchTerm.toLowerCase();
     return (
-      patient.name.toLowerCase().includes(searchLower) ||
+      patientWithName.name.toLowerCase().includes(searchLower) ||
       patient.jmbg.includes(searchLower) ||
       (patient.dob && patient.dob.includes(searchTerm))
     );
@@ -54,24 +57,27 @@ export default function PatientsList({ patients, onSelectPatient }: PatientsList
             </tr>
           </thead>
           <tbody className="divide-y bg-white">
-            {filteredPatients.map((patient) => (
-              <tr key={patient.id} className="hover:bg-muted/50">
-                <td className="px-4 py-3 text-sm font-medium">{patient.name}</td>
-                <td className="px-4 py-3 text-sm">{patient.dob}</td>
-                <td className="px-4 py-3 text-sm">{patient.jmbg}</td>
-                <td className="px-4 py-3 text-sm">{patient.phone}</td>
-                <td className="px-4 py-3 text-right">
-                  <Button 
-                    onClick={() => onSelectPatient(patient)} 
-                    variant="ghost"
-                    size="sm"
-                    className="text-clinic-600 hover:text-clinic-800 hover:bg-clinic-50"
-                  >
-                    Pregled
-                  </Button>
-                </td>
-              </tr>
-            ))}
+            {filteredPatients.map((patient) => {
+              const patientWithName = ensurePatient(patient);
+              return (
+                <tr key={patient.id} className="hover:bg-muted/50">
+                  <td className="px-4 py-3 text-sm font-medium">{patientWithName.name}</td>
+                  <td className="px-4 py-3 text-sm">{patient.dob}</td>
+                  <td className="px-4 py-3 text-sm">{patient.jmbg}</td>
+                  <td className="px-4 py-3 text-sm">{patient.phone}</td>
+                  <td className="px-4 py-3 text-right">
+                    <Button 
+                      onClick={() => onSelectPatient(patient)} 
+                      variant="ghost"
+                      size="sm"
+                      className="text-clinic-600 hover:text-clinic-800 hover:bg-clinic-50"
+                    >
+                      Pregled
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 

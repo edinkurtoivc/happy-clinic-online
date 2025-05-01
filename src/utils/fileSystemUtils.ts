@@ -1,9 +1,9 @@
 /**
  * Utility functions for file system operations in Electron environment
  */
-import type { MedicalReportFile } from '../types/medical-report';
-
-const isElectron = typeof window !== 'undefined' && window.electron?.isElectron;
+import type { MedicalReportFile } from '@/types/medical-report';
+import type { Patient } from '@/types/patient';
+import { ensurePatient } from '@/types/patient';
 
 // Constants for directory and file paths
 export const DEFAULT_DIRS = {
@@ -199,19 +199,22 @@ export const createFolderIfNotExists = async (path: string): Promise<boolean> =>
 /**
  * Create patient directory and save initial patient data
  */
-export const createPatientDirectory = async (basePath: string, patient: any): Promise<string> => {
+export const createPatientDirectory = async (basePath: string, patient: Patient): Promise<string> => {
   if (!isFileSystemAvailable()) return '';
   
   try {
+    // Ensure patient has name getter
+    const typedPatient = ensurePatient(patient);
+    
     // Create patient folder name
-    const folderName = `${patient.name.replace(/\s+/g, '_')}_${patient.jmbg}`;
+    const folderName = `${typedPatient.name.replace(/\s+/g, '_')}_${typedPatient.jmbg}`;
     const patientDir = `${basePath}${DEFAULT_DIRS.PATIENTS}/${folderName}`;
     
     // Create directory
     await createFolderIfNotExists(patientDir);
     
     // Save patient data
-    await writeJsonData(`${patientDir}/karton.json`, patient);
+    await writeJsonData(`${patientDir}/karton.json`, typedPatient);
     
     return folderName;
   } catch (error) {

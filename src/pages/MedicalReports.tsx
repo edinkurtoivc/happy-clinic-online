@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import Header from "@/components/layout/Header";
 import MedicalReportPreview from "@/components/medical-reports/MedicalReportPreview";
@@ -8,6 +9,7 @@ import ExaminationTypeSelect from "@/components/medical-reports/ExaminationTypeS
 import ReportEditor from "@/components/medical-reports/ReportEditor";
 import type { MedicalReport, ExaminationType } from "@/types/medical-report";
 import type { Patient } from "@/types/patient";
+import { ensurePatient } from "@/types/patient";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -47,11 +49,11 @@ export default function MedicalReports() {
   const [examinationTypes] = useState<ExaminationType[]>(mockExaminationTypes);
 
   const handleSelectPatient = (patient: any) => {
-    // Ensure patient has the correct gender type
-    const typedPatient: Patient = {
+    // Ensure patient has the correct gender type and name getter
+    const typedPatient = ensurePatient({
       ...patient,
       gender: patient.gender as 'M' | 'F'
-    };
+    });
     
     setSelectedPatient(typedPatient);
     // Reset the report form when a new patient is selected
@@ -142,9 +144,10 @@ export default function MedicalReports() {
     setIsFinalizingReport(true);
     
     const currentDate = new Date().toISOString();
+    const typedPatient = ensurePatient(selectedPatient!);
     
     const reportData: Partial<MedicalReport> = {
-      patientId: selectedPatient!.id.toString(),
+      patientId: typedPatient.id.toString(),
       doctorId: currentDoctor.id,
       date: currentDate,
       report: reportText,
@@ -152,10 +155,10 @@ export default function MedicalReports() {
       status: isFinal ? 'final' : 'draft',
       appointmentType: selectedExamType,
       patientInfo: {
-        fullName: selectedPatient!.name,
-        birthDate: selectedPatient!.dob,
-        gender: selectedPatient!.gender,
-        jmbg: selectedPatient!.jmbg
+        fullName: typedPatient.name,
+        birthDate: typedPatient.dob,
+        gender: typedPatient.gender,
+        jmbg: typedPatient.jmbg
       }
     };
 

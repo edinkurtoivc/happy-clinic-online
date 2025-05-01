@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Patient } from "@/types/patient";
+import { ensurePatient } from "@/types/patient";
 import type { Appointment } from "@/types/medical-report";
 import type { User } from "@/types/user";
 import dataStorageService from "@/services/DataStorageService";
@@ -42,8 +42,10 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       setIsLoadingPatients(true);
       try {
         const loadedPatients = await dataStorageService.getPatients();
-        setPatients(loadedPatients);
-        console.log("[AppointmentForm] Loaded patients:", loadedPatients);
+        // Ensure all patients have the name getter
+        const patientsWithName = loadedPatients.map(patient => ensurePatient(patient));
+        setPatients(patientsWithName);
+        console.log("[AppointmentForm] Loaded patients:", patientsWithName);
       } catch (error) {
         console.error("[AppointmentForm] Error loading patients:", error);
         toast({
@@ -143,7 +145,18 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       return;
     }
     
-    const selectedPatient = patients.find(p => p.id.toString() === selectedPatientId);
+    const rawSelectedPatient = patients.find(p => p.id.toString() === selectedPatientId);
+    if (!rawSelectedPatient) {
+      toast({
+        title: "Greška",
+        description: "Odabrani pacijent nije pronađen",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Ensure patient has name getter
+    const selectedPatient = ensurePatient(rawSelectedPatient);
     const selectedDoctor = doctors.find(d => d.id === selectedDoctorId);
     const appointmentType = appointmentTypes.find(t => t.id === selectedAppointmentType)?.name;
     
@@ -202,7 +215,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       <CardHeader>
         <CardTitle className="text-xl font-bold text-clinic-800">
           {preselectedPatient 
-            ? `Zakaži novi termin za ${preselectedPatient.name}`
+            ? `Zakaži novi termin za ${ensurePatient(preselectedPatient).name}`
             : "Zakaži novi termin"}
         </CardTitle>
       </CardHeader>
