@@ -1,6 +1,8 @@
 /**
  * Utility functions for file system operations in Electron environment
  */
+import type { MedicalReportFile } from '../types/medical-report';
+
 const isElectron = typeof window !== 'undefined' && window.electron?.isElectron;
 
 // Constants for directory and file paths

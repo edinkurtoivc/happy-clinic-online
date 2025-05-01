@@ -9,6 +9,8 @@ export interface Patient {
   address?: string;
   email?: string;
   gender?: 'M' | 'F';
+  // Add a name getter for backwards compatibility with existing code
+  get name(): string;
 }
 
 export interface PatientHistory {
@@ -51,4 +53,42 @@ export interface MedicalReportFile {
   doctor: string;
   verified: boolean;
   notes?: string;
+}
+
+// Create a PatientImpl class implementing the Patient interface
+// This adds the name getter for backward compatibility
+export class PatientImpl implements Patient {
+  id: number;
+  firstName: string;
+  lastName: string;
+  dob: string;
+  jmbg: string;
+  phone: string;
+  address?: string;
+  email?: string;
+  gender?: 'M' | 'F';
+
+  constructor(data: Omit<Patient, 'name'>) {
+    this.id = data.id;
+    this.firstName = data.firstName;
+    this.lastName = data.lastName;
+    this.dob = data.dob;
+    this.jmbg = data.jmbg;
+    this.phone = data.phone;
+    this.address = data.address;
+    this.email = data.email;
+    this.gender = data.gender;
+  }
+
+  get name(): string {
+    return `${this.firstName} ${this.lastName}`;
+  }
+}
+
+// Helper function to ensure patient objects have the name getter
+export function ensurePatient(patientData: any): Patient {
+  if (patientData && !('name' in patientData) && patientData.firstName && patientData.lastName) {
+    return new PatientImpl(patientData);
+  }
+  return patientData;
 }

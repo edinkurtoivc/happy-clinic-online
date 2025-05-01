@@ -16,6 +16,7 @@ import { initializeFileSystem, migrateData } from "@/utils/fileSystemUtils";
 import dataStorageService from "@/services/DataStorageService";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { isElectron as checkIsElectron } from "@/utils/isElectron";
 
 export default function DataFolderSelect() {
   const { toast } = useToast();
@@ -31,7 +32,8 @@ export default function DataFolderSelect() {
   const [migrationNewPath, setMigrationNewPath] = useState("");
   const [isInitializing, setIsInitializing] = useState(false);
   
-  const isElectron = typeof window !== 'undefined' && window.electron?.isElectron;
+  // Use the utility function to determine if Electron is available
+  const isElectron = checkIsElectron();
   
   const loadInitialData = async () => {
     const savedPath = localStorage.getItem('dataFolderPath') || "";
@@ -53,7 +55,9 @@ export default function DataFolderSelect() {
     if (!isElectron || !path) return;
     
     try {
+      console.log("[DataFolderSelect] Getting folder info for path:", path);
       const info = await window.electron.getFolderInfo(path);
+      console.log("[DataFolderSelect] Folder info result:", info);
       setFolderSizeInfo(info);
     } catch (error) {
       console.error("Error getting folder info:", error);
@@ -71,7 +75,10 @@ export default function DataFolderSelect() {
     }
     
     try {
+      console.log("[DataFolderSelect] Opening directory dialog...");
       const selectedPath = await window.electron.openDirectory();
+      console.log("[DataFolderSelect] Selected path:", selectedPath);
+      
       if (selectedPath) {
         // Check if we need to migrate data
         if (dataPath && dataPath !== selectedPath) {
@@ -85,7 +92,7 @@ export default function DataFolderSelect() {
         await setFolderPath(selectedPath);
       }
     } catch (error) {
-      console.error("Error selecting folder:", error);
+      console.error("[DataFolderSelect] Error selecting folder:", error);
       toast({
         title: "Greška",
         description: "Nije moguće odabrati folder.",
@@ -309,6 +316,8 @@ export default function DataFolderSelect() {
                 variant="outline" 
                 onClick={handleSelectFolder}
                 disabled={isInitializing}
+                data-testid="select-folder-button"
+                type="button"
               >
                 <FolderOpen className="mr-2 h-4 w-4" />
                 Odaberi folder
@@ -320,6 +329,7 @@ export default function DataFolderSelect() {
                 variant="outline"
                 onClick={handleForceReinitialization} 
                 disabled={isInitializing || !dataPath}
+                type="button"
               >
                 {isInitializing ? (
                   <>
@@ -337,6 +347,7 @@ export default function DataFolderSelect() {
               <Button 
                 onClick={handleSaveLocation} 
                 disabled={isSaving || !dataPath || isInitializing}
+                type="button"
               >
                 <Check className="mr-2 h-4 w-4" />
                 {isSaving ? "Spremanje..." : "Spremi lokaciju"}
@@ -409,12 +420,14 @@ export default function DataFolderSelect() {
               variant="outline"
               onClick={() => setShowMigrationDialog(false)}
               disabled={isMigrating}
+              type="button"
             >
               Odustani
             </Button>
             <Button 
               onClick={handleMigrateData} 
               disabled={isMigrating}
+              type="button"
             >
               {isMigrating ? (
                 <>
