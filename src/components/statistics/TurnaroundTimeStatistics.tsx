@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { Appointment } from "@/types/medical-report";
 import { Calendar } from "lucide-react";
+import { User } from "@/types/user";
 
 interface TATData {
   doctorName: string;
@@ -27,6 +28,27 @@ export default function TurnaroundTimeStatistics() {
   const [chartConfig] = useState({
     turnaroundTime: { color: "#6366f1" },
   });
+  const [users, setUsers] = useState<User[]>([]);
+
+  // Load users
+  useEffect(() => {
+    const loadUsers = () => {
+      try {
+        const usersString = localStorage.getItem('users');
+        if (usersString) {
+          const parsedUsers: User[] = JSON.parse(usersString);
+          setUsers(parsedUsers.filter(user => user.role === 'doctor'));
+          console.log("Loaded doctors:", parsedUsers.filter(user => user.role === 'doctor').length);
+        } else {
+          console.log("No users found in localStorage");
+        }
+      } catch (error) {
+        console.error("Error loading users:", error);
+      }
+    };
+    
+    loadUsers();
+  }, []);
 
   // Load and process data
   useEffect(() => {
@@ -63,6 +85,9 @@ export default function TurnaroundTimeStatistics() {
       let totalCount = 0;
       
       completedAppointments.forEach(appt => {
+        // Skip if no doctorId
+        if (!appt.doctorId) return;
+        
         // Find corresponding report (if any)
         const report = reports.find((r: any) => r.appointmentId === appt.id);
         
@@ -72,12 +97,16 @@ export default function TurnaroundTimeStatistics() {
           const reportCompleted = new Date(report.date).getTime();
           const diffDays = Math.max(0, (reportCompleted - appointmentScheduled) / (1000 * 60 * 60 * 24));
           
+          // Find actual doctor name from users
+          const doctor = users.find(u => u.id === appt.doctorId);
+          const doctorName = doctor ? `Dr. ${doctor.firstName} ${doctor.lastName}` : appt.doctorName;
+          
           // Add to doctor's stats
           if (!doctorStats[appt.doctorId]) {
             doctorStats[appt.doctorId] = {
               totalTAT: 0,
               count: 0,
-              name: appt.doctorName
+              name: doctorName
             };
           }
           
@@ -92,12 +121,16 @@ export default function TurnaroundTimeStatistics() {
           const appointmentCompleted = new Date(appt.completedAt || appt.date).getTime();
           const diffDays = Math.max(0, (appointmentCompleted - appointmentScheduled) / (1000 * 60 * 60 * 24));
           
+          // Find actual doctor name from users
+          const doctor = users.find(u => u.id === appt.doctorId);
+          const doctorName = doctor ? `Dr. ${doctor.firstName} ${doctor.lastName}` : appt.doctorName;
+          
           // Add to doctor's stats
           if (!doctorStats[appt.doctorId]) {
             doctorStats[appt.doctorId] = {
               totalTAT: 0,
               count: 0,
-              name: appt.doctorName
+              name: doctorName
             };
           }
           
@@ -119,8 +152,11 @@ export default function TurnaroundTimeStatistics() {
       // Sort by turnaround time (ascending, faster doctors first)
       tatData.sort((a, b) => a.avgTurnaroundTime - b.avgTurnaroundTime);
       
-      // Fake data for development and testing
+      console.log("TAT data generated:", tatData);
+      
+      // Only use fake data if we have no real data
       if (tatData.length === 0) {
+        console.log("No TAT data found, using fallback data");
         const fakeData: TATData[] = [
           { doctorName: "Dr. Adnan Hadžić", avgTurnaroundTime: 1.2, count: 45 },
           { doctorName: "Dr. Petar Petrović", avgTurnaroundTime: 1.8, count: 32 },
@@ -137,7 +173,7 @@ export default function TurnaroundTimeStatistics() {
     } catch (error) {
       console.error("Error processing turnaround time data:", error);
       
-      // Use fake data for development
+      // Use fake data only as last resort
       const fakeData: TATData[] = [
         { doctorName: "Dr. Adnan Hadžić", avgTurnaroundTime: 1.2, count: 45 },
         { doctorName: "Dr. Petar Petrović", avgTurnaroundTime: 1.8, count: 32 },
@@ -147,7 +183,7 @@ export default function TurnaroundTimeStatistics() {
       setChartData(fakeData);
       setAvgOverallTAT(1.6);
     }
-  }, [timeFilter]);
+  }, [timeFilter, users]);
 
   return (
     <Card className="p-6">
