@@ -6,6 +6,7 @@ import DoctorsStatistics from "@/components/statistics/DoctorsStatistics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TopExaminationTypes from "@/components/statistics/TopExaminationTypes";
 import PatientDemographics from "@/components/statistics/PatientDemographics";
+import DoctorPerformanceComparison from "@/components/statistics/DoctorPerformanceComparison";
 
 export default function Statistics() {
   return (
@@ -15,12 +16,17 @@ export default function Statistics() {
         <Tabs defaultValue="doctors" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="doctors">Doktori i Pregledi</TabsTrigger>
+            <TabsTrigger value="performance">Performanse tijekom vremena</TabsTrigger>
             <TabsTrigger value="examinations">Top Vrste Pregleda</TabsTrigger>
             <TabsTrigger value="demographics">Demografija Pacijenata</TabsTrigger>
           </TabsList>
           
           <TabsContent value="doctors" className="space-y-6">
             <DoctorsStatistics />
+          </TabsContent>
+          
+          <TabsContent value="performance" className="space-y-6">
+            <DoctorPerformanceComparison />
           </TabsContent>
           
           <TabsContent value="examinations" className="space-y-6">
