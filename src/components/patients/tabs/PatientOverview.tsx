@@ -88,6 +88,7 @@ export function PatientOverview({
       <RecentVisits 
         patientHistory={patientHistory} 
         setIsScheduling={setIsScheduling} 
+        patient={patient}  
       />
 
       <EditActions

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { v4 as uuidv4 } from "uuid";
+import { PatientImpl } from "@/types/patient";
 import type { Patient } from "@/types/patient";
 
 interface PatientFormProps {
@@ -79,9 +80,9 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (validateForm()) {
-      // Create the patient object with proper typing
-      const patient: Patient = {
-        id: parseInt(uuidv4().replace(/-/g, '').substring(0, 8), 16), // Convert UUID to a number
+      // Create the patient object using PatientImpl which implements the name getter
+      const patient = new PatientImpl({
+        id: parseInt(uuidv4().replace(/-/g, '').substring(0, 8), 16),
         firstName: form.firstName,
         lastName: form.lastName,
         dob: form.dob,
@@ -90,7 +91,8 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
         address: form.address || undefined,
         email: form.email || undefined,
         gender: form.gender ? (form.gender as "M" | "F") : undefined
-      };
+      });
+      
       onSubmit(patient);
     }
   };
