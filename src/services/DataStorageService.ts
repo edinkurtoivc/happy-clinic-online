@@ -1,4 +1,3 @@
-
 import { isFileSystemAvailable, initializeFileSystem, readJsonData, writeJsonData, logAction, DATA_FILES, DEFAULT_DIRS, createPatientDirectory } from "@/utils/fileSystemUtils";
 import { v4 as uuidv4 } from "uuid";
 import type { Patient } from "@/types/patient";
@@ -235,6 +234,57 @@ class DataStorageService {
     }
   }
 
+  /**
+   * Update an appointment
+   */
+  async updateAppointment(updatedAppointment: Appointment) {
+    try {
+      const currentAppointments = await this.getAppointments();
+      
+      // Find the appointment to update
+      const updatedAppointments = currentAppointments.map(appointment => 
+        appointment.id === updatedAppointment.id ? updatedAppointment : appointment
+      );
+      
+      if (updatedAppointment.status === 'completed' && !updatedAppointment.completedAt) {
+        // Set completedAt timestamp if status changed to completed
+        updatedAppointment.completedAt = new Date().toISOString();
+      }
+      
+      return await this.saveAppointments(updatedAppointments);
+    } catch (error) {
+      console.error("[DataStorage] Error updating appointment:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Complete an appointment and link it to a medical report
+   */
+  async completeAppointmentWithReport(appointmentId: string, reportId: string) {
+    try {
+      const currentAppointments = await this.getAppointments();
+      const appointmentIndex = currentAppointments.findIndex(a => a.id === appointmentId);
+      
+      if (appointmentIndex !== -1) {
+        const now = new Date().toISOString();
+        currentAppointments[appointmentIndex] = {
+          ...currentAppointments[appointmentIndex],
+          status: 'completed',
+          reportId: reportId,
+          completedAt: now,
+          reportCompletedAt: now
+        };
+        
+        return await this.saveAppointments(currentAppointments);
+      }
+      return false;
+    } catch (error) {
+      console.error("[DataStorage] Error completing appointment with report:", error);
+      return false;
+    }
+  }
+  
   /**
    * Get users data with comprehensive error handling and logging
    */

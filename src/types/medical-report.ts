@@ -74,6 +74,9 @@ export interface Appointment {
   notes?: string;
   reportId?: string;
   cancellationReason?: string;
+  scheduledAt?: string;  // When the appointment was created/scheduled
+  completedAt?: string;  // When the appointment was marked as completed
+  reportCompletedAt?: string; // When the medical report was finalized
 }
 
 export interface MedicalReportFile {

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -179,6 +180,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       time: selectedTime,
       examinationType: appointmentType,
       status: 'scheduled',
+      scheduledAt: new Date().toISOString(), // Add timestamp when appointment was scheduled
     };
     
     console.log("[AppointmentForm] Creating new appointment:", newAppointment);
