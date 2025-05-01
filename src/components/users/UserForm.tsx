@@ -35,13 +35,6 @@ export default function UserForm({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Format permissions for form
-  const getPermissionsObject = (permissions?: string[]) => ({
-    view_reports: permissions?.includes('view_reports') || false,
-    create_patients: permissions?.includes('create_patients') || false,
-    delete_users: permissions?.includes('delete_users') || false,
-  });
-  
   const form = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -51,7 +44,7 @@ export default function UserForm({
       role: (defaultValues?.role as 'admin' | 'doctor' | 'nurse') || "doctor",
       specialization: defaultValues?.specialization || "",
       phone: defaultValues?.phone || "",
-      permissions: getPermissionsObject(defaultValues?.permissions),
+      roleId: defaultValues?.roleId,
     },
   });
 
@@ -65,7 +58,7 @@ export default function UserForm({
         role: (defaultValues.role as 'admin' | 'doctor' | 'nurse') || "doctor",
         specialization: defaultValues.specialization || "",
         phone: defaultValues.phone || "",
-        permissions: getPermissionsObject(defaultValues?.permissions),
+        roleId: defaultValues?.roleId,
       });
     }
   }, [defaultValues, form]);
@@ -73,16 +66,7 @@ export default function UserForm({
   const handleSubmit = async (data: UserFormData) => {
     try {
       setIsLoading(true);
-      
-      // Convert permissions object to array for API
-      const formattedData = {
-        ...data,
-        permissionsArray: Object.entries(data.permissions)
-          .filter(([_, isEnabled]) => isEnabled)
-          .map(([permission]) => permission)
-      };
-      
-      await onSubmit(formattedData as any);
+      await onSubmit(data);
       onOpenChange(false);
       form.reset();
       toast({

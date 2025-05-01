@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import type { UserFormData } from "@/schemas/userForm";
 import { useState, useEffect } from "react";
 import { type Role } from "@/types/user";
@@ -222,79 +221,6 @@ export function UserFormFields({ form }: UserFormFieldsProps) {
           </FormItem>
         )}
       />
-
-      {/* Individual permissions section */}
-      <div className="mt-6 border-t pt-4">
-        <h3 className="text-sm font-medium mb-3">Pojedinačne dozvole</h3>
-        <FormDescription className="text-xs mb-4">
-          Ove dozvole će nadglasati one definirane ulogom
-        </FormDescription>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <FormField
-            control={form.control}
-            name="permissions.view_reports"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>Pregled izvještaja</FormLabel>
-                  <FormDescription className="text-xs">
-                    Može pregledati medicinske izvještaje
-                  </FormDescription>
-                </div>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="permissions.create_patients"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>Kreiranje pacijenata</FormLabel>
-                  <FormDescription className="text-xs">
-                    Može kreirati i uređivati pacijente
-                  </FormDescription>
-                </div>
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="permissions.delete_users"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>Brisanje korisnika</FormLabel>
-                  <FormDescription className="text-xs">
-                    Može brisati korisnike sistema
-                  </FormDescription>
-                </div>
-              </FormItem>
-            )}
-          />
-        </div>
-      </div>
     </>
   );
 }

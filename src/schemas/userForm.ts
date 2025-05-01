@@ -17,15 +17,6 @@ export const userFormSchema = z.object({
   role: z.enum(["admin", "doctor", "nurse", "technician"]),
   specialization: z.string().optional(),
   phone: z.string().optional(),
-  permissions: z.object({
-    view_reports: z.boolean().default(false),
-    create_patients: z.boolean().default(false),
-    delete_users: z.boolean().default(false),
-  }).default({
-    view_reports: false,
-    create_patients: false,
-    delete_users: false,
-  }),
   roleId: z.number().optional(),
 });
 
