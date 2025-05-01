@@ -75,3 +75,15 @@ export interface Appointment {
   reportId?: string;
   cancellationReason?: string;
 }
+
+export interface MedicalReportFile {
+  id: string;
+  patientId: string;
+  date: string;
+  report: string;
+  therapy: string;
+  appointmentType: string;
+  doctor: string;
+  verified: boolean;
+  notes?: string;
+}

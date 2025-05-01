@@ -11,8 +11,9 @@ export const DEFAULT_DIRS = {
   APPOINTMENTS: '/Termini',
   REPORTS: '/Nalazi',
   SETTINGS: '/Postavke',
-  BACKUPS: '/Backup',
+  BACKUPS: '/SigurnosneKopije',
   LOGS: '/Logs',
+  EXAMINATION_TYPES: '/VrstePregleda',
 };
 
 export const DATA_FILES = {
@@ -20,9 +21,10 @@ export const DATA_FILES = {
   APPOINTMENTS: `${DEFAULT_DIRS.APPOINTMENTS}/appointments.json`,
   USERS: `${DEFAULT_DIRS.USERS}/users.json`,
   SETTINGS: `${DEFAULT_DIRS.SETTINGS}/clinic-info.json`,
-  EXAMINATION_TYPES: `${DEFAULT_DIRS.SETTINGS}/examination-types.json`,
+  EXAMINATION_TYPES: `${DEFAULT_DIRS.EXAMINATION_TYPES}/examination-types.json`,
   SYSTEM_LOG: `${DEFAULT_DIRS.LOGS}/system-log.json`,
   REPORTS_INDEX: `${DEFAULT_DIRS.REPORTS}/index.json`,
+  LOG_FILE: '/log.txt',
 };
 
 /**
@@ -297,78 +299,111 @@ export const saveMedicalReport = async (basePath: string, patientId: string, rep
   if (!isFileSystemAvailable() || !basePath) return false;
   
   try {
-    // Find patient directory
-    const allDirs = await readAllPatientDirectories(basePath);
-    const patientDir = allDirs.find(dir => dir.includes(patientId));
+    // Ensure report has a unique ID
+    const reportId = report.id || `nalaz_${Date.now()}`;
+    const reportFileName = `${reportId}.json`;
     
-    if (!patientDir) {
-      console.error(`[FileSystem] Cannot find patient directory for ID: ${patientId}`);
-      return false;
-    }
+    // Prepare report data structure according to requirements
+    const reportData = {
+      id: reportId,
+      patientId: patientId,
+      date: report.date || new Date().toISOString(),
+      report: report.report || "",
+      therapy: report.therapy || "",
+      appointmentType: report.appointmentType || "Opći pregled",
+      doctor: report.doctorInfo?.fullName || "Unknown Doctor",
+      verified: report.verificationStatus === 'verified',
+      notes: report.notes || ""
+    };
     
-    // Save report to patient's directory
-    const reportPath = `${basePath}${DEFAULT_DIRS.PATIENTS}/${patientDir}/nalazi/${report.id}.json`;
-    await writeJsonData(reportPath, report);
+    // Save report to Nalazi directory
+    const reportPath = `${basePath}${DEFAULT_DIRS.REPORTS}/${reportFileName}`;
+    await writeJsonData(reportPath, reportData);
     
-    // Update meta file
-    const metaPath = `${basePath}${DEFAULT_DIRS.PATIENTS}/${patientDir}/nalazi/meta.json`;
-    const meta = await readJsonData<{ reports: any[] }>(metaPath, { reports: [] });
+    // Update reports index
+    const reportsIndexPath = `${basePath}${DATA_FILES.REPORTS_INDEX}`;
+    const reportsIndex = await readJsonData<{ reports: any[] }>(reportsIndexPath, { reports: [] });
     
-    // Add or update report reference
-    const existingIndex = meta.reports.findIndex(r => r.id === report.id);
+    // Add or update report reference in the index
+    const existingIndex = reportsIndex.reports.findIndex(r => r.id === reportId);
     if (existingIndex >= 0) {
-      meta.reports[existingIndex] = {
-        id: report.id,
-        date: report.date,
-        type: report.type,
-        doctor: report.doctor
+      reportsIndex.reports[existingIndex] = {
+        id: reportId,
+        patientId,
+        date: reportData.date,
+        type: reportData.appointmentType,
+        doctor: reportData.doctor
       };
     } else {
-      meta.reports.push({
-        id: report.id,
-        date: report.date,
-        type: report.type,
-        doctor: report.doctor
+      reportsIndex.reports.push({
+        id: reportId,
+        patientId,
+        date: reportData.date,
+        type: reportData.appointmentType,
+        doctor: reportData.doctor
       });
     }
     
-    // Write updated meta file
-    await writeJsonData(metaPath, meta);
+    // Write updated index file
+    await writeJsonData(reportsIndexPath, reportsIndex);
     
-    // Also update the global reports index
-    if (DATA_FILES.REPORTS_INDEX) {
-      const reportsIndexPath = `${basePath}${DATA_FILES.REPORTS_INDEX}`;
-      const reportsIndex = await readJsonData<{ reports: any[] }>(reportsIndexPath, { reports: [] });
-      
-      // Add or update report in the global index
-      const globalIndex = reportsIndex.reports.findIndex(r => r.id === report.id);
-      if (globalIndex >= 0) {
-        reportsIndex.reports[globalIndex] = {
-          id: report.id,
-          patientId,
-          date: report.date,
-          type: report.type,
-          doctor: report.doctor
-        };
-      } else {
-        reportsIndex.reports.push({
-          id: report.id,
-          patientId,
-          date: report.date,
-          type: report.type,
-          doctor: report.doctor
-        });
-      }
-      
-      // Write updated global index
-      await writeJsonData(reportsIndexPath, reportsIndex);
-    }
+    // Log this action
+    await logAction(basePath, `Saved medical report: ${reportId} for patient: ${patientId}`);
     
-    await logAction(basePath, `Saved medical report: ${report.id} for patient: ${patientId}`);
     return true;
-    
   } catch (error) {
     console.error("[FileSystem] Error saving medical report:", error);
     return false;
+  }
+};
+
+/**
+ * Get medical reports for a specific patient
+ */
+export const getPatientReports = async (basePath: string, patientId: string): Promise<MedicalReportFile[]> => {
+  if (!isFileSystemAvailable() || !basePath) return [];
+  
+  try {
+    const reportsDir = `${basePath}${DEFAULT_DIRS.REPORTS}`;
+    const allFiles = await window.electron.readDirectory(reportsDir);
+    
+    const reports: MedicalReportFile[] = [];
+    
+    // Read each JSON file and filter by patientId
+    for (const file of allFiles) {
+      if (file.endsWith('.json') && file !== 'index.json') {
+        try {
+          const filePath = `${reportsDir}/${file}`;
+          const reportData = await readJsonData<MedicalReportFile>(filePath, null);
+          
+          if (reportData && reportData.patientId === patientId) {
+            reports.push(reportData);
+          }
+        } catch (error) {
+          console.error(`[FileSystem] Error reading report file ${file}:`, error);
+        }
+      }
+    }
+    
+    // Sort by date descending (newest first)
+    return reports.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  } catch (error) {
+    console.error("[FileSystem] Error getting patient reports:", error);
+    return [];
+  }
+};
+
+/**
+ * Get a specific medical report by ID
+ */
+export const getMedicalReport = async (basePath: string, reportId: string): Promise<MedicalReportFile | null> => {
+  if (!isFileSystemAvailable() || !basePath) return null;
+  
+  try {
+    const reportPath = `${basePath}${DEFAULT_DIRS.REPORTS}/${reportId}.json`;
+    return await readJsonData<MedicalReportFile>(reportPath, null);
+  } catch (error) {
+    console.error("[FileSystem] Error getting medical report:", error);
+    return null;
   }
 };

@@ -11,6 +11,7 @@ import { AuditLogTab } from "./tabs/AuditLog";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Patient, PatientHistory as PatientHistoryType, AuditLog } from "@/types/patient";
 import dataStorageService from "@/services/DataStorageService";
+import { RecentVisits } from "./tabs/RecentVisits";
 
 interface PatientCardProps {
   patient: Patient;
@@ -157,6 +158,15 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
               setIsScheduling={setIsScheduling}
               patientHistory={patientHistory}
             />
+            
+            {/* Add RecentVisits component here */}
+            <div className="mt-6">
+              <RecentVisits 
+                patientHistory={patientHistory} 
+                setIsScheduling={setIsScheduling}
+                patient={patient}
+              />
+            </div>
           </TabsContent>
           
           <TabsContent value="reports">

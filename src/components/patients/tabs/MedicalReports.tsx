@@ -5,17 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { MedicalReport } from "@/types/medical-report";
+import type { MedicalReport, MedicalReportFile } from "@/types/medical-report";
+import { getPatientReports } from "@/utils/fileSystemUtils";
 
 interface MedicalReportsProps {
-  reports?: Array<{
-    id: string;
-    patientId: number;
-    date: string;
-    title: string;
-    doctor: string;
-    status: string;
-  }>;
   patient: { id: number };
 }
 
@@ -23,10 +16,11 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [reports, setReports] = useState<MedicalReport[]>([]);
+  const [fileSystemReports, setFileSystemReports] = useState<MedicalReportFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
-    const loadReports = () => {
+    const loadReports = async () => {
       setIsLoading(true);
       try {
         // Get stored reports from localStorage
@@ -38,12 +32,19 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
             report.patientId === patient.id.toString()
           );
           setReports(patientReports);
-        } else {
-          setReports([]);
+        }
+        
+        // Get reports from file system if Electron is available
+        if (window.electron?.isElectron) {
+          const basePath = localStorage.getItem('dataFolderPath');
+          if (basePath) {
+            const fsReports = await getPatientReports(basePath, patient.id.toString());
+            setFileSystemReports(fsReports);
+            console.log("Loaded reports from filesystem:", fsReports);
+          }
         }
       } catch (error) {
         console.error("[MedicalReports] Error loading reports:", error);
-        setReports([]);
       } finally {
         setIsLoading(false);
       }
@@ -62,14 +63,35 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
     });
   };
 
-  const displayReports = reports.filter(report => {
+  // Combine file system reports with localStorage reports
+  const allReports = [
+    ...fileSystemReports.map(report => ({
+      id: report.id,
+      appointmentType: report.appointmentType,
+      doctor: report.doctor,
+      date: report.date,
+      verified: report.verified
+    })),
+    ...reports.map(report => ({
+      id: report.id,
+      appointmentType: report.appointmentType || "Medicinski nalaz",
+      doctor: report.doctorInfo?.fullName || "Doktor",
+      date: report.date,
+      verified: report.verificationStatus === 'verified'
+    }))
+  ];
+
+  const displayReports = allReports.filter(report => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      (report.appointmentType?.toLowerCase().includes(searchLower) || 
-      report.doctorInfo?.fullName?.toLowerCase().includes(searchLower) ||
+      (report.appointmentType.toLowerCase().includes(searchLower) || 
+      report.doctor.toLowerCase().includes(searchLower) ||
       formatDate(report.date).includes(searchTerm))
     );
   });
+
+  // Sort by date descending (newest first)
+  displayReports.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const handleView = (reportId: string) => {
     navigate(`/medical-reports?reportId=${reportId}&mode=view`);
@@ -120,9 +142,9 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
                     <FileText className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="font-medium">{report.appointmentType || "Medicinski nalaz"}</p>
+                    <p className="font-medium">{report.appointmentType}</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatDate(report.date)} · {report.doctorInfo?.fullName || "Doktor"}
+                      {formatDate(report.date)} · {report.doctor}
                     </p>
                   </div>
                 </div>

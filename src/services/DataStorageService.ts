@@ -1,3 +1,4 @@
+
 import { isFileSystemAvailable, initializeFileSystem, readJsonData, writeJsonData, logAction, DATA_FILES, DEFAULT_DIRS, createPatientDirectory } from "@/utils/fileSystemUtils";
 import { v4 as uuidv4 } from "uuid";
 import type { Patient } from "@/types/patient";
@@ -144,7 +145,7 @@ class DataStorageService {
       
       // Create or update patient directory
       const folderName = existingIndex >= 0 
-        ? `${patient.name.replace(/\s+/g, '_')}_${patient.jmbg}` 
+        ? `${patient.firstName}_${patient.lastName}_${patient.jmbg}` 
         : await createPatientDirectory(this.basePath, patient);
       
       // If new patient was created, we're done as createPatientDirectory already writes the files
@@ -154,7 +155,7 @@ class DataStorageService {
       }
       
       // Log the action
-      await logAction(this.basePath, `Updated patient: ${patient.name} (ID: ${patient.id})`);
+      await logAction(this.basePath, `Updated patient: ${patient.firstName} ${patient.lastName} (ID: ${patient.id})`);
       
       return true;
     } catch (error) {

@@ -3,19 +3,22 @@ import { useEffect, useState } from "react";
 import { Calendar, File, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import type { PatientHistory } from "@/types/patient";
-import type { MedicalReport } from "@/types/medical-report";
-import type { Appointment } from "@/types/medical-report";
 import dataStorageService from "@/services/DataStorageService";
+import type { PatientHistory } from "@/types/patient";
+import type { MedicalReport, MedicalReportFile } from "@/types/medical-report";
+import type { Appointment } from "@/types/medical-report";
+import { getPatientReports } from "@/utils/fileSystemUtils";
 
 interface RecentVisitsProps {
   patientHistory: PatientHistory[];
   setIsScheduling: (value: boolean) => void;
+  patient: { id: number };
 }
 
-export function RecentVisits({ patientHistory, setIsScheduling }: RecentVisitsProps) {
+export function RecentVisits({ patientHistory, setIsScheduling, patient }: RecentVisitsProps) {
   const navigate = useNavigate();
   const [reports, setReports] = useState<MedicalReport[]>([]);
+  const [fileSystemReports, setFileSystemReports] = useState<MedicalReportFile[]>([]);
   const [completedAppointments, setCompletedAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,18 +31,26 @@ export function RecentVisits({ patientHistory, setIsScheduling }: RecentVisitsPr
         if (savedReports) {
           const allReports: MedicalReport[] = JSON.parse(savedReports);
           // Filter reports to only show those for the current patient
-          const patientIds = patientHistory.map(record => record.patientId.toString());
-          const filteredReports = allReports.filter(report => 
-            patientIds.includes(report.patientId)
+          const patientReports = allReports.filter(report => 
+            report.patientId === patient.id.toString()
           );
-          setReports(filteredReports);
+          setReports(patientReports);
+        }
+        
+        // Get reports from file system if Electron is available
+        if (window.electron?.isElectron) {
+          const basePath = localStorage.getItem('dataFolderPath');
+          if (basePath) {
+            const fsReports = await getPatientReports(basePath, patient.id.toString());
+            setFileSystemReports(fsReports);
+            console.log("Loaded reports from filesystem:", fsReports);
+          }
         }
         
         // Get completed appointments
         const appointments = await dataStorageService.getAppointments();
-        const patientIds = patientHistory.map(record => record.patientId.toString());
         const filtered = appointments.filter(appointment => 
-          patientIds.includes(appointment.patientId) && 
+          appointment.patientId === patient.id.toString() && 
           appointment.status === 'completed'
         );
         setCompletedAppointments(filtered);
@@ -50,8 +61,10 @@ export function RecentVisits({ patientHistory, setIsScheduling }: RecentVisitsPr
       }
     };
 
-    loadReports();
-  }, [patientHistory]);
+    if (patient?.id) {
+      loadReports();
+    }
+  }, [patient?.id]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('bs-BA', {
@@ -61,18 +74,32 @@ export function RecentVisits({ patientHistory, setIsScheduling }: RecentVisitsPr
     });
   };
 
-  // Get the most recent completed visits (limit to 3)
-  const recentVisits = [...completedAppointments]
+  // Combine file system reports with localStorage reports and completed appointments
+  const allReports = [
+    ...fileSystemReports.map(report => ({
+      id: report.id,
+      patientId: parseInt(report.patientId),
+      date: report.date,
+      type: report.appointmentType,
+      doctor: report.doctor,
+      reportId: report.id
+    })),
+    ...completedAppointments
+      .filter(appointment => appointment.reportId)
+      .map(appointment => ({
+        id: appointment.id,
+        patientId: parseInt(appointment.patientId),
+        date: `${appointment.date}T${appointment.time}`,
+        type: appointment.examinationType,
+        doctor: appointment.doctorName,
+        reportId: appointment.reportId
+      }))
+  ];
+
+  // Get the most recent visits (limit to 3)
+  const recentVisits = allReports
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 3)
-    .map(appointment => ({
-      id: appointment.id,
-      patientId: parseInt(appointment.patientId),
-      date: `${appointment.date}T${appointment.time}`,
-      type: appointment.examinationType,
-      doctor: appointment.doctorName,
-      reportId: appointment.reportId
-    }));
+    .slice(0, 3);
 
   const handleViewReport = (reportId?: string) => {
     if (reportId) {
@@ -128,7 +155,7 @@ export function RecentVisits({ patientHistory, setIsScheduling }: RecentVisitsPr
                     onClick={() => handleViewReport(record.reportId)}
                   >
                     <Eye className="h-4 w-4 mr-1" /> 
-                    {matchingReport ? "Pregledaj" : "Kreiraj nalaz"}
+                    {matchingReport ? "Pregledaj" : "Pregledaj"}
                   </button>
                 </div>
               </div>
