@@ -1,7 +1,8 @@
+
 import { forwardRef, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Printer, Save, ShieldCheck } from "lucide-react";
+import { Printer, Save } from "lucide-react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,7 +43,6 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     onSave,
     isSaved,
     verificationStatus = 'unverified',
-    verifiedBy,
     appointmentType,
     doctorName
   }, ref) => {
@@ -84,7 +84,18 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       }
     };
 
+    const formatDateTime = (dateString?: string) => {
+      if (!dateString) return "";
+      
+      try {
+        return format(new Date(dateString), "dd.MM.yyyy. HH:mm");
+      } catch (e) {
+        return dateString;
+      }
+    };
+
     const today = formatDate(new Date().toISOString());
+    const nowDateTime = formatDateTime(new Date().toISOString());
 
     return (
       <div className="flex flex-col h-full">
@@ -147,7 +158,8 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                 <p>Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
                 <p>Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
                 <p>JMBG: {patient ? patient.jmbg : ""}</p>
-                <p className="mt-2">Datum ispisa nalaza: {today}</p>
+                <p className="mt-2">Datum i vrijeme ispisa: {nowDateTime}</p>
+                <p>Izdao: {displayedDoctorName}</p>
               </div>
               {appointmentType && (
                 <div className="flex items-center justify-end">
@@ -179,22 +191,6 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                 </p>
               </div>
             </div>
-            
-            {isSaved && (
-              <div className="mt-4 p-2 rounded-md text-sm">
-                {verificationStatus === 'verified' && verifiedBy && (
-                  <div className="flex items-center text-green-700 bg-green-50 p-2 rounded-md">
-                    <ShieldCheck className="h-4 w-4 mr-2" />
-                    <span>✅ Verifikovano od strane {verifiedBy}</span>
-                  </div>
-                )}
-                {verificationStatus === 'pending' && (
-                  <div className="text-amber-700 bg-amber-50 p-2 rounded-md">
-                    Čeka verifikaciju
-                  </div>
-                )}
-              </div>
-            )}
             
             {(showSignature || showStamp) && (
               <div className="mt-16 pt-8 text-right">
