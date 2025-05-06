@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import Header from "@/components/layout/Header";
 import MedicalReportPreview from "@/components/medical-reports/MedicalReportPreview";
@@ -138,6 +137,8 @@ export default function MedicalReports() {
       try {
         console.log("[MedicalReports] Saving report to filesystem:", savedReportData);
         const normalizedPath = normalizePath(basePath);
+        console.log("[MedicalReports] Using normalized path:", normalizedPath);
+        
         const saved = await saveMedicalReport(
           normalizedPath, 
           selectedPatient!.id.toString(), 

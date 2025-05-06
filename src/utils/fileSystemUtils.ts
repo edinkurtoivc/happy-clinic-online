@@ -322,8 +322,22 @@ export const saveMedicalReport = async (basePath: string, patientId: string, rep
     };
     
     // Save report to Nalazi directory
-    const reportPath = `${basePath}${DEFAULT_DIRS.REPORTS}/${reportFileName}`;
-    await writeJsonData(reportPath, reportData);
+    const reportsDir = `${basePath}${DEFAULT_DIRS.REPORTS}`;
+    
+    // Ensure the directory exists
+    await createFolderIfNotExists(reportsDir);
+    
+    // Save the full report file
+    const reportPath = `${reportsDir}/${reportFileName}`;
+    const reportSaved = await writeJsonData(reportPath, reportData);
+    
+    if (!reportSaved) {
+      console.error("[FileSystem] Failed to write report file:", reportPath);
+      return false;
+    }
+    
+    // Log success
+    console.log("[FileSystem] Successfully wrote report file:", reportPath);
     
     // Update reports index
     const reportsIndexPath = `${basePath}${DATA_FILES.REPORTS_INDEX}`;
