@@ -46,7 +46,7 @@ export default function ReportEditor({
     <div className="w-full max-w-[560px]">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-emerald-600">Editor za nalaz</h2>
-        {saveStatus && !isSaved && (
+        {saveStatus && (
           <AutoSaveIndicator status={saveStatus} lastSaved={lastSaved} />
         )}
       </div>
@@ -107,8 +107,9 @@ export default function ReportEditor({
         </Button>
       </div>
 
-      {!isSaved && onSave && (
-        <div className="flex space-x-2 mb-4">
+      {/* Modified this condition to ensure buttons are always visible when appropriate */}
+      <div className="flex space-x-2 mb-4">
+        {!isSaved && onSave && (
           <Button 
             onClick={onSave}
             disabled={isSubmitting}
@@ -117,21 +118,21 @@ export default function ReportEditor({
             {isSubmitting ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
             Spremi nalaz
           </Button>
-          
-          {onPrint && (
-            <Button 
-              variant="outline" 
-              onClick={onPrint}
-              disabled={!isSaved || verificationStatus !== 'verified'}
-              title={!isSaved ? "Nalaz mora biti sačuvan prije printanja" : 
-                    verificationStatus !== 'verified' ? "Nalaz mora biti verifikovan prije printanja" : ""}
-              className="whitespace-nowrap"
-            >
-              <Printer className="h-4 w-4 mr-2" /> Print i PDF
-            </Button>
-          )}
-        </div>
-      )}
+        )}
+        
+        {onPrint && (
+          <Button 
+            variant="outline" 
+            onClick={onPrint}
+            disabled={!isSaved && verificationStatus !== 'verified'}
+            title={!isSaved ? "Nalaz mora biti sačuvan prije printanja" : 
+                  verificationStatus !== 'verified' ? "Nalaz mora biti verifikovan prije printanja" : ""}
+            className="whitespace-nowrap"
+          >
+            <Printer className="h-4 w-4 mr-2" /> Print i PDF
+          </Button>
+        )}
+      </div>
       
       {isSaved && (
         <div className="flex justify-between mt-4">

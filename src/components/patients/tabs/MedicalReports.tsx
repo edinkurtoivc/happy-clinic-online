@@ -102,15 +102,18 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
   displayReports.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const handleView = (reportId: string) => {
-    navigate(`/medical-reports?reportId=${reportId}&mode=view`);
+    // Make sure to pass the patient ID when navigating to view a report
+    navigate(`/medical-reports?reportId=${reportId}&mode=view&patientId=${patient.id}`);
   };
 
   const handleEdit = (reportId: string) => {
-    navigate(`/medical-reports?reportId=${reportId}&mode=edit`);
+    // Make sure to pass the patient ID when navigating to edit a report
+    navigate(`/medical-reports?reportId=${reportId}&mode=edit&patientId=${patient.id}`);
   };
 
   const handlePrint = (reportId: string) => {
-    navigate(`/medical-reports?reportId=${reportId}&mode=print`);
+    // Make sure to pass the patient ID when navigating to print a report
+    navigate(`/medical-reports?reportId=${reportId}&mode=print&patientId=${patient.id}`);
   };
 
   return (
@@ -120,7 +123,7 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
         <Button 
           size="sm" 
           variant="outline"
-          onClick={() => navigate('/medical-reports')}
+          onClick={() => navigate(`/medical-reports?patientId=${patient.id}`)}
         >
           Novi nalaz
         </Button>
@@ -195,7 +198,7 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
             variant="outline" 
             size="sm" 
             className="mt-2"
-            onClick={() => navigate('/medical-reports')}
+            onClick={() => navigate(`/medical-reports?patientId=${patient.id}`)}
           >
             Kreiraj novi nalaz
           </Button>
