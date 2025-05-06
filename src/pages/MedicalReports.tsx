@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Header from "@/components/layout/Header";
 import MedicalReportPreview from "@/components/medical-reports/MedicalReportPreview";
 import MedicalReportForm from "@/components/medical-reports/MedicalReportForm";
@@ -7,13 +7,17 @@ import ReportVerification from "@/components/medical-reports/ReportVerification"
 import PatientSelection from "@/components/medical-reports/PatientSelection";
 import ExaminationTypeSelect from "@/components/medical-reports/ExaminationTypeSelect";
 import ReportEditor from "@/components/medical-reports/ReportEditor";
+import { useSaveData } from "@/hooks/useSaveData";
+import { saveMedicalReport } from "@/utils/fileSystemUtils";
+import { isAbsolutePath, normalizePath, createReportData } from "@/utils/reportUtils";
 import type { MedicalReport, ExaminationType } from "@/types/medical-report";
 import type { Patient } from "@/types/patient";
 import { ensurePatient } from "@/types/patient";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import html2pdf from "html2pdf.js";
+import { Spinner } from "@/components/ui/spinner";
 
 // Mock data for examination types - would come from settings in a real app
 const mockExaminationTypes: ExaminationType[] = [
@@ -47,6 +51,44 @@ export default function MedicalReports() {
   const [isFinalizingReport, setIsFinalizingReport] = useState(false);
   const reportPreviewRef = useRef<HTMLDivElement>(null);
   const [examinationTypes] = useState<ExaminationType[]>(mockExaminationTypes);
+  const [isSavingToFileSystem, setIsSavingToFileSystem] = useState(false);
+
+  // Auto-save for the report editor
+  const { saveStatus, lastSaved } = useSaveData({
+    data: {
+      reportText,
+      therapyText,
+      selectedExamType,
+      hasSignature,
+      hasStamp,
+      patientId: selectedPatient?.id
+    },
+    key: `report-editor-draft`,
+    saveDelay: 1500,
+    condition: !isSaved && selectedPatient !== null,
+    onSave: async (data) => {
+      console.log("[MedicalReports] Auto-saving editor draft:", data);
+    }
+  });
+
+  useEffect(() => {
+    // Check for dataFolderPath in localStorage on component mount
+    const basePath = localStorage.getItem('dataFolderPath');
+    if (basePath) {
+      console.log("[MedicalReports] Data folder path found:", basePath);
+      // Validate the path
+      if (!isAbsolutePath(basePath)) {
+        console.warn("[MedicalReports] Data folder path is not absolute:", basePath);
+        toast({
+          title: "Upozorenje",
+          description: "Putanja do foldera nije apsolutna. Izvještaji možda neće biti spremljeni.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      console.warn("[MedicalReports] No data folder path found in localStorage");
+    }
+  }, [toast]);
 
   const handleSelectPatient = (patient: any) => {
     // Ensure patient has the correct gender type and name getter
@@ -74,7 +116,7 @@ export default function MedicalReports() {
 
   const handleCreateReport = async (data: Partial<MedicalReport>) => {
     // Will implement with Supabase later
-    console.log('Kreiranje medicinskog izvještaja:', data);
+    console.log('[MedicalReports] Creating medical report:', data);
     
     // For now, simulate saving with an ID
     const savedReportData: Partial<MedicalReport> = {
@@ -89,6 +131,43 @@ export default function MedicalReports() {
         specialization: currentDoctor.specialization
       }
     };
+    
+    // Try to save to file system if available
+    const basePath = localStorage.getItem('dataFolderPath');
+    if (basePath && window.electron?.isElectron) {
+      setIsSavingToFileSystem(true);
+      try {
+        console.log("[MedicalReports] Saving report to filesystem:", savedReportData);
+        const normalizedPath = normalizePath(basePath);
+        const saved = await saveMedicalReport(
+          normalizedPath, 
+          selectedPatient!.id.toString(), 
+          savedReportData
+        );
+        
+        if (saved) {
+          toast({
+            title: "Uspješno spremljeno",
+            description: "Nalaz je uspješno spremljen na disk",
+          });
+        } else {
+          toast({
+            title: "Greška",
+            description: "Nije moguće spremiti nalaz na disk. Provjerite putanju foldera.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("[MedicalReports] Error saving to file system:", error);
+        toast({
+          title: "Greška",
+          description: "Došlo je do greške prilikom spremanja nalaza na disk.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSavingToFileSystem(false);
+      }
+    }
     
     setSavedReport(savedReportData);
     
@@ -108,6 +187,7 @@ export default function MedicalReports() {
   };
 
   const handleSaveReport = () => {
+    // Validation before saving
     if (!selectedPatient) {
       toast({
         title: "Greška",
@@ -143,17 +223,21 @@ export default function MedicalReports() {
     setShowFinalizeConfirm(false);
     setIsFinalizingReport(true);
     
-    const currentDate = new Date().toISOString();
     const typedPatient = ensurePatient(selectedPatient!);
     
-    const reportData: Partial<MedicalReport> = {
-      patientId: typedPatient.id.toString(),
-      doctorId: currentDoctor.id,
-      date: currentDate,
+    // Use the helper function to create report data
+    const values = {
       report: reportText,
       therapy: therapyText,
-      status: isFinal ? 'final' : 'draft',
+      notes: "",
+      status: isFinal ? "final" as const : "draft" as const,
       appointmentType: selectedExamType,
+      visitType: "first" as const
+    };
+    
+    const defaultValues = {
+      patientId: typedPatient.id.toString(),
+      doctorId: currentDoctor.id,
       patientInfo: {
         fullName: typedPatient.name,
         birthDate: typedPatient.dob,
@@ -161,6 +245,11 @@ export default function MedicalReports() {
         jmbg: typedPatient.jmbg
       }
     };
+    
+    const reportData = createReportData(values, defaultValues, isFinal ? "final" : "draft");
+    
+    // Debug log for testing
+    console.log("[MedicalReports] Report data to be saved:", reportData);
 
     // Simulate a delay for saving
     setTimeout(() => {
@@ -183,7 +272,7 @@ export default function MedicalReports() {
       setSavedReport(verifiedReport);
       
       // Log this action
-      console.log('Report verified:', {
+      console.log('[MedicalReports] Report verified:', {
         reportId,
         verifiedBy: doctorName,
         timestamp: new Date().toISOString()
@@ -228,7 +317,7 @@ export default function MedicalReports() {
     html2pdf().set(opt).from(element).save();
     
     // Log audit information about printing
-    console.log('Audit log: Report printed', {
+    console.log('[MedicalReports] Audit log: Report printed', {
       reportId: savedReport?.id,
       patientId: selectedPatient?.id,
       doctorId: currentDoctor.id,
@@ -255,7 +344,7 @@ export default function MedicalReports() {
         
         <PatientSelection 
           selectedPatient={selectedPatient}
-          onSelectPatient={setSelectedPatient}
+          onSelectPatient={handleSelectPatient}
         />
         
         {selectedPatient && (
@@ -282,6 +371,10 @@ export default function MedicalReports() {
               verificationStatus={savedReport?.verificationStatus}
               onResetReport={resetReportState}
               onOpenVerification={() => setIsVerificationDialogOpen(true)}
+              saveStatus={saveStatus}
+              lastSaved={lastSaved}
+              isSubmitting={isFinalizingReport}
+              onSave={handleSaveReport}
             />
             
             <MedicalReportPreview 
@@ -335,6 +428,9 @@ export default function MedicalReports() {
               onClick={() => handleFinalizeReport(false)}
               disabled={isFinalizingReport}
             >
+              {isFinalizingReport ? (
+                <Spinner className="mr-2 h-4 w-4" />
+              ) : null}
               Sačuvaj kao nacrt
             </Button>
             <Button
@@ -342,7 +438,10 @@ export default function MedicalReports() {
               className="bg-emerald-600 hover:bg-emerald-700"
               disabled={isFinalizingReport}
             >
-              {isFinalizingReport ? 'Spremanje...' : 'Finaliziraj nalaz'}
+              {isFinalizingReport ? (
+                <Spinner className="mr-2 h-4 w-4" />
+              ) : null}
+              Finaliziraj nalaz
             </Button>
           </DialogFooter>
         </DialogContent>

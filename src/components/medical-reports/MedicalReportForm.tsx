@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -31,8 +32,12 @@ import {
 } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { useSaveData } from "@/hooks/useSaveData";
+import { AutoSaveIndicator } from "@/components/ui/auto-save-indicator";
+import { Spinner } from "@/components/ui/spinner";
 import type { MedicalReport, ExaminationType } from "@/types/medical-report";
+import { createReportData } from "@/utils/reportUtils";
 
+// Define form schema with validation rules
 const formSchema = z.object({
   report: z.string().min(1, "Nalaz je obavezan"),
   therapy: z.string().min(1, "Terapija je obavezna"),
@@ -43,6 +48,9 @@ const formSchema = z.object({
     required_error: "Molimo odaberite vrstu posjete",
   }),
 });
+
+// Define a type for form data based on schema
+export type MedicalReportFormData = z.infer<typeof formSchema>;
 
 interface MedicalReportFormProps {
   open: boolean;
@@ -62,7 +70,7 @@ export default function MedicalReportForm({
   const { toast } = useToast();
   const [status, setStatus] = useState<"draft" | "final">("draft");
   const [formKey, setFormKey] = useState(`report-form-${Date.now()}`);
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<MedicalReportFormData>({
     report: defaultValues?.report || "",
     therapy: defaultValues?.therapy || "",
     notes: defaultValues?.notes || "",
@@ -71,35 +79,30 @@ export default function MedicalReportForm({
     visitType: defaultValues?.visitType || "first",
   });
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<MedicalReportFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: formData,
+    mode: "onChange", // Enable validation as user types
   });
 
   useEffect(() => {
     if (defaultValues) {
       console.log("[MedicalReportForm] Default values updated:", defaultValues);
-      setFormData({
+      const updatedFormData = {
         report: defaultValues.report || "",
         therapy: defaultValues.therapy || "",
         notes: defaultValues.notes || "",
         status: defaultValues.status || "draft",
         appointmentType: defaultValues.appointmentType || "",
         visitType: defaultValues.visitType || "first",
-      });
-      form.reset({
-        report: defaultValues.report || "",
-        therapy: defaultValues.therapy || "",
-        notes: defaultValues.notes || "",
-        status: defaultValues.status || "draft",
-        appointmentType: defaultValues.appointmentType || "",
-        visitType: defaultValues.visitType || "first",
-      });
+      };
+      setFormData(updatedFormData);
+      form.reset(updatedFormData);
       setFormKey(`report-form-${Date.now()}`); // Force re-render of the form
     }
   }, [defaultValues, form]);
 
-  const { forceSave } = useSaveData({
+  const { saveStatus, lastSaved } = useSaveData({
     data: { ...formData, defaultValues },
     key: `medical-report-draft-${defaultValues?.id || "new"}`,
     saveDelay: 2000,
@@ -118,21 +121,18 @@ export default function MedicalReportForm({
 
   useEffect(() => {
     const subscription = form.watch((formValues) => {
-      setFormData(formValues);
+      setFormData(formValues as MedicalReportFormData);
     });
     return () => subscription.unsubscribe();
   }, [form]);
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+  const handleSubmit = (values: MedicalReportFormData) => {
     console.log("[MedicalReportForm] Submitting form:", values);
     
-    const reportData = {
-      ...values,
-      date: new Date().toISOString(),
-      status,
-      verificationStatus: status === "final" ? "pending" as const : "unverified" as const,
-    };
-
+    // Create report data object using helper function
+    const reportData = createReportData(values, defaultValues, status);
+    console.log("[MedicalReportForm] Created report data:", reportData); // Debug log
+    
     const patientHistoryEntry = {
       id: Date.now(),
       patientId: defaultValues?.patientId || 0,
@@ -154,7 +154,7 @@ export default function MedicalReportForm({
 
     toast({
       title: "Nalaz spremljen",
-      description: status === "final" ? "Nalaz je finaliziran i spreman za verifikaciju" : "Nalaz je sačuvan kao nacrt",
+      description: status === "final" ? "Nalaz je finaliziran i spremen za verifikaciju" : "Nalaz je sačuvan kao nacrt",
     });
 
     onSubmit(reportData);
@@ -164,14 +164,26 @@ export default function MedicalReportForm({
     localStorage.removeItem(`autosave_medical-report-draft-${defaultValues?.id || "new"}`);
   };
 
+  const isSubmitting = form.formState.isSubmitting;
+  
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[400px] sm:w-[540px]">
-        <SheetHeader>
+    <Sheet open={open} onOpenChange={(isOpen) => {
+      if (!isSubmitting) {
+        onOpenChange(isOpen);
+      }
+    }}>
+      <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+        <SheetHeader className="flex items-center justify-between">
           <SheetTitle>Medicinski nalaz</SheetTitle>
+          <AutoSaveIndicator 
+            status={saveStatus} 
+            lastSaved={lastSaved} 
+            showText={true} 
+            className="text-xs" 
+          />
         </SheetHeader>
         
-        <div className="mt-6">
+        <div className="mt-6 pr-4">
           <Form {...form} key={formKey}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <FormField
@@ -286,7 +298,11 @@ export default function MedicalReportForm({
                     setStatus("draft");
                     form.handleSubmit(handleSubmit)();
                   }}
+                  disabled={isSubmitting}
                 >
+                  {isSubmitting && status === "draft" ? (
+                    <Spinner size="sm" className="mr-2 text-emerald-600" />
+                  ) : null}
                   Sačuvaj kao nacrt
                 </Button>
                 <Button
@@ -295,7 +311,11 @@ export default function MedicalReportForm({
                     setStatus("final");
                     form.handleSubmit(handleSubmit)();
                   }}
+                  disabled={isSubmitting}
                 >
+                  {isSubmitting && status === "final" ? (
+                    <Spinner size="sm" className="mr-2" />
+                  ) : null}
                   Finaliziraj nalaz
                 </Button>
               </div>
