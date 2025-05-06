@@ -355,6 +355,7 @@ export const saveMedicalReport = async (basePath: string, patientId: string, rep
     // Log this action
     await logAction(basePath, `Saved medical report: ${reportId} for patient: ${patientId}`);
     
+    console.log("[fileSystemUtils] Successfully saved medical report:", reportId);
     return true;
   } catch (error) {
     console.error("[FileSystem] Error saving medical report:", error);
@@ -370,7 +371,18 @@ export const getPatientReports = async (basePath: string, patientId: string): Pr
   
   try {
     const reportsDir = `${basePath}${DEFAULT_DIRS.REPORTS}`;
+    
+    // First check if directory exists
+    const dirExists = await window.electron.fileExists(reportsDir);
+    if (!dirExists) {
+      console.log("[FileSystem] Reports directory does not exist:", reportsDir);
+      await window.electron.createDirectory(reportsDir);
+      return [];
+    }
+    
+    console.log("[FileSystem] Reading reports from directory:", reportsDir);
     const allFiles = await window.electron.readDirectory(reportsDir);
+    console.log("[FileSystem] Found files:", allFiles);
     
     const reports: MedicalReportFile[] = [];
     
@@ -379,9 +391,11 @@ export const getPatientReports = async (basePath: string, patientId: string): Pr
       if (file.endsWith('.json') && file !== 'index.json') {
         try {
           const filePath = `${reportsDir}/${file}`;
+          console.log("[FileSystem] Reading report file:", filePath);
           const reportData = await readJsonData<MedicalReportFile>(filePath, null);
           
           if (reportData && reportData.patientId === patientId) {
+            console.log("[FileSystem] Found matching report:", reportData.id);
             reports.push(reportData);
           }
         } catch (error) {

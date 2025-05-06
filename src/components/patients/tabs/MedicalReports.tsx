@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { MedicalReport, MedicalReportFile } from "@/types/medical-report";
 import { getPatientReports } from "@/utils/fileSystemUtils";
+import { Spinner } from "@/components/ui/spinner";
 
 interface MedicalReportsProps {
   patient: { id: number };
@@ -38,9 +39,10 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
         if (window.electron?.isElectron) {
           const basePath = localStorage.getItem('dataFolderPath');
           if (basePath) {
+            console.log("[MedicalReports] Loading reports from filesystem for patient:", patient.id);
             const fsReports = await getPatientReports(basePath, patient.id.toString());
+            console.log("[MedicalReports] Loaded reports from filesystem:", fsReports);
             setFileSystemReports(fsReports);
-            console.log("Loaded reports from filesystem:", fsReports);
           }
         }
       } catch (error) {
@@ -67,7 +69,7 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
   const allReports = [
     ...fileSystemReports.map(report => ({
       id: report.id,
-      appointmentType: report.appointmentType,
+      appointmentType: report.appointmentType || "Medicinski nalaz",
       doctor: report.doctor,
       date: report.date,
       verified: report.verified
@@ -81,11 +83,17 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
     }))
   ];
 
-  const displayReports = allReports.filter(report => {
+  // Remove duplicates (prioritize filesystem reports)
+  const uniqueReports = Array.from(
+    new Map(allReports.map(report => [report.id, report])).values()
+  );
+  
+  const displayReports = uniqueReports.filter(report => {
+    if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
-      (report.appointmentType.toLowerCase().includes(searchLower) || 
-      report.doctor.toLowerCase().includes(searchLower) ||
+      (report.appointmentType?.toLowerCase().includes(searchLower) || 
+      report.doctor?.toLowerCase().includes(searchLower) ||
       formatDate(report.date).includes(searchTerm))
     );
   });
@@ -130,7 +138,8 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
       
       {isLoading ? (
         <div className="text-center p-4">
-          <p className="text-muted-foreground">Učitavanje nalaza...</p>
+          <Spinner className="mx-auto" />
+          <p className="text-muted-foreground mt-2">Učitavanje nalaza...</p>
         </div>
       ) : displayReports.length > 0 ? (
         <div className="space-y-3">
@@ -167,6 +176,8 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
                     variant="outline" 
                     size="sm"
                     onClick={() => handlePrint(report.id)}
+                    disabled={!report.verified}
+                    title={!report.verified ? "Samo verifikovani nalazi se mogu printati" : ""}
                   >
                     <Printer className="h-4 w-4 mr-1" /> Printaj
                   </Button>

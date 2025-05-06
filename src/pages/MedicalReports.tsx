@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import Header from "@/components/layout/Header";
 import MedicalReportPreview from "@/components/medical-reports/MedicalReportPreview";
@@ -15,7 +16,6 @@ import { ensurePatient } from "@/types/patient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import html2pdf from "html2pdf.js";
 import { Spinner } from "@/components/ui/spinner";
 
 // Mock data for examination types - would come from settings in a real app
@@ -147,7 +147,7 @@ export default function MedicalReports() {
         if (saved) {
           toast({
             title: "Uspješno spremljeno",
-            description: "Nalaz je uspješno spremljen na disk",
+            description: "Nalaz je uspješno spremljen u folder Nalazi",
           });
         } else {
           toast({
@@ -176,6 +176,15 @@ export default function MedicalReports() {
         ? "Finalni nalaz je spreman za verifikaciju." 
         : "Nalaz je sačuvan kao nacrt.",
     });
+    
+    // Save to localStorage as well for compatibility
+    try {
+      const existingReports = JSON.parse(localStorage.getItem('medicalReports') || '[]');
+      existingReports.push(savedReportData);
+      localStorage.setItem('medicalReports', JSON.stringify(existingReports));
+    } catch (error) {
+      console.error("[MedicalReports] Error saving to localStorage:", error);
+    }
     
     // If it's a final report, show verification dialog
     if (data.status === 'final') {
