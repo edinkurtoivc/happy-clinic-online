@@ -304,17 +304,6 @@ export default function MedicalReports() {
       return;
     }
 
-    const element = reportPreviewRef.current;
-    const opt = {
-      margin: 10,
-      filename: `nalaz-${selectedPatient?.name || 'pacijent'}-${new Date().toLocaleDateString('bs')}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    };
-
-    html2pdf().set(opt).from(element).save();
-    
     // Log audit information about printing
     console.log('[MedicalReports] Audit log: Report printed', {
       reportId: savedReport?.id,
@@ -323,9 +312,68 @@ export default function MedicalReports() {
       timestamp: new Date().toISOString()
     });
     
+    // Prepare the report for printing
+    const printContent = reportPreviewRef.current.cloneNode(true) as HTMLElement;
+    
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: "Greška",
+        description: "Nije moguće otvoriti prozor za printanje. Provjerite postavke browsera.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Add necessary styles for print
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Nalaz - ${selectedPatient?.name || 'Pacijent'}</title>
+          <style>
+            body {
+              font-family: 'Open Sans', Arial, sans-serif;
+              padding: 20px;
+              color: #333;
+            }
+            .report-container {
+              max-width: 210mm;
+              margin: 0 auto;
+            }
+            @media print {
+              body {
+                padding: 0;
+              }
+              .report-container {
+                width: 100%;
+                max-width: none;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="report-container">
+            ${printContent.outerHTML}
+          </div>
+          <script>
+            // This will open the print dialog automatically
+            window.onload = function() { 
+              window.print();
+              // After printing is done, this will close the window but only if it was auto-triggered
+              window.addEventListener('afterprint', function() {
+                window.close();
+              });
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    
     toast({
-      title: "PDF generisan",
-      description: "Nalaz je uspješno konvertovan u PDF format.",
+      title: "Printanje",
+      description: "Dijalog za printanje je otvoren.",
     });
   };
 
