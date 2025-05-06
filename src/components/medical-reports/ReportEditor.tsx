@@ -42,6 +42,20 @@ export default function ReportEditor({
   onSave,
   onPrint
 }: ReportEditorProps) {
+  // Helper function to determine if we're in Electron
+  const isElectronEnv = () => {
+    return typeof window !== 'undefined' && 
+           (window.electron?.isElectron === true || 
+           (typeof navigator === 'object' && 
+            typeof navigator.userAgent === 'string' && 
+            navigator.userAgent.indexOf('Electron') >= 0));
+  };
+
+  // Determine if buttons should be visible
+  const showSaveButton = !isSaved && onSave;
+  const showPrintButton = !!onPrint;
+  const canPrint = isSaved && verificationStatus === 'verified';
+  
   return (
     <div className="w-full max-w-[560px]">
       <div className="flex justify-between items-center mb-4">
@@ -107,29 +121,29 @@ export default function ReportEditor({
         </Button>
       </div>
 
-      {/* Always show buttons container to ensure they're visible */}
-      <div className="flex space-x-2 mb-4">
-        {/* Save button - only show when not saved and onSave is provided */}
-        {!isSaved && onSave && (
+      {/* Always display the buttons container */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {/* Save Button - Explicitly show when it should be visible */}
+        {showSaveButton && (
           <Button 
             onClick={onSave}
             disabled={isSubmitting}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+            className="flex-1 min-w-[150px] bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
           >
             {isSubmitting ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
             Spremi nalaz
           </Button>
         )}
         
-        {/* Print button - Always show if onPrint function is provided */}
-        {onPrint && (
+        {/* Print button - Always show, but disable when appropriate */}
+        {showPrintButton && (
           <Button 
-            variant="outline" 
-            onClick={onPrint}
-            disabled={(!isSaved || verificationStatus !== 'verified')}
+            variant={canPrint ? "default" : "outline"}
+            onClick={onPrint} 
+            disabled={!canPrint}
+            className={`whitespace-nowrap min-w-[120px] ${canPrint ? "bg-blue-600 hover:bg-blue-700" : ""}`}
             title={!isSaved ? "Nalaz mora biti sačuvan prije printanja" : 
-                  verificationStatus !== 'verified' ? "Nalaz mora biti verifikovan prije printanja" : ""}
-            className="whitespace-nowrap"
+                verificationStatus !== 'verified' ? "Nalaz mora biti verifikovan prije printanja" : ""}
           >
             <Printer className="h-4 w-4 mr-2" /> Print i PDF
           </Button>
@@ -158,6 +172,15 @@ export default function ReportEditor({
               </Button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Debug information - remove in production */}
+      {isElectronEnv() && (
+        <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-500 hidden">
+          <p>Running in Electron: {isElectronEnv() ? 'Yes' : 'No'}</p>
+          <p>Save button should show: {showSaveButton ? 'Yes' : 'No'}</p>
+          <p>Print button should show: {showPrintButton ? 'Yes' : 'No'}</p>
         </div>
       )}
     </div>

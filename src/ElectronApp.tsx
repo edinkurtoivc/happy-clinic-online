@@ -33,6 +33,13 @@ const ElectronApp: React.FC = () => {
           } else {
             console.log("No data path found in localStorage");
             
+            // Set a temporary data path for development
+            if (process.env.NODE_ENV === 'development') {
+              const tempPath = '/tmp/medicinska-app';
+              localStorage.setItem('dataFolderPath', tempPath);
+              console.log("Set temporary data path for development:", tempPath);
+            }
+            
             // Show toast to prompt user to set data path
             toast({
               title: "Podešavanje aplikacije",
@@ -42,6 +49,11 @@ const ElectronApp: React.FC = () => {
           }
         } else {
           console.log("Running in browser environment");
+          // For browser environment, use a mock path to enable full functionality
+          if (!localStorage.getItem('dataFolderPath')) {
+            localStorage.setItem('dataFolderPath', '/browser-mock-path');
+            console.log("Set mock data path for browser environment");
+          }
         }
       } catch (error) {
         console.error("Error initializing application:", error);
