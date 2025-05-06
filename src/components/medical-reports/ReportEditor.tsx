@@ -1,5 +1,5 @@
 
-import { Bold, Italic, Underline, Signature, Stamp, Save, ShieldCheck, RefreshCw } from "lucide-react";
+import { Bold, Italic, Underline, Signature, Stamp, Save, ShieldCheck, RefreshCw, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AutoSaveIndicator } from "@/components/ui/auto-save-indicator";
 
@@ -20,6 +20,7 @@ interface ReportEditorProps {
   lastSaved?: Date | null;
   isSubmitting?: boolean;
   onSave?: () => void;
+  onPrint?: () => void;
 }
 
 export default function ReportEditor({
@@ -38,7 +39,8 @@ export default function ReportEditor({
   saveStatus,
   lastSaved,
   isSubmitting,
-  onSave
+  onSave,
+  onPrint
 }: ReportEditorProps) {
   return (
     <div className="w-full max-w-[560px]">
@@ -106,14 +108,29 @@ export default function ReportEditor({
       </div>
 
       {!isSaved && onSave && (
-        <Button 
-          onClick={onSave}
-          className="mb-4"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-          Spremi nalaz
-        </Button>
+        <div className="flex space-x-2 mb-4">
+          <Button 
+            onClick={onSave}
+            disabled={isSubmitting}
+            className="flex-1"
+          >
+            {isSubmitting ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+            Spremi nalaz
+          </Button>
+          
+          {onPrint && (
+            <Button 
+              variant="outline" 
+              onClick={onPrint}
+              disabled={!isSaved || verificationStatus !== 'verified'}
+              title={!isSaved ? "Nalaz mora biti sačuvan prije printanja" : 
+                    verificationStatus !== 'verified' ? "Nalaz mora biti verifikovan prije printanja" : ""}
+              className="whitespace-nowrap"
+            >
+              <Printer className="h-4 w-4 mr-2" /> Print i PDF
+            </Button>
+          )}
+        </div>
       )}
       
       {isSaved && (
@@ -125,16 +142,29 @@ export default function ReportEditor({
             Novi nalaz
           </Button>
           
-          {verificationStatus === 'pending' && (
-            <Button 
-              variant="outline"
-              className="border-green-500 text-green-600"
-              onClick={onOpenVerification}
-            >
-              <ShieldCheck className="h-4 w-4 mr-2" />
-              Verifikuj nalaz
-            </Button>
-          )}
+          <div className="flex space-x-2">
+            {onPrint && (
+              <Button 
+                variant="outline" 
+                onClick={onPrint}
+                disabled={verificationStatus !== 'verified'}
+                title={verificationStatus !== 'verified' ? "Nalaz mora biti verifikovan prije printanja" : ""}
+              >
+                <Printer className="h-4 w-4 mr-2" /> Print i PDF
+              </Button>
+            )}
+            
+            {verificationStatus === 'pending' && (
+              <Button 
+                variant="outline"
+                className="border-green-500 text-green-600"
+                onClick={onOpenVerification}
+              >
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                Verifikuj nalaz
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>

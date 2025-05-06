@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import Header from "@/components/layout/Header";
 import MedicalReportPreview from "@/components/medical-reports/MedicalReportPreview";
@@ -375,6 +374,7 @@ export default function MedicalReports() {
               lastSaved={lastSaved}
               isSubmitting={isFinalizingReport}
               onSave={handleSaveReport}
+              onPrint={generatePDF}
             />
             
             <MedicalReportPreview 

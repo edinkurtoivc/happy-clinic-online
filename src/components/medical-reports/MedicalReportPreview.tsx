@@ -1,8 +1,7 @@
-
 import { forwardRef, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Printer, Save } from "lucide-react";
+import { Printer } from "lucide-react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,7 +39,6 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     showSignature, 
     showStamp, 
     onPrint, 
-    onSave,
     isSaved,
     verificationStatus = 'unverified',
     appointmentType,
@@ -101,26 +99,6 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       <div className="flex flex-col h-full">
         <div className="flex justify-between mb-4">
           <h2 className="text-xl font-semibold">Pregled uživo</h2>
-          <div className="space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-2"
-              onClick={onPrint}
-              disabled={!isSaved || verificationStatus !== 'verified'}
-              title={!isSaved ? "Nalaz mora biti sačuvan prije printanja" : 
-                     verificationStatus !== 'verified' ? "Nalaz mora biti verifikovan prije printanja" : ""}
-            >
-              <Printer className="h-4 w-4" /> Print i PDF
-            </Button>
-            <Button 
-              size="sm" 
-              className="bg-emerald-500 hover:bg-emerald-600 flex items-center gap-2"
-              onClick={onSave}
-            >
-              <Save className="h-4 w-4" /> Spremi
-            </Button>
-          </div>
         </div>
         
         <Card className="p-6 font-['Open_Sans'] text-sm flex-1 overflow-auto mx-auto max-w-[210mm]" ref={ref}>
