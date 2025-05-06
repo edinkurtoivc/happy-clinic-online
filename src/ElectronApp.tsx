@@ -45,6 +45,12 @@ const ElectronApp: React.FC = () => {
         }
       } catch (error) {
         console.error("Error initializing application:", error);
+        toast({
+          title: "Greška",
+          description: "Došlo je do greške prilikom inicijalizacije aplikacije.",
+          variant: "destructive",
+          duration: 5000,
+        });
       } finally {
         setIsInitializing(false);
       }

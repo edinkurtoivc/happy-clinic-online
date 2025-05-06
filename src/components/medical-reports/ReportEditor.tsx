@@ -107,24 +107,26 @@ export default function ReportEditor({
         </Button>
       </div>
 
-      {/* Modified this condition to ensure buttons are always visible when appropriate */}
+      {/* Always show buttons container to ensure they're visible */}
       <div className="flex space-x-2 mb-4">
+        {/* Save button - only show when not saved and onSave is provided */}
         {!isSaved && onSave && (
           <Button 
             onClick={onSave}
             disabled={isSubmitting}
-            className="flex-1"
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700"
           >
             {isSubmitting ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
             Spremi nalaz
           </Button>
         )}
         
+        {/* Print button - Always show if onPrint function is provided */}
         {onPrint && (
           <Button 
             variant="outline" 
             onClick={onPrint}
-            disabled={!isSaved && verificationStatus !== 'verified'}
+            disabled={(!isSaved || verificationStatus !== 'verified')}
             title={!isSaved ? "Nalaz mora biti sačuvan prije printanja" : 
                   verificationStatus !== 'verified' ? "Nalaz mora biti verifikovan prije printanja" : ""}
             className="whitespace-nowrap"
@@ -144,17 +146,7 @@ export default function ReportEditor({
           </Button>
           
           <div className="flex space-x-2">
-            {onPrint && (
-              <Button 
-                variant="outline" 
-                onClick={onPrint}
-                disabled={verificationStatus !== 'verified'}
-                title={verificationStatus !== 'verified' ? "Nalaz mora biti verifikovan prije printanja" : ""}
-              >
-                <Printer className="h-4 w-4 mr-2" /> Print i PDF
-              </Button>
-            )}
-            
+            {/* Only show verification button if status is pending */}
             {verificationStatus === 'pending' && (
               <Button 
                 variant="outline"
