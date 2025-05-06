@@ -1,4 +1,3 @@
-
 import { Save, RefreshCw, Check, WifiOff, AlertCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SaveStatus } from "@/hooks/useSaveData";
@@ -15,7 +14,7 @@ export function AutoSaveIndicator({
   status,
   lastSaved,
   className,
-  showText = true,
+  showText = false,
   onRetry
 }: AutoSaveIndicatorProps) {
   const getStatusIcon = () => {
@@ -82,7 +81,7 @@ export function AutoSaveIndicator({
       )}
     >
       {getStatusIcon()}
-      <span>{getStatusText()}</span>
+      {showText && <span>{getStatusText()}</span>}
       {status === "error" && onRetry && (
         <button 
           onClick={onRetry}
