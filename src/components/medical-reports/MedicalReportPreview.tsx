@@ -1,3 +1,4 @@
+
 import { forwardRef, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,11 +98,11 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
 
     return (
       <div className="flex flex-col h-full">
-        <div className="flex justify-between mb-4">
+        <div className="flex justify-between mb-4 print:hidden">
           <h2 className="text-xl font-semibold">Pregled uživo</h2>
         </div>
         
-        <Card className="p-6 font-['Open_Sans'] text-sm flex-1 overflow-auto mx-auto max-w-[210mm]" ref={ref}>
+        <Card className="p-6 font-['Open_Sans'] text-sm flex-1 overflow-auto mx-auto max-w-[210mm] print:p-0 print:border-0 print:shadow-none print:max-w-full print:overflow-visible" ref={ref}>
           <div className="flex justify-between items-start mb-6 px-6">
             <div className="flex-shrink-0">
               {clinicInfo.logo ? (
@@ -130,7 +131,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
           </div>
 
           <div className="mb-6 px-6">
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-4 print:grid-cols-2">
               <div>
                 <p className="font-bold">Ime i Prezime: {patient ? patient.name : ""}</p>
                 <p>Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
@@ -154,7 +155,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
           <div className="space-y-6 px-6 leading-relaxed">
             <div>
               <h3 className="font-bold text-base mb-3">Nalaz</h3>
-              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[100px]">
+              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[100px] print:bg-transparent print:border-0 print:p-0">
                 <p className="whitespace-pre-wrap leading-relaxed">
                   {reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}
                 </p>
@@ -163,7 +164,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
 
             <div>
               <h3 className="font-bold text-base mb-3">Terapija i preporuke</h3>
-              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[100px]">
+              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[100px] print:bg-transparent print:border-0 print:p-0">
                 <p className="whitespace-pre-wrap leading-relaxed">
                   {therapyText || "Ovdje će biti prikazana terapija i preporuke..."}
                 </p>

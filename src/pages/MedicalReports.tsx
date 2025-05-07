@@ -342,22 +342,121 @@ export default function MedicalReports() {
         <head>
           <title>Nalaz - ${selectedPatient?.name || 'Pacijent'}</title>
           <style>
+            @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap');
+            
             body {
               font-family: 'Open Sans', Arial, sans-serif;
+              margin: 0;
               padding: 20px;
               color: #333;
+              line-height: 1.5;
             }
+            
             .report-container {
               max-width: 210mm;
               margin: 0 auto;
+              background: white;
             }
+            
+            .header {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 20px;
+            }
+            
+            .logo {
+              height: 60px;
+              object-fit: contain;
+            }
+            
+            .clinic-info {
+              text-align: right;
+            }
+            
+            .clinic-name {
+              font-weight: bold;
+              color: #059669;
+              font-size: 18px;
+              margin-bottom: 5px;
+            }
+            
+            .patient-info {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+              margin-bottom: 20px;
+            }
+            
+            .separator {
+              border-top: 1px solid #e5e7eb;
+              margin: 20px 0;
+            }
+            
+            .content-section {
+              margin-bottom: 30px;
+            }
+            
+            .section-title {
+              font-weight: bold;
+              margin-bottom: 10px;
+              font-size: 16px;
+            }
+            
+            .content-box {
+              white-space: pre-wrap;
+            }
+            
+            .signature-area {
+              display: flex;
+              justify-content: flex-end;
+              margin-top: 60px;
+              align-items: flex-end;
+            }
+            
+            .signature-line {
+              text-align: center;
+            }
+            
+            .signature-line-border {
+              border-bottom: 1px solid black;
+              width: 120px;
+              display: inline-block;
+              margin-bottom: 5px;
+            }
+            
+            .doctor-name {
+              font-size: 12px;
+              color: #666;
+            }
+            
+            .stamp {
+              border: 2px dashed #ccc;
+              border-radius: 50%;
+              width: 100px;
+              height: 100px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-left: 20px;
+              color: #999;
+            }
+            
             @media print {
               body {
                 padding: 0;
+                margin: 0;
               }
+              
               .report-container {
                 width: 100%;
                 max-width: none;
+                padding: 20px;
+                box-sizing: border-box;
+              }
+              
+              @page {
+                margin: 15mm;
+                size: A4;
               }
             }
           </style>
@@ -367,14 +466,20 @@ export default function MedicalReports() {
             ${printContent.outerHTML}
           </div>
           <script>
-            // This will open the print dialog automatically
-            window.onload = function() { 
+            // Remove unnecessary elements that shouldn't be printed
+            document.addEventListener('DOMContentLoaded', function() {
+              // Find and remove elements with print:hidden class
+              const elementsToRemove = document.querySelectorAll('.print\\:hidden');
+              elementsToRemove.forEach(el => el.remove());
+              
+              // Open print dialog after everything is loaded
               window.print();
-              // After printing is done, this will close the window but only if it was auto-triggered
+              
+              // Close window after printing
               window.addEventListener('afterprint', function() {
                 window.close();
               });
-            }
+            });
           </script>
         </body>
       </html>
