@@ -6,11 +6,14 @@ import AppointmentForm from "@/components/appointments/AppointmentForm";
 import type { Appointment } from "@/types/medical-report";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import dataStorageService from "@/services/DataStorageService";
 
 export default function Appointments() {
   const [isCreating, setIsCreating] = useState(false);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   
   // Učitaj termine pri inicijalnom renderiranju
@@ -71,6 +74,19 @@ export default function Appointments() {
     }
   };
   
+  const filteredAppointments = appointments.filter(appointment => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      appointment.patientName.toLowerCase().includes(searchLower) ||
+      appointment.doctorName.toLowerCase().includes(searchLower) ||
+      appointment.date.includes(searchTerm) ||
+      appointment.examinationType.toLowerCase().includes(searchLower) ||
+      appointment.status.toLowerCase().includes(searchLower)
+    );
+  });
+  
   return (
     <div className="flex h-full flex-col">
       <Header title="Termini" />
@@ -82,9 +98,20 @@ export default function Appointments() {
           />
         ) : (
           <div className="mb-4">
-            <Button onClick={() => setIsCreating(true)}>Zakaži</Button>
+            <div className="flex justify-between items-center mb-4">
+              <div className="relative flex-grow max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pretraži termine..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <Button onClick={() => setIsCreating(true)}>Zakaži</Button>
+            </div>
             <AppointmentsList 
-              initialAppointments={appointments} 
+              initialAppointments={filteredAppointments} 
             />
           </div>
         )}
