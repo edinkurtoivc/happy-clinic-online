@@ -1,4 +1,3 @@
-
 export interface MedicalReport {
   id: string;
   patientId: string;
@@ -74,8 +73,9 @@ export interface Appointment {
   notes?: string;
   reportId?: string;
   cancellationReason?: string;
-  scheduledAt?: string;  // When the appointment was created/scheduled
-  completedAt?: string;  // When the appointment was marked as completed
+  scheduledAt?: string;   // When the appointment was created/scheduled
+  completedAt?: string;   // When the appointment was marked as completed
+  cancelledAt?: string;   // When the appointment was cancelled
   reportCompletedAt?: string; // When the medical report was finalized
 }
 

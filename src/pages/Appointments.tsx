@@ -40,6 +40,11 @@ export default function Appointments() {
         appointment.status = 'scheduled';
       }
       
+      // Add scheduledAt timestamp if not present
+      if (!appointment.scheduledAt) {
+        appointment.scheduledAt = new Date().toISOString();
+      }
+      
       const success = await dataStorageService.addAppointment(appointment);
       
       if (success) {
@@ -52,6 +57,7 @@ export default function Appointments() {
         });
         
         console.log("[Appointments] Saved new appointment:", appointment);
+        setIsCreating(false); // Close the form after successful save
       } else {
         throw new Error("Nije moguće spremiti termin");
       }
@@ -77,7 +83,9 @@ export default function Appointments() {
         ) : (
           <div className="mb-4">
             <Button onClick={() => setIsCreating(true)}>Zakaži</Button>
-            <AppointmentsList initialAppointments={appointments} />
+            <AppointmentsList 
+              initialAppointments={appointments} 
+            />
           </div>
         )}
       </div>

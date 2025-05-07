@@ -1,3 +1,4 @@
+
 import { isFileSystemAvailable, initializeFileSystem, readJsonData, writeJsonData, logAction, DATA_FILES, DEFAULT_DIRS, createPatientDirectory } from "@/utils/fileSystemUtils";
 import { v4 as uuidv4 } from "uuid";
 import type { Patient } from "@/types/patient";
@@ -221,11 +222,31 @@ class DataStorageService {
     try {
       // Ensure appointment has an ID
       if (!appointment.id) {
-        appointment.id = uuidv4();
+        appointment.id = `apt-${Date.now()}`;
+      }
+      
+      // Ensure scheduledAt is set
+      if (!appointment.scheduledAt) {
+        appointment.scheduledAt = new Date().toISOString();
       }
       
       const currentAppointments = await this.getAppointments();
-      const updatedAppointments = [...currentAppointments, appointment];
+      
+      // Check if appointment with same ID already exists
+      const existingIndex = currentAppointments.findIndex(a => a.id === appointment.id);
+      let updatedAppointments;
+      
+      if (existingIndex >= 0) {
+        // Update existing appointment
+        updatedAppointments = currentAppointments.map(a => 
+          a.id === appointment.id ? appointment : a
+        );
+        console.log("[DataStorage] Updated existing appointment:", appointment.id);
+      } else {
+        // Add new appointment
+        updatedAppointments = [...currentAppointments, appointment];
+        console.log("[DataStorage] Added new appointment:", appointment.id);
+      }
       
       return await this.saveAppointments(updatedAppointments);
     } catch (error) {
@@ -240,18 +261,37 @@ class DataStorageService {
   async updateAppointment(updatedAppointment: Appointment) {
     try {
       const currentAppointments = await this.getAppointments();
+      const appointmentExists = currentAppointments.some(a => a.id === updatedAppointment.id);
+      
+      if (!appointmentExists) {
+        console.error("[DataStorage] Tried to update non-existing appointment:", updatedAppointment.id);
+        return false;
+      }
       
       // Find the appointment to update
       const updatedAppointments = currentAppointments.map(appointment => 
         appointment.id === updatedAppointment.id ? updatedAppointment : appointment
       );
       
+      // Set timestamps if not already set
       if (updatedAppointment.status === 'completed' && !updatedAppointment.completedAt) {
-        // Set completedAt timestamp if status changed to completed
         updatedAppointment.completedAt = new Date().toISOString();
       }
       
-      return await this.saveAppointments(updatedAppointments);
+      if (updatedAppointment.status === 'cancelled' && !updatedAppointment.cancelledAt) {
+        updatedAppointment.cancelledAt = new Date().toISOString();
+      }
+      
+      console.log("[DataStorage] Updating appointment:", updatedAppointment.id, "Status:", updatedAppointment.status);
+      
+      const success = await this.saveAppointments(updatedAppointments);
+      
+      // Log the action
+      if (success && this.basePath) {
+        await logAction(this.basePath, `Updated appointment: ${updatedAppointment.patientName} (ID: ${updatedAppointment.id}), Status: ${updatedAppointment.status}`);
+      }
+      
+      return success;
     } catch (error) {
       console.error("[DataStorage] Error updating appointment:", error);
       return false;

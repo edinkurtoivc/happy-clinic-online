@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -9,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import CancelAppointmentDialog from "./CancelAppointmentDialog";
 import type { Appointment } from "@/types/medical-report";
+import dataStorageService from "@/services/DataStorageService";
 
 interface AppointmentWithCancellation extends Appointment {
   cancellationReason?: string;
@@ -107,11 +107,6 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
     }
   }, [initialAppointments]);
 
-  const saveAppointments = (updatedAppointments: AppointmentWithCancellation[]) => {
-    localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
-    console.log("[AppointmentsList] Saved appointments to localStorage:", updatedAppointments);
-  };
-
   const formatDisplayDate = (dateStr: string) => {
     try {
       return format(new Date(dateStr), "dd.MM.yyyy.");
@@ -126,29 +121,49 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
       )
     : appointments;
     
-  const handleStatusChange = (appointmentId: string, newStatus: 'scheduled' | 'completed' | 'cancelled', reason?: string) => {
-    const updatedAppointments = appointments.map(appointment => 
-      appointment.id === appointmentId 
-        ? { 
-            ...appointment, 
-            status: newStatus,
-            ...(reason && { cancellationReason: reason })
-          } 
-        : appointment
-    );
+  const handleStatusChange = async (appointmentId: string, newStatus: 'scheduled' | 'completed' | 'cancelled', reason?: string) => {
+    try {
+      const updatedAppointments = appointments.map(appointment => 
+        appointment.id === appointmentId 
+          ? { 
+              ...appointment, 
+              status: newStatus,
+              ...(reason && { cancellationReason: reason }),
+              ...(newStatus === 'completed' ? { completedAt: new Date().toISOString() } : {}),
+              ...(newStatus === 'cancelled' ? { cancelledAt: new Date().toISOString() } : {})
+            } 
+          : appointment
+      );
 
-    setAppointments(updatedAppointments);
-    saveAppointments(updatedAppointments);
-
-    if (newStatus === 'cancelled') {
+      setAppointments(updatedAppointments);
+      
+      // Save to localStorage for compatibility
+      localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
+      
+      // Save to DataStorageService
+      const appointmentToUpdate = updatedAppointments.find(a => a.id === appointmentId);
+      if (appointmentToUpdate) {
+        await dataStorageService.updateAppointment(appointmentToUpdate);
+        console.log("[AppointmentsList] Appointment updated:", appointmentToUpdate);
+      }
+      
+      let toastMessage = "";
+      if (newStatus === 'cancelled') {
+        toastMessage = "Termin je uspješno otkazan";
+      } else if (newStatus === 'completed') {
+        toastMessage = "Termin je uspješno označen kao završen";
+      }
+      
       toast({
-        title: "Termin otkazan",
-        description: "Termin je uspješno otkazan"
+        title: newStatus === 'cancelled' ? "Termin otkazan" : "Termin završen",
+        description: toastMessage
       });
-    } else if (newStatus === 'completed') {
+    } catch (error) {
+      console.error("[AppointmentsList] Error updating appointment status:", error);
       toast({
-        title: "Termin završen",
-        description: "Termin je uspješno označen kao završen"
+        title: "Greška",
+        description: "Dogodila se greška pri ažuriranju termina",
+        variant: "destructive"
       });
     }
   };
@@ -199,9 +214,9 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
     }
   };
 
-  const handleCompleteAppointment = (appointment: Appointment, e: React.MouseEvent) => {
+  const handleCompleteAppointment = async (appointment: Appointment, e: React.MouseEvent) => {
     e.stopPropagation();
-    handleStatusChange(appointment.id, 'completed');
+    await handleStatusChange(appointment.id, 'completed');
     // After marking as completed, navigate to create a medical report
     handleCreateReport(appointment);
   };
