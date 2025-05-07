@@ -86,6 +86,16 @@ const defaultUsers: User[] = [
     password: "$2a$10$YpM2Jf2TXt/9C6gkRJXfOOEq0Evs4xnbzFK1OmYc/2PLm4qXxdTLu", // nurse123
     active: true,
   },
+  {
+    id: "USR007", 
+    email: "glavniadmin@klinika.com",
+    firstName: "Glavni",
+    lastName: "Administrator",
+    role: "admin",
+    phone: "+38761777777",
+    password: "$2a$10$BBJUo6ZUYlz3jm7xQgDD5.FR/GRPXFDJibF1.6P5r/OJlO76Durha", // admin123
+    active: true,
+  }
 ];
 
 // Function to log user activity

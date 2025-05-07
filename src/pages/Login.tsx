@@ -34,7 +34,7 @@ export default function Login() {
   // Check if already authenticated or bypass is enabled
   useEffect(() => {
     // Only navigate if authenticated (not just bypassed)
-    if (isAuthenticated && !bypassAuth && !isLoadingAuth) {
+    if (isAuthenticated && !isLoadingAuth) {
       navigate('/');
     }
   }, [isAuthenticated, navigate, isLoadingAuth, bypassAuth]);
@@ -125,7 +125,7 @@ export default function Login() {
               <AlertDescription className="space-y-2">
                 <div className="font-medium">Admin kredencijali:</div>
                 <div className="text-sm">
-                  <div><strong>Email:</strong> admin@klinika.com</div>
+                  <div><strong>Email:</strong> glavniadmin@klinika.com</div>
                   <div><strong>Šifra:</strong> admin123</div>
                 </div>
                 <Button 

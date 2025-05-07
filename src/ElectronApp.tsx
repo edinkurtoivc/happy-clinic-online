@@ -15,9 +15,6 @@ const ElectronApp: React.FC = () => {
       try {
         setIsInitializing(true);
         
-        // Always set bypassAuth to true to disable login screen
-        localStorage.setItem("bypassAuth", JSON.stringify(true));
-        
         if (isElectronEnv) {
           console.log("Running in Electron environment");
           
