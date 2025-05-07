@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Search, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Patient } from "@/types/patient";
@@ -26,9 +25,9 @@ interface AppointmentFormProps {
 export default function AppointmentForm({ onCancel, preselectedPatient, onSave }: AppointmentFormProps) {
   const { toast } = useToast();
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [selectedPatientId, setSelectedPatientId] = useState<string>(
-    preselectedPatient ? preselectedPatient.id.toString() : ""
-  );
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(preselectedPatient || null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showPatientsDropdown, setShowPatientsDropdown] = useState(false);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [selectedAppointmentType, setSelectedAppointmentType] = useState<string>("");
@@ -134,10 +133,29 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   
   const appointmentTypes = loadAppointmentTypes();
 
+  const filteredPatients = patients.filter(patient => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    const patientWithName = ensurePatient(patient);
+    return (
+      patientWithName.name.toLowerCase().includes(searchLower) ||
+      (patient.jmbg && patient.jmbg.includes(searchTerm)) ||
+      (patient.dob && patient.dob.includes(searchTerm))
+    );
+  });
+
+  const handleSelectPatient = (patient: Patient) => {
+    // Ensure patient has name getter before setting
+    setSelectedPatient(ensurePatient(patient));
+    setShowPatientsDropdown(false);
+    setSearchTerm("");
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedPatientId || !date || !selectedTime || !selectedDoctorId || !selectedAppointmentType) {
+    if (!selectedPatient || !date || !selectedTime || !selectedDoctorId || !selectedAppointmentType) {
       toast({
         title: "Greška pri validaciji",
         description: "Molimo popunite sva obavezna polja",
@@ -146,18 +164,6 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       return;
     }
     
-    const rawSelectedPatient = patients.find(p => p.id.toString() === selectedPatientId);
-    if (!rawSelectedPatient) {
-      toast({
-        title: "Greška",
-        description: "Odabrani pacijent nije pronađen",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Ensure patient has name getter
-    const selectedPatient = ensurePatient(rawSelectedPatient);
     const selectedDoctor = doctors.find(d => d.id === selectedDoctorId);
     const appointmentType = appointmentTypes.find(t => t.id === selectedAppointmentType)?.name;
     
@@ -172,7 +178,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
     
     const newAppointment: Appointment = {
       id: `apt-${Date.now()}`,
-      patientId: selectedPatientId,
+      patientId: selectedPatient.id.toString(),
       patientName: selectedPatient.name,
       doctorId: selectedDoctorId,
       doctorName: `${selectedDoctor.firstName} ${selectedDoctor.lastName}`,
@@ -226,28 +232,76 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="patient">Pacijent</Label>
-            <Select 
-              value={selectedPatientId} 
-              onValueChange={setSelectedPatientId}
-              disabled={!!preselectedPatient}
-            >
-              <SelectTrigger id="patient">
-                <SelectValue placeholder={isLoadingPatients ? "Učitavanje pacijenata..." : "Odaberi pacijenta"} />
-              </SelectTrigger>
-              <SelectContent>
-                {isLoadingPatients ? (
-                  <SelectItem value="loading" disabled>Učitavanje pacijenata...</SelectItem>
-                ) : patients.length > 0 ? (
-                  patients.map(patient => (
-                    <SelectItem key={patient.id} value={patient.id.toString()}>
-                      {patient.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="no-patients" disabled>Nema dostupnih pacijenata</SelectItem>
+            <div className="relative">
+              <div className="w-full relative">
+                <Input 
+                  placeholder={selectedPatient ? selectedPatient.name : "Odaberite pacijenta"}
+                  className="w-full border rounded-md p-4"
+                  onClick={() => setShowPatientsDropdown(!showPatientsDropdown)}
+                  readOnly
+                  disabled={!!preselectedPatient}
+                />
+                {!preselectedPatient && (
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  </div>
                 )}
-              </SelectContent>
-            </Select>
+              </div>
+              
+              {showPatientsDropdown && !preselectedPatient && (
+                <div className="absolute z-10 w-full bg-white border rounded-md mt-1 shadow-md">
+                  <div className="relative m-2">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Pronađite pacijenta..." 
+                      className="pl-8 w-full"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+
+                  {isLoadingPatients ? (
+                    <div className="p-4 text-center text-muted-foreground">Učitavanje pacijenata...</div>
+                  ) : filteredPatients.length > 0 ? (
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {filteredPatients.map(patient => {
+                        const patientWithName = ensurePatient(patient);
+                        return (
+                          <div 
+                            key={patient.id} 
+                            className="p-2 hover:bg-gray-100 cursor-pointer flex flex-col"
+                            onClick={() => handleSelectPatient(patient)}
+                          >
+                            <span className="font-medium">{patientWithName.name}</span>
+                            <span className="text-sm text-muted-foreground">
+                              {patient.jmbg ? `JMBG: ${patient.jmbg} · ` : ''}
+                              {patient.dob ? `Rođen: ${patient.dob}` : ''}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-muted-foreground">
+                      {searchTerm ? "Nema pronađenih pacijenata." : "Nema pacijenata u bazi."}
+                    </div>
+                  )}
+                  
+                  <a 
+                    href="/patients"
+                    className="p-2 hover:bg-gray-100 cursor-pointer flex border-t text-emerald-600"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.location.href = '/patients';
+                    }}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    <span>Dodaj novog pacijenta</span>
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="space-y-2">
