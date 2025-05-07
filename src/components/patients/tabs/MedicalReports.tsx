@@ -25,6 +25,22 @@ interface MedicalReportsProps {
   patient: { id: number };
 }
 
+// Create a unified type for reports that can come from different sources
+type UnifiedMedicalReport = MedicalReport | {
+  id: string;
+  appointmentType: string;
+  doctor: string;
+  date: string;
+  verificationStatus: 'verified' | 'unverified';
+  report: string;
+  therapy: string;
+  notes: string;
+  patientId: string;
+  doctorInfo: {
+    fullName: string;
+  };
+};
+
 export function MedicalReports({ patient }: MedicalReportsProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,12 +48,12 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
   const [reports, setReports] = useState<MedicalReport[]>([]);
   const [fileSystemReports, setFileSystemReports] = useState<MedicalReportFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<MedicalReport | null>(null);
+  const [selectedReport, setSelectedReport] = useState<UnifiedMedicalReport | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editFormOpen, setEditFormOpen] = useState(false);
   const [editReasonDialogOpen, setEditReasonDialogOpen] = useState(false);
   const [editReason, setEditReason] = useState("");
-  const [reportToEdit, setReportToEdit] = useState<any>(null);
+  const [reportToEdit, setReportToEdit] = useState<UnifiedMedicalReport | null>(null);
   
   useEffect(() => {
     const loadReports = async () => {
@@ -85,7 +101,7 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
   };
 
   // Combine file system reports with localStorage reports
-  const allReports = [
+  const allReports: UnifiedMedicalReport[] = [
     ...fileSystemReports.map(report => ({
       id: report.id,
       appointmentType: report.appointmentType || "Medicinski nalaz",
@@ -113,7 +129,8 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
     const searchLower = searchTerm.toLowerCase();
     return (
       (report.appointmentType?.toLowerCase().includes(searchLower) || 
-      report.doctor?.toLowerCase().includes(searchLower) ||
+      (('doctor' in report) ? report.doctor.toLowerCase().includes(searchLower) : 
+      (report.doctorInfo?.fullName?.toLowerCase().includes(searchLower) || false)) ||
       formatDate(report.date).includes(searchTerm))
     );
   });
@@ -121,12 +138,12 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
   // Sort by date descending (newest first)
   displayReports.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const handleView = (report: any) => {
+  const handleView = (report: UnifiedMedicalReport) => {
     setSelectedReport(report);
     setViewDialogOpen(true);
   };
 
-  const handleEdit = (report: any) => {
+  const handleEdit = (report: UnifiedMedicalReport) => {
     setReportToEdit(report);
     setEditReason("");
     setEditReasonDialogOpen(true);
@@ -268,7 +285,9 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
                   <div>
                     <p className="font-medium">{report.appointmentType}</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatDate(report.date)} · {report.doctorInfo?.fullName || "Doktor"}
+                      {formatDate(report.date)} · {
+                        'doctor' in report ? report.doctor : report.doctorInfo?.fullName || "Doktor"
+                      }
                     </p>
                   </div>
                 </div>
@@ -332,7 +351,9 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
                 showSignature={true}
                 showStamp={selectedReport.verificationStatus === 'verified'}
                 appointmentType={selectedReport.appointmentType}
-                doctorName={selectedReport.doctorInfo?.fullName || "Doktor"}
+                doctorName={'doctor' in selectedReport ? 
+                  selectedReport.doctor : 
+                  selectedReport.doctorInfo?.fullName || "Doktor"}
                 onPrint={() => handlePrint(selectedReport.id)}
                 onSave={() => {}}
                 isSaved={true}
