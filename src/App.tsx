@@ -64,7 +64,7 @@ const ProtectedRoute = ({
 const AppRoutes = () => {
   const { isAuthenticated, bypassAuth } = useAuth();
 
-  // Redirect from login to home if already authenticated
+  // Redirect from login to home only if authenticated and not on login page
   if (isAuthenticated && window.location.pathname === "/login") {
     return <Navigate to="/" replace />;
   }

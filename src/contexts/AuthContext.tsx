@@ -126,16 +126,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoadingAuth(true);
       
       try {
-        // Check for bypassAuth in localStorage
-        const storedBypassAuth = localStorage.getItem("bypassAuth");
-        if (storedBypassAuth) {
-          setBypassAuth(JSON.parse(storedBypassAuth));
-        } else {
-          // Default to false if not set
-          localStorage.setItem("bypassAuth", "false");
-          setBypassAuth(false);
-        }
-
+        // Force disable bypass auth on initial load
+        localStorage.setItem("bypassAuth", "false");
+        setBypassAuth(false);
+        
         // Check if users exist in dataStorageService or localStorage
         let users = await dataStorageService.getUsers();
         
@@ -186,11 +180,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const currentUserData = localStorage.getItem("currentUser");
           if (currentUserData) {
             try {
-              const parsedUser = JSON.parse(currentUserData);
-              setUser(parsedUser);
-              setIsAuthenticated(true);
-              console.log("[AuthContext] Loaded user from localStorage:", parsedUser.email);
-              logUserActivity(parsedUser, "se prijavio u aplikaciju (nastavak sesije)");
+              // Clear any existing user data to force login
+              localStorage.removeItem("currentUser");
+              setUser(null);
+              setIsAuthenticated(false);
+              console.log("[AuthContext] Cleared existing user session");
             } catch (error) {
               console.error("[AuthContext] Error parsing current user:", error);
             }
@@ -359,15 +353,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated(false);
     localStorage.removeItem("currentUser");
     
-    // If bypass is enabled, don't navigate to login
-    if (!bypassAuth) {
-      toast({
-        title: "Odjavili ste se",
-        description: "Uspješno ste se odjavili iz sistema",
-      });
-      
-      navigate("/login");
-    }
+    // Always navigate to login when logging out
+    toast({
+      title: "Odjavili ste se",
+      description: "Uspješno ste se odjavili iz sistema",
+    });
+    
+    navigate("/login");
   };
   
   // Helper function to check if user has permission based on role

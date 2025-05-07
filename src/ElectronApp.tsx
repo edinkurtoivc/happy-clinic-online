@@ -52,6 +52,13 @@ const ElectronApp: React.FC = () => {
             console.log("Set mock data path for browser environment");
           }
         }
+        
+        // Clear any bypass auth settings on application start
+        localStorage.setItem('bypassAuth', 'false');
+        
+        // Clear any existing user session on application start to force login
+        localStorage.removeItem('currentUser');
+        
       } catch (error) {
         console.error("Error initializing application:", error);
         toast({
