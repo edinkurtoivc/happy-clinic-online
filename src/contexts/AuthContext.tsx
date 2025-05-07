@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -131,6 +130,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const storedBypassAuth = localStorage.getItem("bypassAuth");
         if (storedBypassAuth) {
           setBypassAuth(JSON.parse(storedBypassAuth));
+        } else {
+          // Default to false if not set
+          localStorage.setItem("bypassAuth", "false");
+          setBypassAuth(false);
         }
 
         // Check if users exist in dataStorageService or localStorage
