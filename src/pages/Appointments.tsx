@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import AppointmentsList from "@/components/appointments/AppointmentsList";
@@ -98,18 +97,21 @@ export default function Appointments() {
           />
         ) : (
           <div className="mb-4">
-            <div className="flex justify-between items-center mb-4">
-              <div className="relative flex-grow max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Pretraži termine..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
+            <div className="flex justify-between mb-4">
+              <h3 className="text-lg font-medium">Lista termina</h3>
               <Button onClick={() => setIsCreating(true)}>Zakaži</Button>
             </div>
+
+            <div className="relative flex-grow max-w-sm mb-4">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Pretraži termine..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            
             <AppointmentsList 
               initialAppointments={filteredAppointments} 
             />
