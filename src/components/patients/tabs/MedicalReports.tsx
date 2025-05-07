@@ -14,9 +14,12 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 interface MedicalReportsProps {
   patient: { id: number };
@@ -32,6 +35,9 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
   const [selectedReport, setSelectedReport] = useState<MedicalReport | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editFormOpen, setEditFormOpen] = useState(false);
+  const [editReasonDialogOpen, setEditReasonDialogOpen] = useState(false);
+  const [editReason, setEditReason] = useState("");
+  const [reportToEdit, setReportToEdit] = useState<any>(null);
   
   useEffect(() => {
     const loadReports = async () => {
@@ -85,23 +91,16 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
       appointmentType: report.appointmentType || "Medicinski nalaz",
       doctor: report.doctor,
       date: report.date,
-      verified: report.verified,
+      verificationStatus: report.verified ? 'verified' as const : 'unverified' as const,
       report: report.report,
       therapy: report.therapy,
       notes: report.notes || "",
-      patientId: report.patientId
+      patientId: report.patientId,
+      doctorInfo: {
+        fullName: report.doctor
+      }
     })),
-    ...reports.map(report => ({
-      id: report.id,
-      appointmentType: report.appointmentType || "Medicinski nalaz",
-      doctor: report.doctorInfo?.fullName || "Doktor",
-      date: report.date,
-      verified: report.verificationStatus === 'verified',
-      report: report.report,
-      therapy: report.therapy,
-      notes: report.notes || "",
-      patientId: report.patientId
-    }))
+    ...reports
   ];
 
   // Remove duplicates (prioritize filesystem reports)
@@ -128,8 +127,48 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
   };
 
   const handleEdit = (report: any) => {
-    setSelectedReport(report);
+    setReportToEdit(report);
+    setEditReason("");
+    setEditReasonDialogOpen(true);
+  };
+
+  const handleEditConfirm = () => {
+    if (!editReason.trim()) {
+      toast({
+        title: "Greška",
+        description: "Morate unijeti razlog promjene",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Log the edit reason
+    console.log(`[MedicalReports] Edit reason for report ${reportToEdit.id}: ${editReason}`);
+    
+    // Store edit reason in localStorage for audit
+    try {
+      const auditLog = JSON.parse(localStorage.getItem('editAuditLog') || '[]');
+      auditLog.push({
+        reportId: reportToEdit.id,
+        patientId: reportToEdit.patientId,
+        timestamp: new Date().toISOString(),
+        reason: editReason,
+        user: "Current User" // In a real app, get this from auth context
+      });
+      localStorage.setItem('editAuditLog', JSON.stringify(auditLog));
+    } catch (error) {
+      console.error("[MedicalReports] Error saving audit log:", error);
+    }
+    
+    // Close the reason dialog and open the edit form
+    setEditReasonDialogOpen(false);
+    setSelectedReport(reportToEdit);
     setEditFormOpen(true);
+    
+    toast({
+      title: "Pristup odobren",
+      description: "Razlog je zabilježen i možete pristupiti uređivanju nalaza",
+    });
   };
 
   const handlePrint = (reportId: string) => {
@@ -229,7 +268,7 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
                   <div>
                     <p className="font-medium">{report.appointmentType}</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatDate(report.date)} · {report.doctor}
+                      {formatDate(report.date)} · {report.doctorInfo?.fullName || "Doktor"}
                     </p>
                   </div>
                 </div>
@@ -252,8 +291,8 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
                     variant="outline" 
                     size="sm"
                     onClick={() => handlePrint(report.id)}
-                    disabled={!report.verified}
-                    title={!report.verified ? "Samo verifikovani nalazi se mogu printati" : ""}
+                    disabled={report.verificationStatus !== 'verified'}
+                    title={report.verificationStatus !== 'verified' ? "Samo verifikovani nalazi se mogu printati" : ""}
                   >
                     <Printer className="h-4 w-4 mr-1" /> Printaj
                   </Button>
@@ -291,13 +330,13 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
                 reportText={selectedReport.report}
                 therapyText={selectedReport.therapy}
                 showSignature={true}
-                showStamp={selectedReport.verified}
+                showStamp={selectedReport.verificationStatus === 'verified'}
                 appointmentType={selectedReport.appointmentType}
-                doctorName={selectedReport.doctor}
+                doctorName={selectedReport.doctorInfo?.fullName || "Doktor"}
                 onPrint={() => handlePrint(selectedReport.id)}
                 onSave={() => {}}
                 isSaved={true}
-                verificationStatus={selectedReport.verified ? 'verified' : 'unverified'}
+                verificationStatus={selectedReport.verificationStatus}
               />
               <div className="flex justify-end space-x-2 mt-4">
                 <Button 
@@ -318,6 +357,43 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for entering edit reason */}
+      <Dialog open={editReasonDialogOpen} onOpenChange={setEditReasonDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Unesite razlog promjene</DialogTitle>
+            <DialogDescription>
+              Molimo unesite zašto želite urediti ovaj medicinski nalaz. Ova informacija će biti zabilježena radi sigurnosti.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Textarea
+              placeholder="Razlog promjene nalaza..."
+              value={editReason}
+              onChange={(e) => setEditReason(e.target.value)}
+              className="min-h-[100px]"
+              autoFocus
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setEditReasonDialogOpen(false)}
+            >
+              Odustani
+            </Button>
+            <Button 
+              onClick={handleEditConfirm}
+              disabled={!editReason.trim()}
+            >
+              Potvrdi
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
