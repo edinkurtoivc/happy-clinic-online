@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
+import type { AuditLog } from "@/types/patient";
 
 interface MedicalReportsProps {
   patient: { id: number };
