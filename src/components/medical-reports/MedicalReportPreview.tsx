@@ -114,23 +114,23 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
         </div>
         
         <Card className="p-6 font-['Open_Sans'] text-sm flex-1 overflow-auto mx-auto max-w-[210mm] print:p-0 print:border-0 print:shadow-none print:max-w-full print:overflow-visible" ref={ref}>
-          <div className="flex justify-between items-start mb-6 px-6">
+          <div className="flex justify-between items-start mb-4 px-6">
             <div className="flex-shrink-0">
               {clinicInfo.logo ? (
                 <img 
                   src={clinicInfo.logo} 
                   alt={`${clinicInfo.name} Logo`} 
-                  className="h-14 mb-2 object-contain"
+                  className="h-12 mb-2 object-contain"
                 />
               ) : (
-                <div className="h-14 mb-2 flex items-center justify-center bg-emerald-50 rounded-md px-4">
+                <div className="h-12 mb-2 flex items-center justify-center bg-emerald-50 rounded-md px-4">
                   <span className="text-emerald-600 font-bold">{clinicInfo.name}</span>
                 </div>
               )}
             </div>
             
             <div className="text-right">
-              <h2 className="font-semibold text-lg text-emerald-600">{clinicInfo.name}</h2>
+              <h2 className="font-semibold text-base text-emerald-600">{clinicInfo.name}</h2>
               <p className="text-muted-foreground text-xs">
                 {clinicInfo.address}, {clinicInfo.city}<br />
                 {clinicInfo.email}<br />
@@ -139,25 +139,25 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             </div>
           </div>
 
-          <div className="mb-6 px-6">
+          <div className="mb-4 px-6">
             <div className="grid md:grid-cols-2 gap-4 print:grid-cols-2">
               <div>
-                <p className="font-bold">Ime i Prezime: {patient ? patient.name : ""}</p>
-                <p className="text-sm text-gray-700">Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
-                <p className="text-sm text-gray-700">Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
-                <p className="text-sm text-gray-700">JMBG: {patient ? patient.jmbg : ""}</p>
-                <p className="mt-2 text-xs text-muted-foreground">Datum i vrijeme ispisa: {nowDateTime}</p>
+                <p className="font-bold text-sm">Ime i Prezime: {patient ? patient.name : ""}</p>
+                <p className="text-xs text-gray-700">Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
+                <p className="text-xs text-gray-700">Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
+                <p className="text-xs text-gray-700">JMBG: {patient ? patient.jmbg : ""}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Datum i vrijeme ispisa: {nowDateTime}</p>
                 <p className="text-xs text-muted-foreground">Izdao: {displayedDoctorName}</p>
               </div>
               <div className="flex flex-col items-end justify-start">
                 {reportCode && (
-                  <p className="font-bold bg-gray-50 p-2 px-3 rounded-md border border-gray-200 text-emerald-700 mb-2">
+                  <p className="font-bold text-sm bg-gray-50 p-2 px-3 rounded-md border border-gray-200 text-emerald-700 mb-2">
                     Broj nalaza: {reportCode}
                   </p>
                 )}
                 {appointmentType && (
-                  <div className="mt-2">
-                    <p className="font-medium text-emerald-700 text-right">
+                  <div className="mt-1">
+                    <p className="font-medium text-xs text-emerald-700 text-right">
                       Vrsta pregleda: <span className="font-normal">{appointmentType}</span>
                     </p>
                     {verificationStatus === 'verified' && (
@@ -172,12 +172,12 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             </div>
           </div>
 
-          <Separator className="mb-6 mx-6" />
+          <Separator className="mb-5 mx-6" />
 
           <div className="space-y-6 px-6 leading-relaxed">
             <div>
-              <h3 className="font-bold text-base mb-3">Nalaz</h3>
-              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[100px] print:bg-transparent print:border-0 print:p-0">
+              <h3 className="font-bold text-lg mb-3">Nalaz</h3>
+              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[120px] print:bg-transparent print:border-0 print:p-0">
                 <p className="whitespace-pre-wrap leading-relaxed">
                   {reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}
                 </p>
@@ -185,8 +185,8 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             </div>
 
             <div>
-              <h3 className="font-bold text-base mb-3">Terapija i preporuke</h3>
-              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[100px] print:bg-transparent print:border-0 print:p-0">
+              <h3 className="font-bold text-lg mb-3">Terapija i preporuke</h3>
+              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[120px] print:bg-transparent print:border-0 print:p-0">
                 <p className="whitespace-pre-wrap leading-relaxed">
                   {therapyText || "Ovdje će biti prikazana terapija i preporuke..."}
                 </p>
@@ -194,7 +194,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             </div>
             
             {(showSignature || showStamp) && (
-              <div className="mt-16 pt-8 text-right">
+              <div className="mt-14 pt-8 text-right">
                 <div className="flex justify-end items-end space-x-4">
                   {showSignature && (
                     <div className="text-center">
