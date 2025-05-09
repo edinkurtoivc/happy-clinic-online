@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface MedicalReportsProps {
   patient: { id: number };
@@ -43,6 +44,7 @@ type UnifiedMedicalReport = MedicalReport | {
 export function MedicalReports({ patient }: MedicalReportsProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [reports, setReports] = useState<MedicalReport[]>([]);
   const [fileSystemReports, setFileSystemReports] = useState<MedicalReportFile[]>([]);
