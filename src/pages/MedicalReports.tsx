@@ -331,9 +331,6 @@ export default function MedicalReports() {
       timestamp: new Date().toISOString()
     });
     
-    // Prepare the report for printing
-    const printContent = reportPreviewRef.current.cloneNode(true) as HTMLElement;
-    
     // Create a new window for printing
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -345,48 +342,56 @@ export default function MedicalReports() {
       return;
     }
     
-    // Add necessary styles for print
+    // Write proper HTML with all necessary styles to the new window
     printWindow.document.write(`
+      <!DOCTYPE html>
       <html>
         <head>
           <title>Nalaz - ${selectedPatient?.name || 'Pacijent'}</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
           <style>
-            @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap');
-            
-            body {
-              font-family: 'Open Sans', Arial, sans-serif;
-              margin: 0;
-              padding: 20px;
-              color: #333;
-              line-height: 1.5;
+            @media print {
+              @page {
+                size: A4;
+                margin: 15mm;
+              }
             }
             
-            .report-container {
+            body {
+              font-family: 'Open Sans', sans-serif;
+              color: #333;
+              line-height: 1.6;
+              margin: 0;
+              padding: 0;
+            }
+            
+            .print-container {
               max-width: 210mm;
               margin: 0 auto;
-              background: white;
+              padding: 20px;
+              box-sizing: border-box;
             }
             
             .header {
               display: flex;
               justify-content: space-between;
-              margin-bottom: 20px;
-            }
-            
-            .logo {
-              height: 60px;
-              object-fit: contain;
-            }
-            
-            .clinic-info {
-              text-align: right;
+              align-items: flex-start;
+              margin-bottom: 30px;
+              padding-bottom: 10px;
             }
             
             .clinic-name {
               font-weight: bold;
+              font-size: 20px;
               color: #059669;
-              font-size: 18px;
-              margin-bottom: 5px;
+            }
+            
+            .clinic-info {
+              font-size: 12px;
+              color: #666;
+              text-align: right;
             }
             
             .patient-info {
@@ -401,6 +406,40 @@ export default function MedicalReports() {
               margin: 20px 0;
             }
             
+            .report-code {
+              font-weight: bold;
+              background: #f9fafb;
+              padding: 8px 12px;
+              border: 1px solid #e5e7eb;
+              border-radius: 4px;
+              color: #059669;
+              display: inline-block;
+            }
+            
+            .exam-type {
+              font-weight: medium;
+              color: #059669;
+              margin-top: 8px;
+              text-align: right;
+            }
+            
+            .verified-badge {
+              display: flex;
+              align-items: center;
+              color: #059669;
+              font-size: 12px;
+              justify-content: flex-end;
+              margin-top: 4px;
+            }
+            
+            .verified-dot {
+              height: 8px;
+              width: 8px;
+              background-color: #059669;
+              border-radius: 50%;
+              margin-right: 4px;
+            }
+            
             .content-section {
               margin-bottom: 30px;
             }
@@ -412,30 +451,33 @@ export default function MedicalReports() {
             }
             
             .content-box {
+              padding: 15px;
+              background: #f9fafb;
+              border: 1px solid #e5e7eb;
+              border-radius: 6px;
+              min-height: 100px;
               white-space: pre-wrap;
             }
             
             .signature-area {
               display: flex;
               justify-content: flex-end;
-              margin-top: 60px;
               align-items: flex-end;
+              margin-top: 60px;
+              gap: 20px;
             }
             
             .signature-line {
-              text-align: center;
-            }
-            
-            .signature-line-border {
-              border-bottom: 1px solid black;
+              border-bottom: 1px solid #000;
               width: 120px;
               display: inline-block;
-              margin-bottom: 5px;
+              margin-bottom: 4px;
             }
             
-            .doctor-name {
+            .signature-name {
               font-size: 12px;
               color: #666;
+              text-align: center;
             }
             
             .stamp {
@@ -446,48 +488,162 @@ export default function MedicalReports() {
               display: flex;
               align-items: center;
               justify-content: center;
-              margin-left: 20px;
               color: #999;
             }
             
+            .footer {
+              margin-top: 60px;
+              padding-top: 10px;
+              border-top: 1px solid #e5e7eb;
+              text-align: center;
+              font-size: 12px;
+              color: #666;
+            }
+            
             @media print {
-              body {
+              .content-box {
+                background: transparent;
+                border: none;
                 padding: 0;
-                margin: 0;
-              }
-              
-              .report-container {
-                width: 100%;
-                max-width: none;
-                padding: 20px;
-                box-sizing: border-box;
-              }
-              
-              @page {
-                margin: 15mm;
-                size: A4;
               }
             }
           </style>
         </head>
         <body>
-          <div class="report-container">
-            ${printContent.outerHTML}
+          <div class="print-container">
+            <div class="header">
+              <div>
+                ${localStorage.getItem('clinicInfo') ? 
+                  JSON.parse(localStorage.getItem('clinicInfo') || '{}').logo ? 
+                  `<img src="${JSON.parse(localStorage.getItem('clinicInfo') || '{}').logo}" alt="Clinic Logo" style="height: 60px; margin-bottom: 10px;">` : 
+                  `<div class="clinic-name">${JSON.parse(localStorage.getItem('clinicInfo') || '{}').name || 'Spark Studio'}</div>` :
+                  '<div class="clinic-name">Spark Studio</div>'}
+              </div>
+              <div class="clinic-info">
+                ${(() => {
+                  try {
+                    const info = JSON.parse(localStorage.getItem('clinicInfo') || '{}');
+                    return `
+                      <div class="clinic-name">${info.name || 'Spark Studio'}</div>
+                      <p>
+                        ${info.address || 'Ozimice 1'}, ${info.city || 'Bihać'}<br>
+                        ${info.email || 'spark.studio.dev@gmail.com'}<br>
+                        ${info.phone || '387 61 123 456'}
+                      </p>
+                    `;
+                  } catch (e) {
+                    return `
+                      <div class="clinic-name">Spark Studio</div>
+                      <p>Ozimice 1, Bihać<br>spark.studio.dev@gmail.com<br>387 61 123 456</p>
+                    `;
+                  }
+                })()}
+              </div>
+            </div>
+            
+            <div class="patient-info">
+              <div>
+                <p><strong>Ime i Prezime:</strong> ${selectedPatient ? selectedPatient.name : ""}</p>
+                <p><strong>Datum rođenja:</strong> ${selectedPatient ? (() => {
+                  try {
+                    return new Date(selectedPatient.dob).toLocaleDateString('bs-BA', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric'
+                    });
+                  } catch (e) {
+                    return selectedPatient.dob || "";
+                  }
+                })() : ""}</p>
+                <p><strong>Spol:</strong> ${selectedPatient ? (selectedPatient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
+                <p><strong>JMBG:</strong> ${selectedPatient ? selectedPatient.jmbg : ""}</p>
+                <p style="margin-top: 10px; font-size: 12px; color: #666;">
+                  Datum i vrijeme izdavanja: ${new Date().toLocaleDateString('bs-BA', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+                <p style="font-size: 12px; color: #666;">
+                  Izdao: ${currentDoctor.name}
+                </p>
+              </div>
+              <div style="text-align: right;">
+                ${savedReport?.reportCode ? `
+                <div class="report-code">
+                  Broj nalaza: ${savedReport.reportCode}
+                </div>
+                ` : ''}
+                ${selectedExamType ? `
+                <div class="exam-type">
+                  Vrsta pregleda: ${selectedExamType}
+                </div>
+                ` : ''}
+                ${savedReport?.verificationStatus === 'verified' ? `
+                <div class="verified-badge">
+                  <div class="verified-dot"></div>
+                  <span>Verificirano</span>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="content-section">
+              <div class="section-title">Nalaz</div>
+              <div class="content-box">
+                ${reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}
+              </div>
+            </div>
+            
+            <div class="content-section">
+              <div class="section-title">Terapija i preporuke</div>
+              <div class="content-box">
+                ${therapyText || "Ovdje će biti prikazana terapija i preporuke..."}
+              </div>
+            </div>
+            
+            ${hasSignature || hasStamp ? `
+            <div class="signature-area">
+              ${hasSignature ? `
+                <div>
+                  <div class="signature-line"></div>
+                  <p class="signature-name">${currentDoctor.name}</p>
+                </div>
+              ` : ''}
+              
+              ${hasStamp ? `
+                <div class="stamp">Pečat</div>
+              ` : ''}
+            </div>
+            ` : ''}
+            
+            <div class="footer">
+              ${(() => {
+                try {
+                  const info = JSON.parse(localStorage.getItem('clinicInfo') || '{}');
+                  return `${info.name || 'Spark Studio'} - ${info.address || 'Ozimice 1'}, ${info.city || 'Bihać'}<br>${info.phone || '387 61 123 456'} | ${info.email || 'spark.studio.dev@gmail.com'}`;
+                } catch (e) {
+                  return 'Spark Studio - Ozimice 1, Bihać<br>387 61 123 456 | spark.studio.dev@gmail.com';
+                }
+              })()}
+            </div>
           </div>
           <script>
-            // Remove unnecessary elements that shouldn't be printed
-            document.addEventListener('DOMContentLoaded', function() {
-              // Find and remove elements with print:hidden class
-              const elementsToRemove = document.querySelectorAll('.print\\:hidden');
-              elementsToRemove.forEach(el => el.remove());
-              
-              // Open print dialog after everything is loaded
-              window.print();
-              
-              // Close window after printing
-              window.addEventListener('afterprint', function() {
-                window.close();
-              });
+            // Open print dialog after everything is loaded
+            window.addEventListener('load', function() {
+              // Add a slight delay to ensure all fonts and styles are loaded
+              setTimeout(() => {
+                window.print();
+              }, 500);
+            });
+            
+            // Close window after printing
+            window.addEventListener('afterprint', function() {
+              window.close();
             });
           </script>
         </body>
