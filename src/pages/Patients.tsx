@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import PatientsList from "@/components/patients/PatientsList";
@@ -83,11 +82,11 @@ export default function Patients() {
       const success = await dataStorageService.savePatient(typedPatient);
       
       if (success) {
-        // Log this update activity
+        // Log this update activity with more details about what changed
         await logPatientActivity(
           typedPatient.id, 
           'update', 
-          `Ažurirane informacije o pacijentu ${typedPatient.name}`
+          `Ažurirane informacije o pacijentu ${typedPatient.name} (${typedPatient.jmbg})`
         );
         
         // Refresh patients list
@@ -124,11 +123,11 @@ export default function Patients() {
       const success = await dataStorageService.savePatient(typedPatient);
       
       if (success) {
-        // Log this create activity
+        // Log this create activity with more detailed information
         await logPatientActivity(
           typedPatient.id, 
           'create', 
-          `Kreiran novi pacijent ${typedPatient.name}`
+          `Kreiran novi pacijent ${typedPatient.name}, JMBG: ${typedPatient.jmbg}, Datum rođenja: ${typedPatient.dob}`
         );
         
         // Refresh patients list

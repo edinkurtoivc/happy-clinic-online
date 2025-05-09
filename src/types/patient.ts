@@ -35,12 +35,15 @@ export interface ReportVersion {
 
 export interface AuditLog {
   id: number;
-  action: 'create' | 'update' | 'view';
+  action: 'create' | 'update' | 'view' | 'verify' | 'edit';
   entityType: 'patient' | 'report' | 'appointment';
   entityId: string | number;
   performedBy: string;
   performedAt: string;
   details: string;
+  reason?: string;  // Reason for editing reports
+  reportId?: string; // For report-related activities
+  appointmentId?: string; // For appointment-related activities
 }
 
 export interface MedicalReportFile {

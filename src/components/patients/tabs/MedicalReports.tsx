@@ -1,4 +1,3 @@
-
 import { FileText, Eye, Edit, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -164,15 +163,28 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
     
     // Store edit reason in localStorage for audit
     try {
-      const auditLog = JSON.parse(localStorage.getItem('editAuditLog') || '[]');
-      auditLog.push({
-        reportId: reportToEdit.id,
-        patientId: reportToEdit.patientId,
-        timestamp: new Date().toISOString(),
+      // Create new audit log for the edit action
+      const newLog: AuditLog = {
+        id: Date.now(),
+        action: 'edit',
+        entityType: 'report',
+        entityId: reportToEdit.id,
+        performedBy: user ? `${user.firstName} ${user.lastName}` : "Nepoznati korisnik",
+        performedAt: new Date().toISOString(),
+        details: `Uređivanje medicinskog nalaza: ${reportToEdit.appointmentType}`,
         reason: editReason,
-        user: "Current User" // In a real app, get this from auth context
-      });
-      localStorage.setItem('editAuditLog', JSON.stringify(auditLog));
+        reportId: reportToEdit.id
+      };
+      
+      // Get existing logs or initialize empty array
+      const existingLogs = localStorage.getItem('auditLogs');
+      const logs = existingLogs ? JSON.parse(existingLogs) : [];
+      
+      // Add new log
+      logs.push(newLog);
+      
+      // Save updated logs
+      localStorage.setItem('auditLogs', JSON.stringify(logs));
     } catch (error) {
       console.error("[MedicalReports] Error saving audit log:", error);
     }

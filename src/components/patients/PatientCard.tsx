@@ -43,9 +43,9 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
         const logs = await fetchPatientAuditLogs(patient.id);
         setAuditLogs(logs);
         
-        // Log this view action
+        // Log this view action with more details
         if (user) {
-          logPatientView(patient.id, user.firstName + ' ' + user.lastName);
+          logPatientView(patient.id, user.firstName + ' ' + user.lastName, patient);
         }
       } catch (error) {
         console.error("Error fetching patient data:", error);
@@ -75,15 +75,18 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
       const logs = allLogs ? JSON.parse(allLogs) : [];
       
       // Filter logs for this specific patient
-      return logs.filter(log => log.entityId === patientId && log.entityType === 'patient');
+      return logs.filter(log => 
+        (log.entityId === patientId && log.entityType === 'patient') ||
+        (log.entityType === 'report' && log.details && log.details.includes(patient.firstName))
+      );
     } catch (error) {
       console.error("Error fetching audit logs:", error);
       return [];
     }
   };
   
-  // Log patient view action
-  const logPatientView = async (patientId: number, userName: string) => {
+  // Log patient view action with more details
+  const logPatientView = async (patientId: number, userName: string, patientData: Patient) => {
     try {
       const newLog: AuditLog = {
         id: Date.now(),
@@ -92,7 +95,7 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
         entityId: patientId,
         performedBy: userName,
         performedAt: new Date().toISOString(),
-        details: `Pregled kartona pacijenta`
+        details: `Pregled kartona pacijenta ${patientData.firstName} ${patientData.lastName}, JMBG: ${patientData.jmbg}`
       };
       
       // Get existing logs or initialize empty array

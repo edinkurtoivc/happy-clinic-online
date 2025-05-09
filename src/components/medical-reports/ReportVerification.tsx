@@ -12,6 +12,7 @@ import {
 import { CheckCircle, ShieldCheck } from "lucide-react";
 import type { MedicalReport } from "@/types/medical-report";
 import { useAuth } from "@/contexts/AuthContext";
+import type { AuditLog } from "@/types/patient";
 
 interface ReportVerificationProps {
   open: boolean;
@@ -42,10 +43,44 @@ export default function ReportVerification({
     setIsVerifying(true);
     if (report.id) {
       onVerify(report.id, verifiedByName);
+      
+      // Log this verification action
+      logVerificationActivity(report.id, verifiedByName, report.patientInfo?.fullName || "");
+      
       setTimeout(() => {
         setIsVerifying(false);
         onOpenChange(false);
       }, 1000);
+    }
+  };
+
+  // Function to log verification activity
+  const logVerificationActivity = (reportId: string, verifierName: string, patientName: string) => {
+    try {
+      const newLog: AuditLog = {
+        id: Date.now(),
+        action: 'verify',
+        entityType: 'report',
+        entityId: reportId,
+        performedBy: verifierName,
+        performedAt: new Date().toISOString(),
+        details: `Verifikacija nalaza za pacijenta ${patientName}`,
+        reportId: reportId
+      };
+      
+      // Get existing logs or initialize empty array
+      const existingLogs = localStorage.getItem('auditLogs');
+      const logs = existingLogs ? JSON.parse(existingLogs) : [];
+      
+      // Add new log
+      logs.push(newLog);
+      
+      // Save updated logs
+      localStorage.setItem('auditLogs', JSON.stringify(logs));
+      
+      console.log(`[ReportVerification] Activity logged: verification of report ${reportId} by ${verifierName}`);
+    } catch (error) {
+      console.error("[ReportVerification] Error logging activity:", error);
     }
   };
 
