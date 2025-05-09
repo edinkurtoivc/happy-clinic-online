@@ -43,6 +43,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     onPrint, 
     isSaved,
     verificationStatus = 'unverified',
+    verifiedBy,
     appointmentType,
     doctorName,
     reportCode, 
@@ -142,7 +143,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
           <div className="mb-4 px-6">
             <div className="grid md:grid-cols-2 gap-4 print:grid-cols-2">
               <div>
-                <p className="font-bold text-sm">Ime i Prezime: {patient ? patient.name : ""}</p>
+                <p className="font-bold text-xs">Ime i Prezime: {patient ? patient.name : ""}</p>
                 <p className="text-xs text-gray-700">Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
                 <p className="text-xs text-gray-700">Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
                 <p className="text-xs text-gray-700">JMBG: {patient ? patient.jmbg : ""}</p>
@@ -161,9 +162,14 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                       Vrsta pregleda: <span className="font-normal">{appointmentType}</span>
                     </p>
                     {verificationStatus === 'verified' && (
-                      <div className="flex items-center text-emerald-600 justify-end mt-1">
-                        <div className="h-2 w-2 bg-emerald-500 rounded-full mr-1"></div>
-                        <p className="text-xs">Verificirano</p>
+                      <div className="flex flex-col items-end mt-1">
+                        <div className="flex items-center text-emerald-600 justify-end">
+                          <div className="h-2 w-2 bg-emerald-500 rounded-full mr-1"></div>
+                          <p className="text-xs">Verificirano</p>
+                        </div>
+                        {verifiedBy && (
+                          <p className="text-xs text-gray-600 mt-1">Verificirao: {verifiedBy}</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -177,7 +183,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
           <div className="space-y-6 px-6 leading-relaxed">
             <div>
               <h3 className="font-bold text-lg mb-3">Nalaz</h3>
-              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[120px] print:bg-transparent print:border-0 print:p-0">
+              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[150px] print:bg-transparent print:border-0 print:p-0">
                 <p className="whitespace-pre-wrap leading-relaxed">
                   {reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}
                 </p>
@@ -186,7 +192,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
 
             <div>
               <h3 className="font-bold text-lg mb-3">Terapija i preporuke</h3>
-              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[120px] print:bg-transparent print:border-0 print:p-0">
+              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[150px] print:bg-transparent print:border-0 print:p-0">
                 <p className="whitespace-pre-wrap leading-relaxed">
                   {therapyText || "Ovdje će biti prikazana terapija i preporuke..."}
                 </p>

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { CheckCircle, ShieldCheck } from "lucide-react";
 import type { MedicalReport } from "@/types/medical-report";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ReportVerificationProps {
   open: boolean;
@@ -32,11 +33,15 @@ export default function ReportVerification({
   currentDoctor
 }: ReportVerificationProps) {
   const [isVerifying, setIsVerifying] = useState(false);
+  const { user } = useAuth();
+
+  // Get the verified by name from authenticated user if available
+  const verifiedByName = user ? `${user.firstName} ${user.lastName}` : currentDoctor.name;
 
   const handleVerify = () => {
     setIsVerifying(true);
     if (report.id) {
-      onVerify(report.id, currentDoctor.name);
+      onVerify(report.id, verifiedByName);
       setTimeout(() => {
         setIsVerifying(false);
         onOpenChange(false);
@@ -83,7 +88,7 @@ export default function ReportVerification({
           <div className="bg-green-50 p-3 rounded-md">
             <p className="text-sm">
               Verifikacijom potvrđujete da je nalaz kompletan i ispravan.
-              Nalaz će biti označen kao verifikovan od strane {currentDoctor.name}.
+              Nalaz će biti označen kao verifikovan od strane <strong>{verifiedByName}</strong>.
             </p>
           </div>
         </div>
