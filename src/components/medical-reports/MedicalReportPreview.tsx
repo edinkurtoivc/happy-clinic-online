@@ -73,8 +73,12 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       }
     }, []);
 
-    // Get the doctor name from the context if available, otherwise use the prop
-    const displayedDoctorName = user ? `${user.firstName} ${user.lastName}` : (doctorName || "potpis doktora");
+    // Get the current user's full name for doctor signature and verification
+    const currentUserName = user ? `${user.firstName} ${user.lastName}` : "";
+    
+    // Use current user's name if available, otherwise fall back to provided names or defaults
+    const displayedDoctorName = currentUserName || doctorName || "potpis doktora";
+    const displayedVerifierName = verifiedBy && verifiedBy !== "Dr. Marko Marković" ? verifiedBy : currentUserName || verifiedBy || "";
 
     const formatDate = (dateString?: string) => {
       if (!dateString) return "";
@@ -167,8 +171,8 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                           <div className="h-2 w-2 bg-emerald-500 rounded-full mr-1"></div>
                           <p className="text-xs">Verificirano</p>
                         </div>
-                        {verifiedBy && (
-                          <p className="text-xs text-gray-600 mt-1">Verificirao: {verifiedBy}</p>
+                        {displayedVerifierName && (
+                          <p className="text-xs text-gray-600 mt-1">Verificirao: {displayedVerifierName}</p>
                         )}
                       </div>
                     )}

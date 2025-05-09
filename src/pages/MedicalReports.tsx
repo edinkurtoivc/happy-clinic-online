@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Mock data for examination types - would come from settings in a real app
 const mockExaminationTypes: ExaminationType[] = [
@@ -35,6 +36,7 @@ const currentDoctor = {
 
 export default function MedicalReports() {
   const { toast } = useToast();
+  const { user } = useAuth(); // Get the current authenticated user
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isVerificationDialogOpen, setIsVerificationDialogOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -327,9 +329,13 @@ export default function MedicalReports() {
     console.log('[MedicalReports] Audit log: Report printed', {
       reportId: savedReport?.id,
       patientId: selectedPatient?.id,
-      doctorId: currentDoctor.id,
+      doctorId: user?.id || currentDoctor.id,
       timestamp: new Date().toISOString()
     });
+    
+    // Get the current user's name for the print
+    const currentUserName = user ? `${user.firstName} ${user.lastName}` : currentDoctor.name;
+    const verifierName = savedReport?.verifiedBy || currentUserName;
     
     // Create a new window for printing
     const printWindow = window.open('', '_blank');
@@ -567,7 +573,7 @@ export default function MedicalReports() {
                   })}
                 </p>
                 <p style="font-size: 12px; color: #666;">
-                  Izdao: ${currentDoctor.name}
+                  Izdao: ${currentUserName}
                 </p>
               </div>
               <div style="text-align: right;">
@@ -586,6 +592,9 @@ export default function MedicalReports() {
                   <div class="verified-dot"></div>
                   <span>Verificirano</span>
                 </div>
+                <p style="font-size: 12px; color: #666; margin-top: 4px;">
+                  Verificirao: ${verifierName}
+                </p>
                 ` : ''}
               </div>
             </div>
@@ -611,7 +620,7 @@ export default function MedicalReports() {
               ${hasSignature ? `
                 <div>
                   <div class="signature-line"></div>
-                  <p class="signature-name">${currentDoctor.name}</p>
+                  <p class="signature-name">${currentUserName}</p>
                 </div>
               ` : ''}
               
