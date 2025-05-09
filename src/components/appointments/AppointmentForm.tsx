@@ -35,6 +35,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   const [doctors, setDoctors] = useState<User[]>([]);
   const [isLoadingPatients, setIsLoadingPatients] = useState(false);
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
+  const [appointmentTypes, setAppointmentTypes] = useState<any[]>([]);
 
   // Fetch patients from DataStorageService
   useEffect(() => {
@@ -87,6 +88,39 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
     loadDoctors();
   }, [toast]);
   
+  // Load examination types from the settings
+  useEffect(() => {
+    try {
+      const savedTypes = localStorage.getItem('examination-types');
+      if (savedTypes) {
+        const parsedTypes = JSON.parse(savedTypes);
+        if (Array.isArray(parsedTypes) && parsedTypes.length > 0) {
+          console.log("[AppointmentForm] Loaded examination types from settings:", parsedTypes);
+          setAppointmentTypes(parsedTypes);
+          return;
+        }
+      }
+
+      // Fallback to default types if no saved types found
+      setAppointmentTypes([
+        { id: 1, name: "Opći pregled", duration: "30 min", price: "50 KM" },
+        { id: 2, name: "Kardiološki pregled", duration: "45 min", price: "80 KM" },
+        { id: 3, name: "Dermatološki pregled", duration: "30 min", price: "60 KM" },
+        { id: 4, name: "Neurološki pregled", duration: "60 min", price: "100 KM" },
+        { id: 5, name: "Laboratorijski nalaz", duration: "20 min", price: "30 KM" },
+      ]);
+    } catch (error) {
+      console.error("[AppointmentForm] Error loading examination types:", error);
+      // Set default types on error
+      setAppointmentTypes([
+        { id: 1, name: "Opći pregled", duration: "30 min", price: "50 KM" },
+        { id: 2, name: "Kardiološki pregled", duration: "45 min", price: "80 KM" },
+        { id: 3, name: "Dermatološki pregled", duration: "30 min", price: "60 KM" },
+        { id: 4, name: "Neurološki pregled", duration: "60 min", price: "100 KM" },
+      ]);
+    }
+  }, []);
+  
   const getDefaultDoctors = (): User[] => {
     return [
       { 
@@ -112,27 +146,6 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
     ];
   };
   
-  const loadAppointmentTypes = () => {
-    try {
-      const savedTypes = localStorage.getItem('examinationTypes');
-      if (savedTypes) {
-        return JSON.parse(savedTypes);
-      }
-    } catch (error) {
-      console.error("[AppointmentForm] Error loading examination types:", error);
-    }
-    
-    return [
-      { id: "1", name: "Internistički pregled", duration: "30 min", price: "50 KM" },
-      { id: "2", name: "Kardiološki pregled", duration: "45 min", price: "80 KM" },
-      { id: "3", name: "Dermatološki pregled", duration: "30 min", price: "60 KM" },
-      { id: "4", name: "Neurološki pregled", duration: "60 min", price: "100 KM" },
-      { id: "5", name: "Laboratorijski nalaz", duration: "20 min", price: "30 KM" },
-    ];
-  };
-  
-  const appointmentTypes = loadAppointmentTypes();
-
   const filteredPatients = patients.filter(patient => {
     if (!searchTerm) return true;
     
@@ -165,7 +178,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
     }
     
     const selectedDoctor = doctors.find(d => d.id === selectedDoctorId);
-    const appointmentType = appointmentTypes.find(t => t.id === selectedAppointmentType)?.name;
+    const appointmentType = appointmentTypes.find(t => t.id.toString() === selectedAppointmentType)?.name;
     
     if (!selectedPatient || !selectedDoctor || !appointmentType) {
       toast({
@@ -334,7 +347,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
               </SelectTrigger>
               <SelectContent>
                 {appointmentTypes.map(type => (
-                  <SelectItem key={type.id} value={type.id}>
+                  <SelectItem key={type.id} value={type.id.toString()}>
                     {type.name} - {type.duration} ({type.price})
                   </SelectItem>
                 ))}

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -70,6 +69,7 @@ export default function MedicalReportForm({
   const { toast } = useToast();
   const [status, setStatus] = useState<"draft" | "final">("draft");
   const [formKey, setFormKey] = useState(`report-form-${Date.now()}`);
+  const [loadedExamTypes, setLoadedExamTypes] = useState<ExaminationType[]>(examinationTypes || []);
   const [formData, setFormData] = useState<MedicalReportFormData>({
     report: defaultValues?.report || "",
     therapy: defaultValues?.therapy || "",
@@ -84,6 +84,24 @@ export default function MedicalReportForm({
     defaultValues: formData,
     mode: "onChange", // Enable validation as user types
   });
+
+  // Load examination types from localStorage if not provided
+  useEffect(() => {
+    if (!examinationTypes || examinationTypes.length === 0) {
+      try {
+        const savedTypes = localStorage.getItem('examination-types');
+        if (savedTypes) {
+          const parsedTypes = JSON.parse(savedTypes);
+          if (Array.isArray(parsedTypes) && parsedTypes.length > 0) {
+            console.log("[MedicalReportForm] Loaded examination types from localStorage:", parsedTypes);
+            setLoadedExamTypes(parsedTypes);
+          }
+        }
+      } catch (error) {
+        console.error("[MedicalReportForm] Error loading examination types:", error);
+      }
+    }
+  }, [examinationTypes]);
 
   useEffect(() => {
     if (defaultValues) {
@@ -233,7 +251,7 @@ export default function MedicalReportForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {examinationTypes.map(type => (
+                        {loadedExamTypes.map(type => (
                           <SelectItem key={type.id} value={type.name}>
                             {type.name}
                           </SelectItem>

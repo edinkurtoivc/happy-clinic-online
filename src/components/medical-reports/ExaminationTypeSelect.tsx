@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import type { ExaminationType } from "@/types/medical-report";
 
@@ -15,6 +16,26 @@ export default function ExaminationTypeSelect({
   examinationTypes,
   disabled 
 }: ExaminationTypeSelectProps) {
+  const [loadedTypes, setLoadedTypes] = useState<ExaminationType[]>(examinationTypes || []);
+
+  // Load examination types from localStorage if no types are provided
+  useEffect(() => {
+    if (!examinationTypes || examinationTypes.length === 0) {
+      try {
+        const savedTypes = localStorage.getItem('examination-types');
+        if (savedTypes) {
+          const parsedTypes = JSON.parse(savedTypes);
+          if (Array.isArray(parsedTypes) && parsedTypes.length > 0) {
+            console.log("[ExaminationTypeSelect] Loaded examination types from localStorage:", parsedTypes);
+            setLoadedTypes(parsedTypes);
+          }
+        }
+      } catch (error) {
+        console.error("[ExaminationTypeSelect] Error loading examination types:", error);
+      }
+    }
+  }, [examinationTypes]);
+
   return (
     <div className="mb-6">
       <label className="block text-sm font-medium mb-2">Vrsta pregleda</label>
@@ -25,7 +46,7 @@ export default function ExaminationTypeSelect({
         disabled={disabled}
       >
         <option value="">Odaberite vrstu pregleda</option>
-        {examinationTypes.map(type => (
+        {loadedTypes.map(type => (
           <option key={type.id} value={type.name}>{type.name}</option>
         ))}
       </select>
