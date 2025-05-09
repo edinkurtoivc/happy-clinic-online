@@ -30,6 +30,7 @@ export interface MedicalReport {
   verifiedAt?: string;
   verifiedBy?: string;
   verificationStatus: 'unverified' | 'pending' | 'verified';
+  reportCode?: string; // Added unique report code
 }
 
 export interface MedicalReportVersion {

@@ -8,7 +8,7 @@ import ExaminationTypeSelect from "@/components/medical-reports/ExaminationTypeS
 import ReportEditor from "@/components/medical-reports/ReportEditor";
 import { useSaveData } from "@/hooks/useSaveData";
 import { saveMedicalReport } from "@/utils/fileSystemUtils";
-import { isAbsolutePath, normalizePath, createReportData } from "@/utils/reportUtils";
+import { isAbsolutePath, normalizePath, createReportData, generateReportCode } from "@/utils/reportUtils";
 import type { MedicalReport, ExaminationType } from "@/types/medical-report";
 import type { Patient } from "@/types/patient";
 import { ensurePatient } from "@/types/patient";
@@ -50,6 +50,7 @@ export default function MedicalReports() {
   const reportPreviewRef = useRef<HTMLDivElement>(null);
   const [examinationTypes] = useState<ExaminationType[]>(mockExaminationTypes);
   const [isSavingToFileSystem, setIsSavingToFileSystem] = useState(false);
+  const [reportCode, setReportCode] = useState<string | undefined>(undefined);
 
   // Auto-save for the report editor
   const { saveStatus, lastSaved } = useSaveData({
@@ -96,7 +97,7 @@ export default function MedicalReports() {
     });
     
     setSelectedPatient(typedPatient);
-    // Reset the report form when a new patient is selected
+    // When a new patient is selected, reset the report state
     if (isSaved) {
       resetReportState();
     }
@@ -110,11 +111,15 @@ export default function MedicalReports() {
     setSavedReport(null);
     setHasSignature(false);
     setHasStamp(false);
+    setReportCode(undefined); // Reset report code when creating new report
   };
 
   const handleCreateReport = async (data: Partial<MedicalReport>) => {
     // Will implement with Supabase later
     console.log('[MedicalReports] Creating medical report:', data);
+    
+    // Generate a report code if not already set
+    const reportCodeToUse = data.reportCode || generateReportCode();
     
     // For now, simulate saving with an ID
     const savedReportData: Partial<MedicalReport> = {
@@ -127,8 +132,12 @@ export default function MedicalReports() {
       doctorInfo: {
         fullName: currentDoctor.name,
         specialization: currentDoctor.specialization
-      }
+      },
+      reportCode: reportCodeToUse, // Include the report code
     };
+    
+    // Update state with the report code
+    setReportCode(reportCodeToUse);
     
     // Try to save to file system if available
     const basePath = localStorage.getItem('dataFolderPath');
@@ -554,6 +563,7 @@ export default function MedicalReports() {
               verifiedBy={savedReport?.verifiedBy}
               appointmentType={selectedExamType}
               doctorName={currentDoctor.name}
+              reportCode={savedReport?.reportCode || reportCode}
             />
           </div>
         </div>

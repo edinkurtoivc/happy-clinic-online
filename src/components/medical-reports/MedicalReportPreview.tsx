@@ -30,6 +30,7 @@ interface MedicalReportPreviewProps {
   verifiedBy?: string;
   appointmentType?: string;
   doctorName?: string;
+  reportCode?: string; // Added report code prop
 }
 
 const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProps>(
@@ -43,7 +44,8 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     isSaved,
     verificationStatus = 'unverified',
     appointmentType,
-    doctorName
+    doctorName,
+    reportCode, // Added report code parameter
   }, ref) => {
     const { user } = useAuth();
     const [clinicInfo, setClinicInfo] = useState<ClinicInfo>({
@@ -140,13 +142,18 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                 <p className="mt-2">Datum i vrijeme ispisa: {nowDateTime}</p>
                 <p>Izdao: {displayedDoctorName}</p>
               </div>
-              {appointmentType && (
-                <div className="flex items-center justify-end">
+              <div className="flex flex-col items-end justify-start">
+                {reportCode && (
+                  <p className="font-bold bg-gray-100 p-1 px-2 rounded border text-emerald-700 mb-2">
+                    Broj nalaza: {reportCode}
+                  </p>
+                )}
+                {appointmentType && (
                   <p className="font-medium text-emerald-700 text-right">
                     Vrsta pregleda: {appointmentType}
                   </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
