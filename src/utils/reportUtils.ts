@@ -1,3 +1,4 @@
+
 import type { MedicalReport } from "@/types/medical-report";
 import { MedicalReportFormData } from "@/components/medical-reports/MedicalReportForm";
 

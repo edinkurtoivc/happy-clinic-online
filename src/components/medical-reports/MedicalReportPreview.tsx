@@ -30,7 +30,7 @@ interface MedicalReportPreviewProps {
   verifiedBy?: string;
   appointmentType?: string;
   doctorName?: string;
-  reportCode?: string; // Added report code prop
+  reportCode?: string;
 }
 
 const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProps>(
@@ -45,7 +45,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     verificationStatus = 'unverified',
     appointmentType,
     doctorName,
-    reportCode, // Added report code parameter
+    reportCode, 
   }, ref) => {
     const { user } = useAuth();
     const [clinicInfo, setClinicInfo] = useState<ClinicInfo>({
@@ -102,6 +102,15 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       <div className="flex flex-col h-full">
         <div className="flex justify-between mb-4 print:hidden">
           <h2 className="text-xl font-semibold">Pregled uživo</h2>
+          <Button 
+            onClick={onPrint} 
+            disabled={!isSaved || verificationStatus !== 'verified'} 
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            Print nalaza
+          </Button>
         </div>
         
         <Card className="p-6 font-['Open_Sans'] text-sm flex-1 overflow-auto mx-auto max-w-[210mm] print:p-0 print:border-0 print:shadow-none print:max-w-full print:overflow-visible" ref={ref}>
@@ -114,17 +123,15 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                   className="h-14 mb-2 object-contain"
                 />
               ) : (
-                <img 
-                  src="/placeholder.svg" 
-                  alt="Clinic Logo" 
-                  className="h-14 mb-2"
-                />
+                <div className="h-14 mb-2 flex items-center justify-center bg-emerald-50 rounded-md px-4">
+                  <span className="text-emerald-600 font-bold">{clinicInfo.name}</span>
+                </div>
               )}
             </div>
             
             <div className="text-right">
               <h2 className="font-semibold text-lg text-emerald-600">{clinicInfo.name}</h2>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 {clinicInfo.address}, {clinicInfo.city}<br />
                 {clinicInfo.email}<br />
                 {clinicInfo.phone}
@@ -136,22 +143,30 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             <div className="grid md:grid-cols-2 gap-4 print:grid-cols-2">
               <div>
                 <p className="font-bold">Ime i Prezime: {patient ? patient.name : ""}</p>
-                <p>Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
-                <p>Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
-                <p>JMBG: {patient ? patient.jmbg : ""}</p>
-                <p className="mt-2">Datum i vrijeme ispisa: {nowDateTime}</p>
-                <p>Izdao: {displayedDoctorName}</p>
+                <p className="text-sm text-gray-700">Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
+                <p className="text-sm text-gray-700">Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
+                <p className="text-sm text-gray-700">JMBG: {patient ? patient.jmbg : ""}</p>
+                <p className="mt-2 text-xs text-muted-foreground">Datum i vrijeme ispisa: {nowDateTime}</p>
+                <p className="text-xs text-muted-foreground">Izdao: {displayedDoctorName}</p>
               </div>
               <div className="flex flex-col items-end justify-start">
                 {reportCode && (
-                  <p className="font-bold bg-gray-100 p-1 px-2 rounded border text-emerald-700 mb-2">
+                  <p className="font-bold bg-gray-50 p-2 px-3 rounded-md border border-gray-200 text-emerald-700 mb-2">
                     Broj nalaza: {reportCode}
                   </p>
                 )}
                 {appointmentType && (
-                  <p className="font-medium text-emerald-700 text-right">
-                    Vrsta pregleda: {appointmentType}
-                  </p>
+                  <div className="mt-2">
+                    <p className="font-medium text-emerald-700 text-right">
+                      Vrsta pregleda: <span className="font-normal">{appointmentType}</span>
+                    </p>
+                    {verificationStatus === 'verified' && (
+                      <div className="flex items-center text-emerald-600 justify-end mt-1">
+                        <div className="h-2 w-2 bg-emerald-500 rounded-full mr-1"></div>
+                        <p className="text-xs">Verificirano</p>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -191,13 +206,19 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                   )}
                   
                   {showStamp && (
-                    <div className="border-2 border-dashed border-gray-300 rounded-full w-24 h-24 flex items-center justify-center text-gray-400">
+                    <div className="border-2 border-dashed border-gray-300 rounded-full w-24 h-24 flex items-center justify-center text-gray-400 print:border-gray-400">
                       Pečat
                     </div>
                   )}
                 </div>
               </div>
             )}
+          </div>
+          
+          {/* Footer - only visible in print */}
+          <div className="hidden print:block mt-10 pt-8 border-t text-center text-xs text-gray-500 px-6">
+            <p>{clinicInfo.name} - {clinicInfo.address}, {clinicInfo.city}</p>
+            <p>{clinicInfo.phone} | {clinicInfo.email}</p>
           </div>
         </Card>
       </div>
