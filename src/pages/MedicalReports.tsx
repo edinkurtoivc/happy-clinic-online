@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import dataStorageService from "@/services/DataStorageService";
 import MedicalReportVersions from "@/components/medical-reports/MedicalReportVersions";
 import { ReasonDialog } from "@/components/patient-chart/ReasonDialog";
-
+import QRCode from "qrcode";
 
 // Mock current user/doctor
 const currentDoctor = {
@@ -491,332 +491,161 @@ try {
     const currentUserName = user ? `${user.firstName} ${user.lastName}` : currentDoctor.name;
     const verifierName = savedReport?.verifiedBy || currentUserName;
     
-    // Create a new window for printing
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast({
-        title: "Greška",
-        description: "Nije moguće otvoriti prozor za printanje. Provjerite postavke browsera.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Write proper HTML with all necessary styles to the new window
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Nalaz - ${selectedPatient?.name || 'Pacijent'}</title>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-          <style>
-            @media print {
-              @page {
-                size: A4;
-                margin: 15mm;
-              }
-            }
-            
-            body {
-              font-family: 'Open Sans', sans-serif;
-              color: #333;
-              line-height: 1.6;
-              margin: 0;
-              padding: 0;
-            }
-            
-            .print-container {
-              max-width: 210mm;
-              margin: 0 auto;
-              padding: 20px;
-              box-sizing: border-box;
-            }
-            
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              margin-bottom: 30px;
-              padding-bottom: 10px;
-            }
-            
-            .clinic-name {
-              font-weight: bold;
-              font-size: 20px;
-              color: #059669;
-            }
-            
-            .clinic-info {
-              font-size: 12px;
-              color: #666;
-              text-align: right;
-            }
-            
-            .patient-info {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 20px;
-              margin-bottom: 20px;
-            }
-            
-            .separator {
-              border-top: 1px solid #e5e7eb;
-              margin: 20px 0;
-            }
-            
-            .report-code {
-              font-weight: bold;
-              background: #f9fafb;
-              padding: 8px 12px;
-              border: 1px solid #e5e7eb;
-              border-radius: 4px;
-              color: #059669;
-              display: inline-block;
-            }
-            
-            .exam-type {
-              font-weight: medium;
-              color: #059669;
-              margin-top: 8px;
-              text-align: right;
-            }
-            
-            .verified-badge {
-              display: flex;
-              align-items: center;
-              color: #059669;
-              font-size: 12px;
-              justify-content: flex-end;
-              margin-top: 4px;
-            }
-            
-            .verified-dot {
-              height: 8px;
-              width: 8px;
-              background-color: #059669;
-              border-radius: 50%;
-              margin-right: 4px;
-            }
-            
-            .content-section {
-              margin-bottom: 30px;
-            }
-            
-            .section-title {
-              font-weight: bold;
-              margin-bottom: 10px;
-              font-size: 16px;
-            }
-            
-            .content-box {
-              padding: 15px;
-              background: #f9fafb;
-              border: 1px solid #e5e7eb;
-              border-radius: 6px;
-              min-height: 100px;
-              white-space: pre-wrap;
-            }
-            
-            .signature-area {
-              display: flex;
-              justify-content: flex-end;
-              align-items: flex-end;
-              margin-top: 60px;
-              gap: 20px;
-            }
-            
-            .signature-line {
-              border-bottom: 1px solid #000;
-              width: 120px;
-              display: inline-block;
-              margin-bottom: 4px;
-            }
-            
-            .signature-name {
-              font-size: 12px;
-              color: #666;
-              text-align: center;
-            }
-            
-            .stamp {
-              border: 2px dashed #ccc;
-              border-radius: 50%;
-              width: 100px;
-              height: 100px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: #999;
-            }
-            
-            .footer {
-              margin-top: 60px;
-              padding-top: 10px;
-              border-top: 1px solid #e5e7eb;
-              text-align: center;
-              font-size: 12px;
-              color: #666;
-            }
-            
-            @media print {
-              .content-box {
-                background: transparent;
-                border: none;
-                padding: 0;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="print-container">
-            <div class="header">
-              <div>
-                ${localStorage.getItem('clinicInfo') ? 
-                  JSON.parse(localStorage.getItem('clinicInfo') || '{}').logo ? 
-                  `<img src="${JSON.parse(localStorage.getItem('clinicInfo') || '{}').logo}" alt="Clinic Logo" style="height: 60px; margin-bottom: 10px;">` : 
-                  `<div class="clinic-name">${JSON.parse(localStorage.getItem('clinicInfo') || '{}').name || 'Spark Studio'}</div>` :
-                  '<div class="clinic-name">Spark Studio</div>'}
-              </div>
-              <div class="clinic-info">
-                ${(() => {
-                  try {
-                    const info = JSON.parse(localStorage.getItem('clinicInfo') || '{}');
-                    return `
-                      <div class="clinic-name">${info.name || 'Spark Studio'}</div>
-                      <p>
-                        ${info.address || 'Ozimice 1'}, ${info.city || 'Bihać'}<br>
-                        ${info.email || 'spark.studio.dev@gmail.com'}<br>
-                        ${info.phone || '387 61 123 456'}
-                      </p>
-                    `;
-                  } catch (e) {
-                    return `
-                      <div class="clinic-name">Spark Studio</div>
-                      <p>Ozimice 1, Bihać<br>spark.studio.dev@gmail.com<br>387 61 123 456</p>
-                    `;
-                  }
-                })()}
-              </div>
-            </div>
-            
-            <div class="patient-info">
-              <div>
-                <p><strong>Ime i Prezime:</strong> ${selectedPatient ? selectedPatient.name : ""}</p>
-                <p><strong>Datum rođenja:</strong> ${selectedPatient ? (() => {
-                  try {
-                    return new Date(selectedPatient.dob).toLocaleDateString('bs-BA', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric'
-                    });
-                  } catch (e) {
-                    return selectedPatient.dob || "";
-                  }
-                })() : ""}</p>
-                <p><strong>Spol:</strong> ${selectedPatient ? (selectedPatient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
-                <p><strong>JMBG:</strong> ${selectedPatient ? selectedPatient.jmbg : ""}</p>
-                <p style="margin-top: 10px; font-size: 12px; color: #666;">
-                  Datum i vrijeme izdavanja: ${new Date().toLocaleDateString('bs-BA', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
-                <p style="font-size: 12px; color: #666;">
-                  Izdao: ${currentUserName}
-                </p>
-              </div>
-              <div style="text-align: right;">
-                ${savedReport?.reportCode ? `
-                <div class="report-code">
-                  Broj nalaza: ${savedReport.reportCode}
-                </div>
-                ` : ''}
-                ${selectedExamType ? `
-                <div class="exam-type">
-                  Vrsta pregleda: ${selectedExamType}
-                </div>
-                ` : ''}
-                ${savedReport?.verificationStatus === 'verified' ? `
-                <div class="verified-badge">
-                  <div class="verified-dot"></div>
-                  <span>Verificirano</span>
-                </div>
-                <p style="font-size: 12px; color: #666; margin-top: 4px;">
-                  Verificirao: ${verifierName}
-                </p>
-                ` : ''}
-              </div>
-            </div>
-            
-            <div class="separator"></div>
-            
-            <div class="content-section">
-              <div class="section-title">Nalaz</div>
-              <div class="content-box">
-                ${reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}
-              </div>
-            </div>
-            
-            <div class="content-section">
-              <div class="section-title">Terapija i preporuke</div>
-              <div class="content-box">
-                ${therapyText || "Ovdje će biti prikazana terapija i preporuke..."}
-              </div>
-            </div>
-            
-            ${hasSignature || hasStamp ? `
-            <div class="signature-area">
-              ${hasSignature ? `
+    // Prepare QR and open print window when ready
+    const computeHash = async (input: string) => {
+      const data = new TextEncoder().encode(input);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    };
+
+    const buildQr = async () => {
+      try {
+        const clinicInfoRaw = localStorage.getItem('clinicInfo');
+        const clinicName = clinicInfoRaw ? (JSON.parse(clinicInfoRaw).name || 'Spark Studio') : 'Spark Studio';
+        const payload = JSON.stringify({
+          code: savedReport?.reportCode || reportCode || '',
+          patient: selectedPatient ? { name: selectedPatient.name, jmbg: selectedPatient.jmbg } : {},
+          type: selectedExamType || '',
+          doctor: currentUserName,
+          clinic: clinicName,
+          t: new Date().toISOString(),
+        });
+        const hash = await computeHash(payload);
+        const text = `MR:${savedReport?.reportCode || reportCode || ''}|H:${hash}`;
+        const url = await QRCode.toDataURL(text, { margin: 0, width: 96 });
+        return url;
+      } catch (e) {
+        console.warn('[MedicalReports] QR generation failed', e);
+        return '';
+      }
+    };
+
+    buildQr().then((qrUrl) => {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast({
+          title: "Greška",
+          description: "Nije moguće otvoriti prozor za printanje. Provjerite postavke browsera.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Nalaz - ${selectedPatient?.name || 'Pacijent'}</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              @media print { @page { size: A4; margin: 15mm; } .content-box { background: transparent; border: none; padding: 0; } }
+              body { font-family: 'Open Sans', sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 0; }
+              .print-container { max-width: 210mm; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+              .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 10px; }
+              .clinic-name { font-weight: bold; font-size: 20px; color: #059669; }
+              .clinic-info { font-size: 12px; color: #666; text-align: right; }
+              .patient-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+              .separator { border-top: 1px solid #e5e7eb; margin: 20px 0; }
+              .report-code { font-weight: bold; background: #f9fafb; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 4px; color: #059669; display: inline-block; }
+              .exam-type { font-weight: medium; color: #059669; margin-top: 8px; text-align: right; }
+              .verified-badge { display: flex; align-items: center; color: #059669; font-size: 12px; justify-content: flex-end; margin-top: 4px; }
+              .verified-dot { height: 8px; width: 8px; background-color: #059669; border-radius: 50%; margin-right: 4px; }
+              .content-section { margin-bottom: 30px; }
+              .section-title { font-weight: bold; margin-bottom: 10px; font-size: 16px; }
+              .content-box { padding: 15px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; min-height: 100px; white-space: pre-wrap; }
+              .signature-area { display: flex; justify-content: flex-end; align-items: flex-end; margin-top: 60px; gap: 20px; }
+              .signature-line { border-bottom: 1px solid #000; width: 120px; display: inline-block; margin-bottom: 4px; }
+              .signature-name { font-size: 12px; color: #666; text-align: center; }
+              .stamp { border: 2px dashed #ccc; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; color: #999; }
+              .footer { margin-top: 60px; padding-top: 10px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #666; }
+            </style>
+          </head>
+          <body>
+            <div class="print-container">
+              <div class="header">
                 <div>
-                  <div class="signature-line"></div>
-                  <p class="signature-name">${currentUserName}</p>
+                  ${localStorage.getItem('clinicInfo') ? 
+                    JSON.parse(localStorage.getItem('clinicInfo') || '{}').logo ? 
+                    `<img src="${JSON.parse(localStorage.getItem('clinicInfo') || '{}').logo}" alt="Clinic Logo" style="height: 60px; margin-bottom: 10px;">` : 
+                    `<div class="clinic-name">${JSON.parse(localStorage.getItem('clinicInfo') || '{}').name || 'Spark Studio'}</div>` :
+                    '<div class="clinic-name">Spark Studio</div>'}
                 </div>
-              ` : ''}
+                <div class="clinic-info">
+                  ${(() => {
+                    try {
+                      const info = JSON.parse(localStorage.getItem('clinicInfo') || '{}');
+                      return `
+                        <div class="clinic-name">${info.name || 'Spark Studio'}</div>
+                        <p>
+                          ${info.address || 'Ozimice 1'}, ${info.city || 'Bihać'}<br>
+                          ${info.email || 'spark.studio.dev@gmail.com'}<br>
+                          ${info.phone || '387 61 123 456'}
+                        </p>
+                      `;
+                    } catch (e) {
+                      return `
+                        <div class="clinic-name">Spark Studio</div>
+                        <p>Ozimice 1, Bihać<br>spark.studio.dev@gmail.com<br>387 61 123 456</p>
+                      `;
+                    }
+                  })()}
+                </div>
+              </div>
               
-              ${hasStamp ? `
-                <div class="stamp">Pečat</div>
-              ` : ''}
+              <div class="patient-info">
+                <div>
+                  <p><strong>Ime i Prezime:</strong> ${selectedPatient ? selectedPatient.name : ""}</p>
+                  <p><strong>Datum rođenja:</strong> ${selectedPatient ? (() => { try { return new Date(selectedPatient.dob).toLocaleDateString('bs-BA',{day:'2-digit',month:'2-digit',year:'numeric'});} catch(e){ return selectedPatient.dob || ""; } })() : ""}</p>
+                  <p><strong>Spol:</strong> ${selectedPatient ? (selectedPatient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
+                  <p><strong>JMBG:</strong> ${selectedPatient ? selectedPatient.jmbg : ""}</p>
+                  <p style="margin-top: 10px; font-size: 12px; color: #666;">Datum i vrijeme izdavanja: ${new Date().toLocaleDateString('bs-BA',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</p>
+                  <p style="font-size: 12px; color: #666;">Izdao: ${currentUserName}</p>
+                </div>
+                <div style="text-align: right;">
+                  ${savedReport?.reportCode ? `<div class="report-code">Broj nalaza: ${savedReport.reportCode}</div>` : ''}
+                  ${selectedExamType ? `<div class="exam-type">Vrsta pregleda: ${selectedExamType}</div>` : ''}
+                  ${qrUrl ? `<img src="${qrUrl}" alt="QR kod nalaza" style="width:96px;height:96px;margin-top:8px;" />` : ''}
+                  ${savedReport?.verificationStatus === 'verified' ? `
+                    <div class="verified-badge"><div class="verified-dot"></div><span>Verificirano</span></div>
+                    <p style="font-size: 12px; color: #666; margin-top: 4px;">Verificirao: ${verifierName}</p>
+                  ` : ''}
+                </div>
+              </div>
+              
+              <div class="separator"></div>
+              
+              <div class="content-section">
+                <div class="section-title">Nalaz</div>
+                <div class="content-box">${reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}</div>
+              </div>
+              
+              <div class="content-section">
+                <div class="section-title">Terapija i preporuke</div>
+                <div class="content-box">${therapyText || "Ovdje će biti prikazana terapija i preporuke..."}</div>
+              </div>
+              
+              ${hasSignature || hasStamp ? `
+              <div class="signature-area">
+                ${hasSignature ? `<div><div class="signature-line"></div><p class="signature-name">${currentUserName}</p></div>` : ''}
+                ${hasStamp ? `<div class="stamp">Pečat</div>` : ''}
+              </div>` : ''}
+              
+              <div class="footer">
+                ${(() => { try { const info = JSON.parse(localStorage.getItem('clinicInfo') || '{}'); return `${info.name || 'Spark Studio'} - ${info.address || 'Ozimice 1'}, ${info.city || 'Bihać'}<br>${info.phone || '387 61 123 456'} | ${info.email || 'spark.studio.dev@gmail.com'}`; } catch (e) { return 'Spark Studio - Ozimice 1, Bihać<br>387 61 123 456 | spark.studio.dev@gmail.com'; } })()}
+              </div>
             </div>
-            ` : ''}
-            
-            <div class="footer">
-              ${(() => {
-                try {
-                  const info = JSON.parse(localStorage.getItem('clinicInfo') || '{}');
-                  return `${info.name || 'Spark Studio'} - ${info.address || 'Ozimice 1'}, ${info.city || 'Bihać'}<br>${info.phone || '387 61 123 456'} | ${info.email || 'spark.studio.dev@gmail.com'}`;
-                } catch (e) {
-                  return 'Spark Studio - Ozimice 1, Bihać<br>387 61 123 456 | spark.studio.dev@gmail.com';
-                }
-              })()}
-            </div>
-          </div>
-          <script>
-            // Open print dialog after everything is loaded
-            window.addEventListener('load', function() {
-              // Add a slight delay to ensure all fonts and styles are loaded
-              setTimeout(() => {
-                window.print();
-              }, 500);
-            });
-            
-            // Close window after printing
-            window.addEventListener('afterprint', function() {
-              window.close();
-            });
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    
-    toast({
-      title: "Printanje",
-      description: "Dijalog za printanje je otvoren.",
+            <script>
+              window.addEventListener('load', function(){ setTimeout(() => { window.print(); }, 400); });
+              window.addEventListener('afterprint', function(){ window.close(); });
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      toast({ title: "Printanje", description: "Dijalog za printanje je otvoren." });
     });
   };
 
@@ -955,6 +784,22 @@ try {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ReasonDialog
+        open={reasonOpen}
+        onClose={() => setReasonOpen(false)}
+        title="Razlog izmjene nalaza"
+        description="Molimo unesite razlog izmjene finalizovanog nalaza."
+        label="Razlog"
+        confirmText="Nastavi"
+        cancelText="Odustani"
+        onConfirm={(reason) => {
+          setEditReason(reason);
+          setReasonOpen(false);
+          setIsEditingReport(true);
+          setShowFinalizeConfirm(true);
+        }}
+      />
     </div>
   );
 }
