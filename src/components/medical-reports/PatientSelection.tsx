@@ -126,7 +126,7 @@ export default function PatientSelection({ selectedPatient, onSelectPatient, onV
         </div>
         
         {showPatientsDropdown && (
-          <div className="absolute z-10 w-full bg-white border rounded-md mt-1 shadow-md">
+          <div className="absolute z-50 w-full bg-popover text-popover-foreground border rounded-md mt-1 shadow-md not-italic">
             <div className="relative m-2">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input 
@@ -147,10 +147,10 @@ export default function PatientSelection({ selectedPatient, onSelectPatient, onV
                   return (
                     <div 
                       key={patient.id} 
-                      className="p-2 hover:bg-gray-100 cursor-pointer flex flex-col"
+                      className="p-2 hover:bg-accent/50 cursor-pointer flex flex-col not-italic"
                       onClick={() => handleSelectPatient(patient)}
                     >
-                      <span className="font-medium">{patientWithName.name}</span>
+                      <span className="font-normal not-italic">{patientWithName.name}</span>
                       <span className="text-sm text-muted-foreground">
                         {patient.jmbg ? `JMBG: ${patient.jmbg} · ` : ''}
                         {patient.dob ? `Rođen: ${patient.dob}` : ''}
@@ -167,7 +167,7 @@ export default function PatientSelection({ selectedPatient, onSelectPatient, onV
             
             <a 
               href="/patients"
-              className="p-2 hover:bg-gray-100 cursor-pointer flex border-t text-emerald-600"
+              className="p-2 hover:bg-accent/50 cursor-pointer flex border-t text-primary"
               onClick={(e) => {
                 e.preventDefault();
                 window.location.href = '/patients';
