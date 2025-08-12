@@ -13,6 +13,7 @@ import { ConfirmDialog } from "@/components/patient-chart/ConfirmDialog";
 import { ResultEntryDialog, type ResultPayload } from "@/components/patient-chart/ResultEntryDialog";
 import VitalSignsTab, { type VitalSign } from "@/components/patient-chart/VitalSignsTab";
 import SectionPdfDialog from "@/components/patient-chart/SectionPdfDialog";
+import html2pdf from "html2pdf.js";
 
 interface ProblemItem { id: string; description: string; status: "active" | "resolved"; code?: string }
 interface AllergyItem { id: string; substance: string; reaction?: string; severity?: "mild" | "moderate" | "severe" }
@@ -90,6 +91,19 @@ export default function PatientChartTab({ patient }: { patient: any }) {
     } catch {}
   };
 
+  // Allergy check helper
+  const checkAllergyConflict = (medicationName: string) => {
+    const name = medicationName.toLowerCase();
+    const matches = (clinical.allergies || []).filter(a => a.substance && name.includes(a.substance.toLowerCase()));
+    if (!matches.length) return null;
+    // pick highest severity
+    const order = { mild: 1, moderate: 2, severe: 3 } as const;
+    let top = matches[0];
+    for (const m of matches) {
+      if (order[(m.severity || 'mild') as keyof typeof order] > order[(top.severity || 'mild') as keyof typeof order]) top = m;
+    }
+    return { severity: (top.severity || 'mild') as 'mild'|'moderate'|'severe', substances: matches.map(m => m.substance) };
+  };
   // handlers
   const addProblem = () => {
     if (!problemText.trim()) return;
@@ -136,12 +150,51 @@ export default function PatientChartTab({ patient }: { patient: any }) {
 
   const addMedication = () => {
     if (!medName.trim()) return;
+    const conflict = checkAllergyConflict(medName.trim());
+    if (conflict) {
+      const isSevere = conflict.severity === 'severe';
+      confirmRef.current = {
+        title: isSevere ? 'OPASNOST: Teška alergija' : 'Upozorenje: Moguća alergija',
+        description: `Lijek '${medName.trim()}' se poklapa sa alergijama: ${conflict.substances.join(', ')}. ${isSevere ? 'Potrebno je unijeti razlog za override.' : 'Želite li nastaviti?'}`,
+        requireReason: isSevere,
+        destructive: isSevere,
+        onConfirm: (reason?: string) => {
+          const next = { ...clinical, medications: [{ id: `${Date.now()}`, name: medName.trim(), dose: medDose || undefined, route: medRoute || undefined, active: true }, ...clinical.medications] };
+          persist(next, `dodat lijek '${medName.trim()}'${reason ? `. Override razlog: ${reason}` : ''}`);
+          setMedName(""); setMedDose(""); setMedRoute("");
+          toast({ title: isSevere ? 'Override primijenjen' : 'Lijek dodat', description: isSevere ? 'Teška alergija – override uz razlog.' : 'Lijek je dodat.' });
+        }
+      };
+      setConfirmOpen(true);
+      return;
+    }
     const next = { ...clinical, medications: [{ id: `${Date.now()}`, name: medName.trim(), dose: medDose || undefined, route: medRoute || undefined, active: true }, ...clinical.medications] };
     persist(next, `dodat lijek '${medName.trim()}'`);
     setMedName(""); setMedDose(""); setMedRoute("");
     toast({ title: "Sačuvano", description: "Lijek je dodat." });
   };
   const toggleMedication = (id: string) => {
+    const med = clinical.medications.find(m => m.id === id);
+    if (!med) return;
+    // If activating and conflict exists, warn/require reason depending on severity
+    if (!med.active) {
+      const conflict = checkAllergyConflict(med.name);
+      if (conflict) {
+        const isSevere = conflict.severity === 'severe';
+        confirmRef.current = {
+          title: isSevere ? 'OPASNOST: Teška alergija' : 'Upozorenje: Moguća alergija',
+          description: `Lijek '${med.name}' se poklapa sa alergijama: ${conflict.substances.join(', ')}. ${isSevere ? 'Potrebno je unijeti razlog za override.' : 'Želite li nastaviti?'}`,
+          requireReason: isSevere,
+          destructive: isSevere,
+          onConfirm: (reason?: string) => {
+            const next = { ...clinical, medications: clinical.medications.map(m => m.id === id ? { ...m, active: true } : m) };
+            persist(next, `lijek ${id} aktiviran${reason ? `. Override razlog: ${reason}` : ''}`);
+          }
+        };
+        setConfirmOpen(true);
+        return;
+      }
+    }
     const next = { ...clinical, medications: clinical.medications.map(m => m.id === id ? { ...m, active: !m.active } : m) };
     persist(next, `lijek ${id} promjena statusa`);
   };
@@ -200,8 +253,41 @@ export default function PatientChartTab({ patient }: { patient: any }) {
     setResultOpen(true);
   };
 
+  // PDF export selected sections
+  const exportSelectedSections = async (sections: string[]) => {
+    try {
+      const container = document.createElement('div');
+      container.style.padding = '16px';
+      for (const id of sections) {
+        const el = document.getElementById(`section-${id}`);
+        if (el) {
+          const clone = el.cloneNode(true) as HTMLElement;
+          const wrap = document.createElement('div');
+          wrap.style.marginBottom = '16px';
+          wrap.appendChild(clone);
+          container.appendChild(wrap);
+        }
+      }
+      if (!container.childNodes.length) {
+        toast({ title: 'PDF', description: 'Nema odabranih sekcija za izvoz.' });
+        return;
+      }
+      await html2pdf().set({
+        margin: 10,
+        filename: `karton-${patient?.lastName || 'pacijent'}.pdf`,
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).from(container).save();
+      toast({ title: 'PDF generisan', description: 'Dokument je spreman.' });
+    } catch (e) {
+      console.error('[PDF] export error', e);
+      toast({ title: 'Greška pri PDF izvozu', description: 'Pokušajte ponovo.', variant: 'destructive' });
+    }
+  };
   return (
     <div className="space-y-4">
+      <div className="flex justify-end mb-2">
+        <Button variant="outline" onClick={() => setPdfOpen(true)}>PDF izvoz</Button>
+      </div>
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Pregled</TabsTrigger>
@@ -513,9 +599,9 @@ export default function PatientChartTab({ patient }: { patient: any }) {
           toast({ title: 'Rezultat unesen', description: 'Rezultat je sačuvan i dodan u historiju.' });
         }}
       />
-      <SectionPdfDialog open={pdfOpen} onClose={() => setPdfOpen(false)} sections={pdfSections} onConfirm={(sections) => {
+      <SectionPdfDialog open={pdfOpen} onClose={() => setPdfOpen(false)} sections={pdfSections} onConfirm={async (sections) => {
         setPdfOpen(false);
-        toast({ title: 'PDF', description: `Odabrane sekcije: ${sections.join(', ')}` });
+        await exportSelectedSections(sections);
       }} />
     </div>
   );
