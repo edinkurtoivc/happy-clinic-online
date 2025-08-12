@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import CancelAppointmentDialog from "./CancelAppointmentDialog";
+import RescheduleAppointmentDialog from "./RescheduleAppointmentDialog";
 import type { Appointment } from "@/types/medical-report";
 import dataStorageService from "@/services/DataStorageService";
 
@@ -82,6 +83,7 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
   const [appointments, setAppointments] = useState<AppointmentWithCancellation[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithCancellation | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -181,6 +183,40 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
     setSelectedAppointment(null);
   };
   
+  const handleRescheduleConfirm = async (updated: Appointment) => {
+    try {
+      const updatedList = appointments.map(a => a.id === updated.id ? { ...a, date: updated.date, time: updated.time, status: updated.status } : a);
+      setAppointments(updatedList);
+      localStorage.setItem('appointments', JSON.stringify(updatedList));
+      await dataStorageService.updateAppointment(updated);
+
+      // Audit
+      try {
+        const currentUser = localStorage.getItem('currentUser');
+        const performedBy = currentUser ? `${JSON.parse(currentUser).firstName} ${JSON.parse(currentUser).lastName}` : 'unknown';
+        const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+        logs.push({
+          id: Date.now(),
+          action: 'update',
+          entityType: 'appointment',
+          entityId: updated.id,
+          performedBy,
+          performedAt: new Date().toISOString(),
+          details: `Termin pomjeren na ${updated.date} ${updated.time}`,
+          appointmentId: updated.id,
+        });
+        localStorage.setItem('auditLogs', JSON.stringify(logs));
+      } catch {}
+
+      toast({ title: 'Termin pomjeren', description: 'Termin je uspješno pomjeren' });
+    } catch (e) {
+      console.error('[AppointmentsList] Reschedule failed', e);
+      toast({ title: 'Greška', description: 'Nije moguće pomjeriti termin', variant: 'destructive' });
+    } finally {
+      setShowRescheduleDialog(false);
+      setSelectedAppointment(null);
+    }
+  };
   const handleCreateReport = (appointment: Appointment) => {
     navigate('/medical-reports', { 
       state: { 
@@ -302,6 +338,17 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
                               onClick={(e) => handleCompleteAppointment(appointment, e)}
                             >
                               Završi termin
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedAppointment(appointment);
+                                setShowRescheduleDialog(true);
+                              }}
+                            >
+                              Pomjeri
                             </Button>
                             <Button 
                               variant="ghost" 

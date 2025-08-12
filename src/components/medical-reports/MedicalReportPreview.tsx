@@ -79,7 +79,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     
     // Use current user's name if available, otherwise fall back to provided names or defaults
     const displayedDoctorName = currentUserName || doctorName || "potpis doktora";
-    const displayedVerifierName = verifiedBy && verifiedBy !== "Dr. Marko Marković" ? verifiedBy : currentUserName || verifiedBy || "";
+    const displayedVerifierName = currentUserName || verifiedBy || "";
 
     const [qrDataUrl, setQrDataUrl] = useState<string>("");
 

@@ -40,11 +40,22 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   const [appointmentTypes, setAppointmentTypes] = useState<ExaminationType[]>([]);
   const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
 
-  // Helper: generate 30-min slots between 08:00 and 20:00
+  // Helper: parse duration like "45 min" or "45" to minutes
+  const parseDurationToMinutes = (dur?: string) => {
+    if (!dur) return 30;
+    const match = dur.match(/\d+/);
+    const n = match ? parseInt(match[0], 10) : 30;
+    return isNaN(n) || n <= 0 ? 30 : n;
+  };
+
+  // Helper: generate slots between 08:00 and 20:00 using selected exam type duration as step
   const generateSlots = () => {
+    const step = parseDurationToMinutes(
+      appointmentTypes.find(t => t.id.toString() === selectedAppointmentType)?.duration
+    );
     const slots: string[] = [];
     for (let h = 8; h <= 20; h++) {
-      for (let m = 0; m < 60; m += 30) {
+      for (let m = 0; m < 60; m += step) {
         const hh = h.toString().padStart(2, '0');
         const mm = m.toString().padStart(2, '0');
         slots.push(`${hh}:${mm}`);
