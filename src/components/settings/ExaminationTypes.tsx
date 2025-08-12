@@ -86,28 +86,30 @@ export default function ExaminationTypes() {
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (data: ExamTypeFormData) => {
+  const handleSubmit = async (data: ExamTypeFormData) => {
     if (formMode === 'create') {
-      // Ensure all required fields are provided
       const newExamType: ExaminationType = {
         id: Math.max(0, ...examTypes.map(e => e.id)) + 1,
         name: data.name,
         duration: data.duration,
         price: data.price || "",
       };
-      setExamTypes([...examTypes, newExamType]);
+      const updated = [...examTypes, newExamType];
+      setExamTypes(updated);
+      await dataStorageService.saveExaminationTypes(updated);
       toast({
         title: "Vrsta pregleda kreirana",
         description: "Nova vrsta pregleda je uspješno dodana",
       });
     } else {
-      // Ensure all required fields are provided when updating
-      setExamTypes(examTypes.map(e => (e.id === data.id ? {
+      const updated = examTypes.map(e => (e.id === data.id ? {
         id: e.id,
         name: data.name,
         duration: data.duration,
         price: data.price || "",
-      } as ExaminationType : e)));
+      } as ExaminationType : e));
+      setExamTypes(updated);
+      await dataStorageService.saveExaminationTypes(updated);
       toast({
         title: "Vrsta pregleda ažurirana",
         description: "Vrsta pregleda je uspješno ažurirana",
@@ -116,8 +118,10 @@ export default function ExaminationTypes() {
     setIsDialogOpen(false);
   };
 
-  const handleDelete = (id: number) => {
-    setExamTypes(examTypes.filter(e => e.id !== id));
+  const handleDelete = async (id: number) => {
+    const updated = examTypes.filter(e => e.id !== id);
+    setExamTypes(updated);
+    await dataStorageService.saveExaminationTypes(updated);
     toast({
       title: "Vrsta pregleda obrisana",
       description: "Vrsta pregleda je uspješno obrisana",

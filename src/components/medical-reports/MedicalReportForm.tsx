@@ -71,6 +71,7 @@ export default function MedicalReportForm({
   const [status, setStatus] = useState<"draft" | "final">("draft");
   const [formKey, setFormKey] = useState(`report-form-${Date.now()}`);
   const [loadedExamTypes, setLoadedExamTypes] = useState<ExaminationType[]>(examinationTypes || []);
+  const { examTypes } = useExaminationTypes();
   const [formData, setFormData] = useState<MedicalReportFormData>({
     report: defaultValues?.report || "",
     therapy: defaultValues?.therapy || "",
@@ -86,23 +87,11 @@ export default function MedicalReportForm({
     mode: "onChange", // Enable validation as user types
   });
 
-  // Load examination types from localStorage if not provided
+  // Sync examination types from centralized storage or props
   useEffect(() => {
-    if (!examinationTypes || examinationTypes.length === 0) {
-      try {
-        const savedTypes = localStorage.getItem('examination-types');
-        if (savedTypes) {
-          const parsedTypes = JSON.parse(savedTypes);
-          if (Array.isArray(parsedTypes) && parsedTypes.length > 0) {
-            console.log("[MedicalReportForm] Loaded examination types from localStorage:", parsedTypes);
-            setLoadedExamTypes(parsedTypes);
-          }
-        }
-      } catch (error) {
-        console.error("[MedicalReportForm] Error loading examination types:", error);
-      }
-    }
-  }, [examinationTypes]);
+    const types = (examinationTypes && examinationTypes.length > 0) ? examinationTypes : examTypes;
+    setLoadedExamTypes(types || []);
+  }, [examinationTypes, examTypes]);
 
   useEffect(() => {
     if (defaultValues) {
