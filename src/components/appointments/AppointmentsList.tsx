@@ -149,6 +149,24 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
         console.log("[AppointmentsList] Appointment updated:", appointmentToUpdate);
       }
       
+      // Audit log
+      try {
+        const currentUser = localStorage.getItem('currentUser');
+        const performedBy = currentUser ? `${JSON.parse(currentUser).firstName} ${JSON.parse(currentUser).lastName}` : 'unknown';
+        const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+        logs.push({
+          id: Date.now(),
+          action: newStatus === 'cancelled' ? 'update' : (newStatus === 'completed' ? 'update' : 'update'),
+          entityType: 'appointment',
+          entityId: appointmentId,
+          performedBy,
+          performedAt: new Date().toISOString(),
+          details: newStatus === 'cancelled' ? `Termin otkazan. Razlog: ${reason || ''}` : newStatus === 'completed' ? 'Termin obilježen kao završen' : 'Termin ažuriran',
+          appointmentId: appointmentId,
+        });
+        localStorage.setItem('auditLogs', JSON.stringify(logs));
+      } catch {}
+      
       let toastMessage = "";
       if (newStatus === 'cancelled') {
         toastMessage = "Termin je uspješno otkazan";
@@ -157,7 +175,7 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
       }
       
       toast({
-        title: newStatus === 'cancelled' ? "Termin otkazan" : "Termin završen",
+        title: newStatus === 'cancelled' ? "Termin otkazan" : newStatus === 'completed' ? "Termin završen" : "Termin ažuriran",
         description: toastMessage
       });
     } catch (error) {
@@ -392,16 +410,28 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
       </Card>
 
       {selectedAppointment && (
-        <CancelAppointmentDialog
-          isOpen={showCancelDialog}
-          onClose={() => {
-            setShowCancelDialog(false);
-            setSelectedAppointment(null);
-          }}
-          onConfirm={handleCancelConfirm}
-          appointmentDate={format(new Date(selectedAppointment.date), "dd.MM.yyyy.")}
-          patientName={selectedAppointment.patientName}
-        />
+        <>
+          <CancelAppointmentDialog
+            isOpen={showCancelDialog}
+            onClose={() => {
+              setShowCancelDialog(false);
+              setSelectedAppointment(null);
+            }}
+            onConfirm={handleCancelConfirm}
+            appointmentDate={format(new Date(selectedAppointment.date), "dd.MM.yyyy.")}
+            patientName={selectedAppointment.patientName}
+          />
+
+          <RescheduleAppointmentDialog
+            open={showRescheduleDialog}
+            onOpenChange={(open) => {
+              setShowRescheduleDialog(open);
+              if (!open) setSelectedAppointment(null);
+            }}
+            appointment={selectedAppointment}
+            onConfirm={handleRescheduleConfirm}
+          />
+        </>
       )}
     </div>
   );
