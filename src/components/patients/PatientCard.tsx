@@ -177,14 +177,14 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
               patientHistory={patientHistory}
             />
             
-            {/* Add RecentVisits component here */}
-            <div className="mt-6">
+            <section aria-labelledby="patient-history" className="mt-6">
+              <h3 id="patient-history" className="text-lg font-semibold text-clinic-800">Historija pacijenta</h3>
               <RecentVisits 
                 patientHistory={patientHistory} 
                 setIsScheduling={setIsScheduling}
                 patient={patient}
               />
-            </div>
+            </section>
           </TabsContent>
           
           <TabsContent value="reports">
