@@ -5,7 +5,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import "@fullcalendar/core/index.css";
 
-import "@fullcalendar/timegrid/index.css";
+
 import type { Appointment } from "@/types/medical-report";
 import dataStorageService from "@/services/DataStorageService";
 import { useToast } from "@/hooks/use-toast";
