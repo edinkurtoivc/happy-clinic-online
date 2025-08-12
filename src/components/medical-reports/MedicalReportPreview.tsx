@@ -72,11 +72,11 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       const savedPx = localStorage.getItem('reportFontSize');
       if (savedPx) {
         const n = parseFloat(savedPx);
-        return isNaN(n) ? 14 : n;
+        return isNaN(n) ? 12 : n;
       }
       const savedScale = localStorage.getItem('reportFontScale');
       const scale = savedScale ? parseFloat(savedScale) : 1;
-      const derived = 14 * (isNaN(scale) ? 1 : scale);
+      const derived = 12 * (isNaN(scale) ? 1 : scale);
       return Math.round(derived * 10) / 10;
     });
     const [stylePrefs, setStylePrefs] = useState<{ headingFont: 'heading' | 'sans'; sectionBackground: boolean; showQr: boolean; showReportCode: boolean }>(() => {
@@ -116,10 +116,10 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
         const px = e?.detail?.size;
         if (typeof px === 'number') {
           setFontSizePx(px);
-          setFontScale(px / 14);
+          setFontScale(px / 12);
         } else if (typeof s === 'number') {
           setFontScale(s);
-          setFontSizePx(Math.round(14 * s * 10) / 10);
+          setFontSizePx(Math.round(12 * s * 10) / 10);
         }
       };
       window.addEventListener('reportFontScale:changed', onChange);

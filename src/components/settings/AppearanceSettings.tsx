@@ -27,11 +27,11 @@ export default function AppearanceSettings() {
     const savedPx = localStorage.getItem('reportFontSize');
     if (savedPx) {
       const num = parseFloat(savedPx);
-      return isNaN(num) ? 14 : num;
+      return isNaN(num) ? 12 : num;
     }
     const savedScale = localStorage.getItem('reportFontScale');
     const scale = savedScale ? parseFloat(savedScale) : 1;
-    const derived = 14 * (isNaN(scale) ? 1 : scale);
+    const derived = 12 * (isNaN(scale) ? 1 : scale);
     return Math.round(derived * 10) / 10;
   });
 
@@ -39,7 +39,7 @@ export default function AppearanceSettings() {
     setReportFontSize(val);
     localStorage.setItem('reportFontSize', String(val));
     // Backwards compatibility: also store scale
-    const scale = val / 14;
+    const scale = val / 12;
     localStorage.setItem('reportFontScale', String(scale));
     try { window.dispatchEvent(new CustomEvent('reportFontSize:changed', { detail: { size: val } })); } catch {}
     try { window.dispatchEvent(new CustomEvent('reportFontScale:changed', { detail: { scale } })); } catch {}
