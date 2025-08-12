@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import QRCode from "qrcode";
+import { Badge } from "@/components/ui/badge";
 
 interface ClinicInfo {
   name: string;
@@ -139,10 +140,28 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     const today = formatDate(new Date().toISOString());
     const nowDateTime = formatDateTime(new Date().toISOString());
 
+    const statusLabel = !isSaved
+      ? "U uređivanju"
+      : verificationStatus === 'verified'
+      ? "Verificirano"
+      : verificationStatus === 'pending'
+      ? "Na verifikaciji"
+      : "Nacrt";
+    let badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = !isSaved
+      ? 'outline'
+      : verificationStatus === 'verified'
+      ? 'default'
+      : verificationStatus === 'pending'
+      ? 'secondary'
+      : 'outline';
+
     return (
       <div className="flex flex-col h-full">
         <div className="flex justify-between mb-4 print:hidden">
-          <h2 className="text-xl font-semibold">Pregled uživo</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">Pregled uživo</h2>
+            <Badge variant={badgeVariant}>{statusLabel}</Badge>
+          </div>
           <Button 
             onClick={onPrint} 
             disabled={!isSaved || verificationStatus !== 'verified'} 

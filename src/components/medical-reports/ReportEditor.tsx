@@ -2,6 +2,7 @@
 import { Bold, Italic, Underline, Signature, Stamp, Save, ShieldCheck, RefreshCw, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AutoSaveIndicator } from "@/components/ui/auto-save-indicator";
+import { Badge } from "@/components/ui/badge";
 
 interface ReportEditorProps {
   reportText: string;
@@ -56,16 +57,32 @@ export default function ReportEditor({
   const showPrintButton = !!onPrint;
   const canPrint = isSaved && verificationStatus === 'verified';
   
+  const statusLabel = !isSaved
+    ? "U uređivanju"
+    : verificationStatus === 'verified'
+    ? "Verificirano"
+    : verificationStatus === 'pending'
+    ? "Na verifikaciji"
+    : "Nacrt";
+  let badgeVariant: "default" | "secondary" | "destructive" | "outline" = "outline";
+  if (!isSaved) badgeVariant = "outline";
+  else if (verificationStatus === 'verified') badgeVariant = "default";
+  else if (verificationStatus === 'pending') badgeVariant = "secondary";
+  else badgeVariant = "outline";
+  
   return (
     <div className="w-full max-w-[560px]">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-emerald-600">Editor za nalaz</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-emerald-600">Editor za nalaz</h2>
+          <Badge variant={badgeVariant}>{statusLabel}</Badge>
+        </div>
         {saveStatus && (
           <AutoSaveIndicator status={saveStatus} lastSaved={lastSaved} />
         )}
       </div>
       
-      <div className="border rounded-md p-2 mb-4">
+      <div className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-2 mb-4">
         <div className="flex gap-2 mb-2">
           <Button variant="outline" size="icon" className="h-8 w-8" disabled={isSaved}>
             <Bold className="h-4 w-4" />
