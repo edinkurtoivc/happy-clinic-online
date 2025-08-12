@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import AppointmentsList from "@/components/appointments/AppointmentsList";
 import AppointmentForm from "@/components/appointments/AppointmentForm";
+import CalendarView from "@/components/appointments/CalendarView";
 import type { Appointment } from "@/types/medical-report";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ export default function Appointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>("list");
   const { toast } = useToast();
   
   // Učitaj termine pri inicijalnom renderiranju
@@ -101,9 +103,25 @@ const loadAppointments = async () => {
           />
         ) : (
           <div className="mb-4">
-            <div className="flex justify-between mb-4">
-              <h3 className="text-lg font-medium">Lista termina</h3>
-              <Button onClick={() => setIsCreating(true)}>Zakaži</Button>
+            <div className="flex justify-between mb-4 items-center">
+              <h3 className="text-lg font-medium">Pregled termina</h3>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                >
+                  Lista
+                </Button>
+                <Button
+                  variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('calendar')}
+                >
+                  Kalendar
+                </Button>
+                <Button onClick={() => setIsCreating(true)}>Zakaži</Button>
+              </div>
             </div>
 
             <div className="relative flex-grow max-w-sm mb-4">
@@ -115,11 +133,14 @@ const loadAppointments = async () => {
                 className="pl-8"
               />
             </div>
-            
-            <AppointmentsList 
-              initialAppointments={filteredAppointments}
-              isLoading={isLoading}
-            />
+            {viewMode === 'calendar' ? (
+              <CalendarView appointments={filteredAppointments} onUpdated={loadAppointments} />
+            ) : (
+              <AppointmentsList 
+                initialAppointments={filteredAppointments}
+                isLoading={isLoading}
+              />
+            )}
           </div>
         )}
       </div>
