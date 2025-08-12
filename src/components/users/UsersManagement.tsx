@@ -13,7 +13,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Eye, Edit, Trash2, Search, Download, Key } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, Edit, Trash2, Search, Download, Key, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type { User } from "@/types/user";
 import UserForm from "./UserForm";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +28,10 @@ export default function UsersManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'doctor' | 'nurse' | 'technician'>('all');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sort, setSort] = useState<{ key: 'name' | 'role' | 'email'; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' });
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -301,6 +306,31 @@ export default function UsersManagement() {
     return matchesRole && matchesQuery;
   });
 
+  const toggleSort = (key: 'name' | 'role' | 'email') => {
+    setSort((prev) => (prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+  };
+
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    let av = '';
+    let bv = '';
+    if (sort.key === 'name') {
+      av = `${a.firstName} ${a.lastName}`.toLowerCase();
+      bv = `${b.firstName} ${b.lastName}`.toLowerCase();
+    } else if (sort.key === 'role') {
+      av = a.role.toLowerCase();
+      bv = b.role.toLowerCase();
+    } else {
+      av = a.email.toLowerCase();
+      bv = b.email.toLowerCase();
+    }
+    const cmp = av.localeCompare(bv, 'bs');
+    return sort.dir === 'asc' ? cmp : -cmp;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedUsers = sortedUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   const logAudit = (action: string, details: string, entityId?: string) => {
     try {
       const currentUser = localStorage.getItem('currentUser');
@@ -361,6 +391,54 @@ export default function UsersManagement() {
     URL.revokeObjectURL(url);
   };
 
+  const exportSelected = () => {
+    const headers = ['ID','Ime','Prezime','Email','Uloga','Specijalizacija','Telefon','Aktivan'];
+    const selected = users.filter(u => selectedIds.includes(u.id));
+    const rows = selected.map(u => [u.id, u.firstName, u.lastName, u.email, u.role, u.specialization || '', u.phone || '', u.active ? 'DA' : 'NE']);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `korisnici-odabrani-${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const isSelected = (id: string) => selectedIds.includes(id);
+  const toggleSelect = (id: string, checked: boolean) => {
+    setSelectedIds(prev => checked ? Array.from(new Set([...prev, id])) : prev.filter(x => x !== id));
+  };
+  const toggleSelectAll = (checked: boolean) => {
+    const ids = paginatedUsers.map(u => u.id);
+    setSelectedIds(prev => checked ? Array.from(new Set([...prev, ...ids])) : prev.filter(id => !ids.includes(id)));
+  };
+  const isAllSelected = paginatedUsers.length > 0 && paginatedUsers.every(u => selectedIds.includes(u.id));
+
+  const bulkActivate = async () => {
+    const updated = users.map(u => selectedIds.includes(u.id) ? { ...u, active: true } : u);
+    setUsers(updated);
+    await saveUsers(updated);
+    logAudit('update', `Aktivirani korisnici: ${selectedIds.length}`);
+    toast({ title: 'Aktivirano', description: `Aktivirano ${selectedIds.length} korisnika.` });
+  };
+  const bulkDeactivate = async () => {
+    const updated = users.map(u => selectedIds.includes(u.id) ? { ...u, active: false } : u);
+    setUsers(updated);
+    await saveUsers(updated);
+    logAudit('update', `Deaktivirani korisnici: ${selectedIds.length}`);
+    toast({ title: 'Deaktivirano', description: `Deaktivirano ${selectedIds.length} korisnika.` });
+  };
+  const bulkDelete = async () => {
+    if (!window.confirm(`Obrisati ${selectedIds.length} korisnika?`)) return;
+    const updated = users.filter(u => !selectedIds.includes(u.id));
+    setUsers(updated);
+    await saveUsers(updated);
+    logAudit('delete', `Obrisano korisnika: ${selectedIds.length}`);
+    setSelectedIds([]);
+    toast({ title: 'Obrisano', description: 'Odabrani korisnici su obrisani.' });
+  };
+
   return (
     <>
       <Card className="p-6">
@@ -403,6 +481,20 @@ export default function UsersManagement() {
             </Select>
           </div>
         </div>
+
+        {selectedIds.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border p-3 bg-background">
+            <span className="text-sm text-muted-foreground">Odabrano: {selectedIds.length}</span>
+            <Button variant="outline" size="sm" onClick={bulkActivate}>Aktiviraj</Button>
+            <Button variant="outline" size="sm" onClick={bulkDeactivate}>Deaktiviraj</Button>
+            <Button variant="outline" size="sm" onClick={exportSelected}>
+              <Download className="h-4 w-4 mr-1" /> Izvoz selekcije
+            </Button>
+            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+              <Trash2 className="h-4 w-4 mr-1" /> Obriši
+            </Button>
+          </div>
+        )}
 
         <div className="rounded-md border">
           <Table>
