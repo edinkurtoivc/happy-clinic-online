@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import dataStorageService from "@/services/DataStorageService";
 import MedicalReportVersions from "@/components/medical-reports/MedicalReportVersions";
 import { ReasonDialog } from "@/components/patient-chart/ReasonDialog";
-import QRCode from "qrcode";
+import { buildReportQR } from "@/utils/qrUtils";
 
 // Mock current user/doctor
 const currentDoctor = {
@@ -491,37 +491,17 @@ try {
     const currentUserName = user ? `${user.firstName} ${user.lastName}` : currentDoctor.name;
     const verifierName = savedReport?.verifiedBy || currentUserName;
     
-    // Prepare QR and open print window when ready
-    const computeHash = async (input: string) => {
-      const data = new TextEncoder().encode(input);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    };
+    // Build QR and then open print window
+    const clinicInfoRaw = localStorage.getItem('clinicInfo');
+    const clinicName = clinicInfoRaw ? (JSON.parse(clinicInfoRaw).name || 'Spark Studio') : 'Spark Studio';
 
-    const buildQr = async () => {
-      try {
-        const clinicInfoRaw = localStorage.getItem('clinicInfo');
-        const clinicName = clinicInfoRaw ? (JSON.parse(clinicInfoRaw).name || 'Spark Studio') : 'Spark Studio';
-        const payload = JSON.stringify({
-          code: savedReport?.reportCode || reportCode || '',
-          patient: selectedPatient ? { name: selectedPatient.name, jmbg: selectedPatient.jmbg } : {},
-          type: selectedExamType || '',
-          doctor: currentUserName,
-          clinic: clinicName,
-          t: new Date().toISOString(),
-        });
-        const hash = await computeHash(payload);
-        const text = `MR:${savedReport?.reportCode || reportCode || ''}|H:${hash}`;
-        const url = await QRCode.toDataURL(text, { margin: 0, width: 96 });
-        return url;
-      } catch (e) {
-        console.warn('[MedicalReports] QR generation failed', e);
-        return '';
-      }
-    };
-
-    buildQr().then((qrUrl) => {
+    buildReportQR({
+      reportCode: savedReport?.reportCode || reportCode || '',
+      patient: selectedPatient ? { name: selectedPatient.name, jmbg: selectedPatient.jmbg } : undefined,
+      type: selectedExamType || '',
+      doctor: currentUserName,
+      clinicName,
+    }).then((qrUrl) => {
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
         toast({
