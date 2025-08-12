@@ -11,12 +11,13 @@ import useExaminationTypes from "@/hooks/useExaminationTypes";
 import dataStorageService from "@/services/DataStorageService";
 import type { Appointment } from "@/types/medical-report";
 import { cn } from "@/lib/utils";
-
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 interface RescheduleAppointmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   appointment: Appointment;
-  onConfirm: (updated: Appointment) => void;
+  onConfirm: (updated: Appointment, reason: string) => void;
 }
 
 export default function RescheduleAppointmentDialog({ open, onOpenChange, appointment, onConfirm }: RescheduleAppointmentDialogProps) {
@@ -25,7 +26,8 @@ export default function RescheduleAppointmentDialog({ open, onOpenChange, appoin
   const { examTypes } = useExaminationTypes();
   const currentExam = useMemo(() => examTypes.find(t => t.name === appointment.examinationType), [examTypes, appointment.examinationType]);
   const [occupied, setOccupied] = useState<string[]>([]);
-
+  const [reason, setReason] = useState("");
+  const { toast } = useToast();
   const parseDurationToMinutes = (dur?: string) => {
     if (!dur) return 30;
     const n = parseInt((dur.match(/\d+/)?.[0] || '30'), 10);
@@ -56,16 +58,20 @@ export default function RescheduleAppointmentDialog({ open, onOpenChange, appoin
     load();
   }, [appointment?.doctorId, appointment?.id, date]);
 
-  const handleConfirm = () => {
-    if (!date || !time) return;
-    const updated: Appointment = {
-      ...appointment,
-      date: format(date, 'yyyy-MM-dd'),
-      time,
-      status: 'scheduled',
-    };
-    onConfirm(updated);
+const handleConfirm = () => {
+  if (!date || !time) return;
+  if (!reason.trim()) {
+    toast({ title: "Greška", description: "Molimo unesite razlog pomjeranja", variant: "destructive" });
+    return;
+  }
+  const updated: Appointment = {
+    ...appointment,
+    date: format(date, 'yyyy-MM-dd'),
+    time,
+    status: 'scheduled',
   };
+  onConfirm(updated, reason);
+};
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -105,6 +111,14 @@ export default function RescheduleAppointmentDialog({ open, onOpenChange, appoin
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Razlog pomjeranja</Label>
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Unesite razlog pomjeranja termina"
+            />
           </div>
         </div>
         <DialogFooter>

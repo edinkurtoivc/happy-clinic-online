@@ -13,6 +13,7 @@ export default function Appointments() {
   const [isCreating, setIsCreating] = useState(false);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
   // Učitaj termine pri inicijalnom renderiranju
@@ -20,20 +21,23 @@ export default function Appointments() {
     loadAppointments();
   }, []);
   
-  const loadAppointments = async () => {
-    try {
-      const loadedAppointments = await dataStorageService.getAppointments();
-      setAppointments(loadedAppointments);
-      console.log("[Appointments] Loaded appointments:", loadedAppointments);
-    } catch (error) {
-      console.error("[Appointments] Error loading appointments:", error);
-      toast({
-        title: "Greška",
-        description: "Dogodila se greška pri učitavanju termina.",
-        variant: "destructive"
-      });
-    }
-  };
+const loadAppointments = async () => {
+  try {
+    setIsLoading(true);
+    const loadedAppointments = await dataStorageService.getAppointments();
+    setAppointments(loadedAppointments);
+    console.log("[Appointments] Loaded appointments:", loadedAppointments);
+  } catch (error) {
+    console.error("[Appointments] Error loading appointments:", error);
+    toast({
+      title: "Greška",
+      description: "Dogodila se greška pri učitavanju termina.",
+      variant: "destructive"
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleSaveAppointment = async (appointment: Appointment) => {
     try {
@@ -113,7 +117,8 @@ export default function Appointments() {
             </div>
             
             <AppointmentsList 
-              initialAppointments={filteredAppointments} 
+              initialAppointments={filteredAppointments}
+              isLoading={isLoading}
             />
           </div>
         )}

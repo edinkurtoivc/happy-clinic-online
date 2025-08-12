@@ -10,7 +10,8 @@ import CancelAppointmentDialog from "./CancelAppointmentDialog";
 import RescheduleAppointmentDialog from "./RescheduleAppointmentDialog";
 import type { Appointment } from "@/types/medical-report";
 import dataStorageService from "@/services/DataStorageService";
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 interface AppointmentWithCancellation extends Appointment {
   cancellationReason?: string;
 }
@@ -76,16 +77,20 @@ const mockAppointments: AppointmentWithCancellation[] = [
 
 interface AppointmentsListProps {
   initialAppointments?: Appointment[];
+  isLoading?: boolean;
 }
 
-export default function AppointmentsList({ initialAppointments }: AppointmentsListProps) {
+export default function AppointmentsList({ initialAppointments, isLoading }: AppointmentsListProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [appointments, setAppointments] = useState<AppointmentWithCancellation[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithCancellation | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'completed' | 'cancelled'>('all');
+  const [doctorFilter, setDoctorFilter] = useState<string>('all');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const doctorOptions = Array.from(new Set(appointments.map(a => a.doctorName))).sort();
 
   useEffect(() => {
     if (initialAppointments && initialAppointments.length > 0) {
@@ -117,11 +122,11 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
     }
   };
 
-  const filteredAppointments = selectedDate
-    ? appointments.filter(
-        (appointment) => appointment.date === format(selectedDate, "yyyy-MM-dd")
-      )
-    : appointments;
+const filteredAppointments = (
+  selectedDate
+    ? appointments.filter((appointment) => appointment.date === format(selectedDate, "yyyy-MM-dd"))
+    : appointments
+).filter((a) => (statusFilter === 'all' || a.status === statusFilter) && (doctorFilter === 'all' || a.doctorName === doctorFilter));
     
   const handleStatusChange = async (appointmentId: string, newStatus: 'scheduled' | 'completed' | 'cancelled', reason?: string) => {
     try {
@@ -201,7 +206,7 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
     setSelectedAppointment(null);
   };
   
-  const handleRescheduleConfirm = async (updated: Appointment) => {
+  const handleRescheduleConfirm = async (updated: Appointment, reason: string) => {
     try {
       const updatedList = appointments.map(a => a.id === updated.id ? { ...a, date: updated.date, time: updated.time, status: updated.status } : a);
       setAppointments(updatedList);
@@ -220,7 +225,7 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
           entityId: updated.id,
           performedBy,
           performedAt: new Date().toISOString(),
-          details: `Termin pomjeren na ${updated.date} ${updated.time}`,
+          details: `Termin pomjeren na ${updated.date} ${updated.time}. Razlog: ${reason}`,
           appointmentId: updated.id,
         });
         localStorage.setItem('auditLogs', JSON.stringify(logs));
@@ -257,16 +262,16 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'completed':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Završen</Badge>;
-      case 'cancelled':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Otkazan</Badge>;
-      default:
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">Zakazan</Badge>;
-    }
-  };
+const getStatusBadge = (status: string) => {
+  switch(status) {
+    case 'completed':
+      return <Badge variant="secondary">Završen</Badge>;
+    case 'cancelled':
+      return <Badge variant="destructive">Otkazan</Badge>;
+    default:
+      return <Badge variant="default">Zakazan</Badge>;
+  }
+};
 
   const handleCompleteAppointment = async (appointment: Appointment, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -297,6 +302,38 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
             </h3>
           </div>
 
+          <div className="mb-4 flex flex-wrap gap-2 items-center">
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as 'all' | 'scheduled' | 'completed' | 'cancelled')}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Svi statusi</SelectItem>
+                <SelectItem value="scheduled">Zakazani</SelectItem>
+                <SelectItem value="completed">Završeni</SelectItem>
+                <SelectItem value="cancelled">Otkazani</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={doctorFilter} onValueChange={(v) => setDoctorFilter(v)}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Doktor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Svi doktori</SelectItem>
+                {doctorOptions.map((name) => (
+                  <SelectItem key={name} value={name}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant="default">Zakazan</Badge>
+              <Badge variant="secondary">Završen</Badge>
+              <Badge variant="destructive">Otkazan</Badge>
+            </div>
+          </div>
+
           <div className="rounded-md border">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-muted">
@@ -310,7 +347,18 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
                 </tr>
               </thead>
               <tbody className="divide-y bg-white">
-                {filteredAppointments.length > 0 ? (
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, idx) => (
+                    <tr key={`skeleton-${idx}`}>
+                      <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-4 w-40" /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-4 w-36" /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-5 w-20" /></td>
+                      <td className="px-4 py-3 text-right"><Skeleton className="h-8 w-48 ml-auto" /></td>
+                    </tr>
+                  ))
+                ) : filteredAppointments.length > 0 ? (
                   filteredAppointments.map((appointment) => (
                     <tr 
                       key={appointment.id} 
@@ -399,7 +447,7 @@ export default function AppointmentsList({ initialAppointments }: AppointmentsLi
                 ) : (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                      Nema zakazanih termina za ovaj datum
+                      Nema zakazanih termina za odabrane kriterije
                     </td>
                   </tr>
                 )}

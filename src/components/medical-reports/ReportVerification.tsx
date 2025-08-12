@@ -13,7 +13,8 @@ import { CheckCircle, ShieldCheck } from "lucide-react";
 import type { MedicalReport } from "@/types/medical-report";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AuditLog } from "@/types/patient";
-
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 interface ReportVerificationProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,55 +36,60 @@ export default function ReportVerification({
 }: ReportVerificationProps) {
   const [isVerifying, setIsVerifying] = useState(false);
   const { user } = useAuth();
+  const [reason, setReason] = useState("");
+  const [reasonError, setReasonError] = useState(false);
 
   // Get the verified by name from authenticated user if available
   const verifiedByName = user ? `${user.firstName} ${user.lastName}` : currentDoctor.name;
 
-  const handleVerify = () => {
-    setIsVerifying(true);
-    if (report.id) {
-      onVerify(report.id, verifiedByName);
-      
-      // Log this verification action
-      logVerificationActivity(report.id, verifiedByName, report.patientInfo?.fullName || "");
-      
-      setTimeout(() => {
-        setIsVerifying(false);
-        onOpenChange(false);
-      }, 1000);
-    }
-  };
+const handleVerify = () => {
+  if (!reason.trim()) {
+    setReasonError(true);
+    return;
+  }
+  setIsVerifying(true);
+  if (report.id) {
+    onVerify(report.id, verifiedByName);
 
-  // Function to log verification activity
-  const logVerificationActivity = (reportId: string, verifierName: string, patientName: string) => {
-    try {
-      const newLog: AuditLog = {
-        id: Date.now(),
-        action: 'verify',
-        entityType: 'report',
-        entityId: reportId,
-        performedBy: verifierName,
-        performedAt: new Date().toISOString(),
-        details: `Verifikacija nalaza za pacijenta ${patientName}`,
-        reportId: reportId
-      };
-      
-      // Get existing logs or initialize empty array
-      const existingLogs = localStorage.getItem('auditLogs');
-      const logs = existingLogs ? JSON.parse(existingLogs) : [];
-      
-      // Add new log
-      logs.push(newLog);
-      
-      // Save updated logs
-      localStorage.setItem('auditLogs', JSON.stringify(logs));
-      
-      console.log(`[ReportVerification] Activity logged: verification of report ${reportId} by ${verifierName}`);
-    } catch (error) {
-      console.error("[ReportVerification] Error logging activity:", error);
-    }
-  };
+    // Log this verification action
+    logVerificationActivity(report.id, verifiedByName, report.patientInfo?.fullName || "", reason);
 
+    setTimeout(() => {
+      setIsVerifying(false);
+      onOpenChange(false);
+    }, 1000);
+  }
+};
+
+// Function to log verification activity
+const logVerificationActivity = (reportId: string, verifierName: string, patientName: string, reasonText: string) => {
+  try {
+    const newLog: AuditLog = {
+      id: Date.now(),
+      action: 'verify',
+      entityType: 'report',
+      entityId: reportId,
+      performedBy: verifierName,
+      performedAt: new Date().toISOString(),
+      details: `Verifikacija nalaza za pacijenta ${patientName}. Razlog: ${reasonText}`,
+      reportId: reportId
+    };
+    
+    // Get existing logs or initialize empty array
+    const existingLogs = localStorage.getItem('auditLogs');
+    const logs = existingLogs ? JSON.parse(existingLogs) : [];
+    
+    // Add new log
+    logs.push(newLog);
+    
+    // Save updated logs
+    localStorage.setItem('auditLogs', JSON.stringify(logs));
+    
+    console.log(`[ReportVerification] Activity logged: verification of report ${reportId} by ${verifierName}`);
+  } catch (error) {
+    console.error("[ReportVerification] Error logging activity:", error);
+  }
+};
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -119,6 +125,14 @@ export default function ReportVerification({
               <p className="text-sm whitespace-pre-wrap">{report.notes}</p>
             </div>
           )}
+          
+          <div className="space-y-2">
+            <Label htmlFor="verify-reason">Razlog verifikacije</Label>
+            <Textarea id="verify-reason" value={reason} onChange={(e) => { setReason(e.target.value); setReasonError(false); }} placeholder="Unesite razlog verifikacije (obavezno)" />
+            {reasonError && (
+              <p className="text-xs text-destructive">Razlog je obavezan.</p>
+            )}
+          </div>
           
           <div className="bg-green-50 p-3 rounded-md">
             <p className="text-sm">
