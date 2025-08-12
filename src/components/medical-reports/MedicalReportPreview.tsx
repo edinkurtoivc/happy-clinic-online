@@ -63,6 +63,11 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       phone: "387 61 123 456",
       email: "spark.studio.dev@gmail.com",
     });
+    const [fontScale, setFontScale] = useState<number>(() => {
+      const saved = localStorage.getItem('reportFontScale');
+      const num = saved ? parseFloat(saved) : 1;
+      return isNaN(num) ? 1 : num;
+    });
 
     // Load clinic info from localStorage on component mount
     useEffect(() => {
@@ -77,6 +82,16 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
           console.error("[MedicalReportPreview] Error parsing clinic info:", error);
         }
       }
+    }, []);
+
+    // Listen for font scale changes from settings
+    useEffect(() => {
+      const onScale = (e: any) => {
+        const val = e?.detail?.scale;
+        if (typeof val === 'number') setFontScale(val);
+      };
+      window.addEventListener('reportFontScale:changed', onScale);
+      return () => window.removeEventListener('reportFontScale:changed', onScale);
     }, []);
 
 // Get the current user's full name for doctor signature and verification
@@ -167,7 +182,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
           </Button>
         </div>
         
-        <Card className="p-6 font-['Open_Sans'] text-sm flex-1 overflow-auto mx-auto max-w-[210mm] print:p-0 print:border-0 print:shadow-none print:max-w-full print:overflow-visible" ref={ref}>
+        <Card className="p-6 font-sans text-sm flex-1 overflow-auto mx-auto max-w-[210mm] print:p-0 print:border-0 print:shadow-none print:max-w-full print:overflow-visible" ref={ref}>
           <div className="flex justify-between items-start mb-4 px-6">
             <div className="flex-shrink-0">
               {clinicInfo.logo ? (
@@ -177,14 +192,14 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                   className="h-12 mb-2 object-contain"
                 />
               ) : (
-                <div className="h-12 mb-2 flex items-center justify-center bg-emerald-50 rounded-md px-4">
-                  <span className="text-emerald-600 font-bold">{clinicInfo.name}</span>
+                <div className="h-12 mb-2 flex items-center justify-center bg-accent rounded-md px-4">
+                  <span className="text-primary font-bold font-heading">{clinicInfo.name}</span>
                 </div>
               )}
             </div>
             
             <div className="text-right">
-              <h2 className="font-semibold text-base text-emerald-600">{clinicInfo.name}</h2>
+              <h2 className="font-heading font-semibold text-base text-primary">{clinicInfo.name}</h2>
               <p className="text-muted-foreground text-xs">
                 {clinicInfo.address}, {clinicInfo.city}<br />
                 {clinicInfo.email}<br />
@@ -196,16 +211,16 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
           <div className="mb-4 px-6">
             <div className="grid md:grid-cols-2 gap-4 print:grid-cols-2">
               <div>
-                <p className="font-bold text-xs">Ime i Prezime: {patient ? patient.name : ""}</p>
-                <p className="text-xs text-gray-700">Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
-                <p className="text-xs text-gray-700">Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
-                <p className="text-xs text-gray-700">JMBG: {patient ? patient.jmbg : ""}</p>
+                <p className="font-medium text-xs">Ime i Prezime: {patient ? patient.name : ""}</p>
+                <p className="text-xs text-muted-foreground">Datum rođenja: {patient ? formatDate(patient.dob) : ""}</p>
+                <p className="text-xs text-muted-foreground">Spol: {patient ? (patient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
+                <p className="text-xs text-muted-foreground">JMBG: {patient ? patient.jmbg : ""}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Datum i vrijeme ispisa: {nowDateTime}</p>
                 <p className="text-xs text-muted-foreground">Izdao: {displayedDoctorName}</p>
               </div>
               <div className="flex flex-col items-end justify-start">
                 {reportCode && (
-                  <p className="font-bold text-sm bg-gray-50 p-2 px-3 rounded-md border border-gray-200 text-emerald-700 mb-2">
+                  <p className="font-medium text-sm bg-accent/40 p-2 px-3 rounded-md border border-border text-primary mb-2">
                     Broj nalaza: {reportCode}
                   </p>
                 )}
@@ -214,17 +229,17 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                 )}
                 {appointmentType && (
                   <div className="mt-1">
-                    <p className="font-medium text-xs text-emerald-700 text-right">
-                      Vrsta pregleda: <span className="font-normal">{appointmentType}</span>
+                    <p className="font-medium text-xs text-primary text-right">
+                      Vrsta pregleda: <span className="font-normal text-foreground">{appointmentType}</span>
                     </p>
                     {verificationStatus === 'verified' && (
                       <div className="flex flex-col items-end mt-1">
-                        <div className="flex items-center text-emerald-600 justify-end">
-                          <div className="h-2 w-2 bg-emerald-500 rounded-full mr-1"></div>
+                        <div className="flex items-center text-primary justify-end">
+                          <div className="h-2 w-2 bg-primary rounded-full mr-1"></div>
                           <p className="text-xs">Verificirano</p>
                         </div>
                         {displayedVerifierName && (
-                          <p className="text-xs text-gray-600 mt-1">Verificirao: {displayedVerifierName}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Verificirao: {displayedVerifierName}</p>
                         )}
                       </div>
                     )}
@@ -238,18 +253,18 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
 
           <div className="space-y-6 px-6 leading-relaxed">
             <div>
-              <h3 className="font-bold text-lg mb-3">Nalaz</h3>
-              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[150px] print:bg-transparent print:border-0 print:p-0">
-                <p className="whitespace-pre-wrap leading-relaxed">
+              <h3 className="font-heading font-semibold text-lg mb-3">Nalaz</h3>
+              <div className="bg-accent/40 p-4 rounded-md border border-border min-h-[150px] print:bg-transparent print:border-0 print:p-0">
+                <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: `${(14 * fontScale).toFixed(2)}px` }}>
                   {reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}
                 </p>
               </div>
             </div>
 
             <div>
-              <h3 className="font-bold text-lg mb-3">Terapija i preporuke</h3>
-              <div className="bg-gray-50 p-4 rounded-md border border-gray-100 min-h-[150px] print:bg-transparent print:border-0 print:p-0">
-                <p className="whitespace-pre-wrap leading-relaxed">
+              <h3 className="font-heading font-semibold text-lg mb-3">Terapija i preporuke</h3>
+              <div className="bg-accent/40 p-4 rounded-md border border-border min-h-[150px] print:bg-transparent print:border-0 print:p-0">
+                <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: `${(14 * fontScale).toFixed(2)}px` }}>
                   {therapyText || "Ovdje će biti prikazana terapija i preporuke..."}
                 </p>
               </div>
