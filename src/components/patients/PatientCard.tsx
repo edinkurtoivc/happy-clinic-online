@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { Patient, PatientHistory as PatientHistoryType, AuditLog } from "@/types/patient";
 import dataStorageService from "@/services/DataStorageService";
 import { RecentVisits } from "./tabs/RecentVisits";
+import PatientChartTab from "@/components/patient-chart/PatientChartTab";
 
 interface PatientCardProps {
   patient: Patient;
@@ -161,6 +162,7 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="overview">Pregled</TabsTrigger>
+            <TabsTrigger value="chart">Karton</TabsTrigger>
             <TabsTrigger value="reports">Nalazi</TabsTrigger>
             <TabsTrigger value="audit">Evidencija aktivnosti</TabsTrigger>
           </TabsList>
