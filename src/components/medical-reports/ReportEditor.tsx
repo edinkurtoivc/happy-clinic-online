@@ -1,5 +1,5 @@
 
-import { Bold, Italic, Underline, Signature, Stamp, Save, ShieldCheck, RefreshCw, Printer } from "lucide-react";
+import { Bold, Italic, Underline, Save, ShieldCheck, RefreshCw, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AutoSaveIndicator } from "@/components/ui/auto-save-indicator";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,7 @@ export default function ReportEditor({
   therapyText,
   onReportChange,
   onTherapyChange,
+  // props retained for compatibility though toggles are removed from UI
   hasSignature,
   hasStamp,
   onToggleSignature,
@@ -117,26 +118,7 @@ export default function ReportEditor({
         />
       </div>
       
-      <div className="flex items-center space-x-4 mb-4">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className={`flex items-center gap-2 ${hasSignature ? 'bg-emerald-100' : ''}`}
-          onClick={onToggleSignature}
-          disabled={isSaved || isSubmitting}
-        >
-          <Signature className="h-4 w-4" /> {hasSignature ? 'Potpis dodan' : 'Dodaj potpis'}
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className={`flex items-center gap-2 ${hasStamp ? 'bg-emerald-100' : ''}`}
-          onClick={onToggleStamp}
-          disabled={isSaved || isSubmitting}
-        >
-          <Stamp className="h-4 w-4" /> {hasStamp ? 'Pečat dodan' : 'Dodaj pečat'}
-        </Button>
-      </div>
+      {/* Uklonjeni potpis/pečat dugmići - potpis i pečat se dodaju automatski nakon verifikacije */}
 
       {/* Always display the buttons container */}
       <div className="flex flex-wrap gap-2 mb-4">

@@ -1,11 +1,12 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import dataStorageService from "@/services/DataStorageService";
 
 export default function UserProfile() {
   const { toast } = useToast();
@@ -15,17 +16,22 @@ export default function UserProfile() {
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [stampPreview, setStampPreview] = useState<string | null>(null);
   
-  // Mock user data
+  const { user } = useAuth();
   const [userData, setUserData] = useState({
-    firstName: "John",
-    lastName: "Smith",
-    email: "dr.smith@clinic.com",
-    phone: "+123456789",
-    birthDate: "1980-05-15",
-    specialization: "Cardiology",
-    hasSignature: false,
-    hasStamp: false,
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    birthDate: user?.birthDate || "",
+    specialization: user?.specialization || "",
+    hasSignature: !!user?.signatureImage,
+    hasStamp: !!user?.stampImage,
   });
+
+  useEffect(() => {
+    setSignaturePreview(user?.signatureImage || null);
+    setStampPreview(user?.stampImage || null);
+  }, [user]);
 
   const handleSignatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -55,19 +61,47 @@ export default function UserProfile() {
     }
   };
 
-  const handleSave = () => {
-    // In a real app, this would update the user profile in the database
-    setUserData({
-      ...userData,
-      hasSignature: !!signaturePreview,
-      hasStamp: !!stampPreview,
-    });
-    setIsEditing(false);
-    
-    toast({
-      title: "Profil ažuriran",
-      description: "Vaš profil je uspješno ažuriran",
-    });
+  const handleSave = async () => {
+    try {
+      // Load users and update current user by email
+      const users = await dataStorageService.getUsers();
+      const idx = users.findIndex((u: any) => u.email === userData.email);
+      if (idx === -1) {
+        toast({ title: "Greška", description: "Korisnik nije pronađen.", variant: "destructive" });
+        return;
+      }
+      const existing = users[idx];
+      const updatedUser = {
+        ...existing,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone,
+        birthDate: userData.birthDate,
+        specialization: userData.specialization,
+        signatureImage: signaturePreview || existing.signatureImage,
+        stampImage: stampPreview || existing.stampImage,
+      };
+      const updatedUsers = [...users];
+      updatedUsers[idx] = updatedUser;
+      const ok = await dataStorageService.saveUsers(updatedUsers);
+      if (ok) {
+        // Update currentUser cache without password
+        const clean = { ...updatedUser } as any;
+        delete clean.password;
+        localStorage.setItem('currentUser', JSON.stringify(clean));
+        setUserData({
+          ...userData,
+          hasSignature: !!clean.signatureImage,
+          hasStamp: !!clean.stampImage,
+        });
+        setIsEditing(false);
+        toast({ title: "Profil ažuriran", description: "Potpis/pečat su sačuvani. Biće korišteni pri verifikaciji." });
+      } else {
+        toast({ title: "Greška", description: "Spremanje nije uspjelo.", variant: "destructive" });
+      }
+    } catch (e) {
+      toast({ title: "Greška", description: "Došlo je do greške pri spremanju.", variant: "destructive" });
+    }
   };
 
   const handleChangePassword = () => {

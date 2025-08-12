@@ -425,8 +425,18 @@ try {
   const handleVerifyReport = (reportId: string, doctorName: string) => {
     // In a real app, this would call your backend API
     if (savedReport) {
-      const verifierSignature = user?.signatureImage;
-      const verifierStamp = user?.stampImage;
+      const currentStored = localStorage.getItem('currentUser');
+      let storedSig: string | undefined = undefined;
+      let storedStamp: string | undefined = undefined;
+      try {
+        if (currentStored) {
+          const parsed = JSON.parse(currentStored);
+          storedSig = parsed.signatureImage;
+          storedStamp = parsed.stampImage;
+        }
+      } catch {}
+      const verifierSignature = storedSig || user?.signatureImage;
+      const verifierStamp = storedStamp || user?.stampImage;
       const verifiedReport = {
         ...savedReport,
         verificationStatus: 'verified' as const,
