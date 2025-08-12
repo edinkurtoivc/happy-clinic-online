@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/contexts/AuthContext";
+import dataStorageService from "@/services/DataStorageService";
 
 // Mock data for examination types - would come from settings in a real app
 const mockExaminationTypes: ExaminationType[] = [
@@ -182,6 +183,54 @@ export default function MedicalReports() {
     
     setSavedReport(savedReportData);
     
+    // Audit: report created
+    try {
+      const currentUser = localStorage.getItem('currentUser');
+      const performedBy = currentUser ? `${JSON.parse(currentUser).firstName} ${JSON.parse(currentUser).lastName}` : 'unknown';
+      const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+      logs.push({
+        id: Date.now(),
+        action: 'create',
+        entityType: 'report',
+        entityId: savedReportData.id,
+        performedBy,
+        performedAt: new Date().toISOString(),
+        details: `Kreiran nalaz (${selectedExamType}) za pacijenta ${selectedPatient?.name}`,
+        reportId: savedReportData.id,
+      });
+      localStorage.setItem('auditLogs', JSON.stringify(logs));
+    } catch {}
+    
+    // Attempt to link with existing scheduled appointment (same patient and exam type, today)
+    try {
+      const all = await dataStorageService.getAppointments();
+      const match = all.find(a => 
+        a.patientId === selectedPatient!.id.toString() &&
+        a.examinationType === selectedExamType &&
+        a.status === 'scheduled'
+      );
+      if (match && savedReportData.id) {
+        await dataStorageService.completeAppointmentWithReport(match.id, savedReportData.id);
+        setSavedReport(prev => ({ ...(prev || savedReportData), appointmentId: match.id }));
+        // Audit: link appointment
+        const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+        logs.push({
+          id: Date.now(),
+          action: 'update',
+          entityType: 'appointment',
+          entityId: match.id,
+          performedBy: user ? `${user.firstName} ${user.lastName}` : currentDoctor.name,
+          performedAt: new Date().toISOString(),
+          details: `Termin povezan s nalazom ${savedReportData.id}`,
+          appointmentId: match.id,
+          reportId: savedReportData.id,
+        });
+        localStorage.setItem('auditLogs', JSON.stringify(logs));
+      }
+    } catch (e) {
+      console.warn('[MedicalReports] Linking report to appointment failed', e);
+    }
+
     toast({
       title: "Nalaz sačuvan",
       description: data.status === 'final' 
@@ -326,12 +375,23 @@ export default function MedicalReports() {
     }
 
     // Log audit information about printing
-    console.log('[MedicalReports] Audit log: Report printed', {
-      reportId: savedReport?.id,
-      patientId: selectedPatient?.id,
-      doctorId: user?.id || currentDoctor.id,
-      timestamp: new Date().toISOString()
-    });
+    try {
+      const currentUser = localStorage.getItem('currentUser');
+      const performedBy = currentUser ? `${JSON.parse(currentUser).firstName} ${JSON.parse(currentUser).lastName}` : 'unknown';
+      const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+      logs.push({
+        id: Date.now(),
+        action: 'view',
+        entityType: 'report',
+        entityId: savedReport?.id,
+        performedBy,
+        performedAt: new Date().toISOString(),
+        details: 'Print nalaza',
+        reportId: savedReport?.id,
+      });
+      localStorage.setItem('auditLogs', JSON.stringify(logs));
+    } catch {}
+
     
     // Get the current user's name for the print
     const currentUserName = user ? `${user.firstName} ${user.lastName}` : currentDoctor.name;

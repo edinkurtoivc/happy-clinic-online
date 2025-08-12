@@ -230,11 +230,25 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       try {
         const success = await dataStorageService.addAppointment(newAppointment);
         if (!success) throw new Error('Save failed');
-        
-        toast({
-          title: "Termin zakazan",
-          description: `Termin uspješno zakazan za ${format(date!, "dd.MM.yyyy.")} u ${selectedTime}`,
-        });
+
+        // Audit log
+        try {
+          const currentUser = localStorage.getItem('currentUser');
+          const performedBy = currentUser ? `${JSON.parse(currentUser).firstName} ${JSON.parse(currentUser).lastName}` : 'unknown';
+          const existingLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+          existingLogs.push({
+            id: Date.now(),
+            action: 'create',
+            entityType: 'appointment',
+            entityId: newAppointment.id,
+            performedBy,
+            performedAt: new Date().toISOString(),
+            details: `Kreiran termin za ${newAppointment.patientName} kod ${newAppointment.doctorName} u ${newAppointment.time}`,
+            appointmentId: newAppointment.id,
+          });
+          localStorage.setItem('auditLogs', JSON.stringify(existingLogs));
+        } catch {}
+
         
         onCancel();
       } catch (error) {

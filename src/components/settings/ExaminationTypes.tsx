@@ -29,6 +29,7 @@ export default function ExaminationTypes() {
   const [examTypes, setExamTypes] = useState<ExaminationType[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const fileInputId = "exam-types-import";
 
   useEffect(() => {
     const loadTypes = async () => {
@@ -49,12 +50,55 @@ export default function ExaminationTypes() {
     data: examTypes,
     key: "examination-types",
     onSave: async (data) => {
-      console.log("[ExaminationTypes] Saving examination types:", data);
       await dataStorageService.saveExaminationTypes(data as ExaminationType[]);
       return;
     },
-    loadFromStorage: false // We handle loading manually above
+    loadFromStorage: false
   });
+
+  const saveWithVersioning = async (updated: ExaminationType[]) => {
+    try {
+      const history = JSON.parse(localStorage.getItem('examination-types-history') || '[]');
+      history.push({ timestamp: new Date().toISOString(), types: examTypes });
+      localStorage.setItem('examination-types-history', JSON.stringify(history));
+    } catch {}
+    setExamTypes(updated);
+    await dataStorageService.saveExaminationTypes(updated);
+  };
+
+  const exportTypes = () => {
+    const blob = new Blob([JSON.stringify(examTypes, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `examination-types-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importTypes = async (file: File) => {
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const types: ExaminationType[] = parsed.types || parsed; // support {types: []} or []
+      if (!Array.isArray(types)) throw new Error('Invalid format');
+      await saveWithVersioning(types);
+      toast({ title: 'Uvoz uspješan', description: `Uvezeno ${types.length} vrsta pregleda` });
+    } catch (e) {
+      toast({ title: 'Greška pri uvozu', description: 'Provjerite JSON format', variant: 'destructive' });
+    }
+  };
+
+  const revertLastVersion = async () => {
+    try {
+      const history = JSON.parse(localStorage.getItem('examination-types-history') || '[]');
+      const last = history.pop();
+      if (!last) return;
+      localStorage.setItem('examination-types-history', JSON.stringify(history));
+      await saveWithVersioning(last.types as ExaminationType[]);
+      toast({ title: 'Vrati verziju', description: 'Vraćena posljednja verzija' });
+    } catch {}
+  };
 
   const form = useForm<ExamTypeFormData>({
     resolver: zodResolver(examTypeSchema),
@@ -95,8 +139,7 @@ export default function ExaminationTypes() {
         price: data.price || "",
       };
       const updated = [...examTypes, newExamType];
-      setExamTypes(updated);
-      await dataStorageService.saveExaminationTypes(updated);
+      await saveWithVersioning(updated);
       toast({
         title: "Vrsta pregleda kreirana",
         description: "Nova vrsta pregleda je uspješno dodana",
@@ -108,8 +151,7 @@ export default function ExaminationTypes() {
         duration: data.duration,
         price: data.price || "",
       } as ExaminationType : e));
-      setExamTypes(updated);
-      await dataStorageService.saveExaminationTypes(updated);
+      await saveWithVersioning(updated);
       toast({
         title: "Vrsta pregleda ažurirana",
         description: "Vrsta pregleda je uspješno ažurirana",
@@ -120,8 +162,7 @@ export default function ExaminationTypes() {
 
   const handleDelete = async (id: number) => {
     const updated = examTypes.filter(e => e.id !== id);
-    setExamTypes(updated);
-    await dataStorageService.saveExaminationTypes(updated);
+    await saveWithVersioning(updated);
     toast({
       title: "Vrsta pregleda obrisana",
       description: "Vrsta pregleda je uspješno obrisana",
@@ -138,7 +179,18 @@ export default function ExaminationTypes() {
               Definišite vrste pregleda koje obavljate u praksi
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <input
+              id={fileInputId}
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (f) await importTypes(f);
+                (e.target as HTMLInputElement).value = '';
+              }}
+            />
             <AutoSaveIndicator 
               status={
                 isOffline ? "offline" : 
@@ -148,6 +200,9 @@ export default function ExaminationTypes() {
               lastSaved={lastSaved} 
               onRetry={forceSave}
             />
+            <Button variant="outline" onClick={exportTypes}>Izvezi JSON</Button>
+            <Button variant="outline" onClick={() => document.getElementById(fileInputId)?.click()}>Uvezi JSON</Button>
+            <Button variant="outline" onClick={revertLastVersion}>Vrati zadnju verziju</Button>
             <Button onClick={openAddDialog}>Dodaj vrstu pregleda</Button>
           </div>
         </div>

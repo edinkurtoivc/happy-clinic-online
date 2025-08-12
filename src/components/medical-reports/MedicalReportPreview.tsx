@@ -196,6 +196,9 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                     Broj nalaza: {reportCode}
                   </p>
                 )}
+                {qrDataUrl && (
+                  <img src={qrDataUrl} alt="QR kod nalaza" className="w-24 h-24 mb-2" />
+                )}
                 {appointmentType && (
                   <div className="mt-1">
                     <p className="font-medium text-xs text-emerald-700 text-right">
