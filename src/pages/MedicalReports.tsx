@@ -9,7 +9,7 @@ import ReportEditor from "@/components/medical-reports/ReportEditor";
 import { useSaveData } from "@/hooks/useSaveData";
 import { saveMedicalReport } from "@/utils/fileSystemUtils";
 import { isAbsolutePath, normalizePath, createReportData, generateReportCode } from "@/utils/reportUtils";
-import type { MedicalReport } from "@/types/medical-report";
+import type { MedicalReport, MedicalReportVersion } from "@/types/medical-report";
 import type { Patient } from "@/types/patient";
 import { ensurePatient } from "@/types/patient";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/contexts/AuthContext";
 import dataStorageService from "@/services/DataStorageService";
+import MedicalReportVersions from "@/components/medical-reports/MedicalReportVersions";
+import { ReasonDialog } from "@/components/patient-chart/ReasonDialog";
 
 
 // Mock current user/doctor
@@ -46,6 +48,13 @@ export default function MedicalReports() {
   
   const [isSavingToFileSystem, setIsSavingToFileSystem] = useState(false);
   const [reportCode, setReportCode] = useState<string | undefined>(undefined);
+  // Versions & editing state
+  const [versions, setVersions] = useState<MedicalReportVersion[]>([]);
+  const [showVersions, setShowVersions] = useState(false);
+  const [isEditingReport, setIsEditingReport] = useState(false);
+  const [pendingEditVersion, setPendingEditVersion] = useState<MedicalReportVersion | null>(null);
+  const [reasonOpen, setReasonOpen] = useState(false);
+  const [editReason, setEditReason] = useState<string>("");
 
   // Auto-save for the report editor
   const { saveStatus, lastSaved } = useSaveData({
@@ -82,7 +91,24 @@ export default function MedicalReports() {
     } else {
       console.warn("[MedicalReports] No data folder path found in localStorage");
     }
-  }, [toast]);
+}, [toast]);
+
+  // Load versions from storage when a report is selected/created
+  useEffect(() => {
+    if (!savedReport?.id) {
+      setVersions([]);
+      return;
+    }
+    try {
+      const key = `report-versions:${savedReport.id}`;
+      const stored = JSON.parse(localStorage.getItem(key) || 'null');
+      const fromReport = (savedReport as any).versions || [];
+      const merged = stored && Array.isArray(stored) ? stored : fromReport;
+      setVersions(merged || []);
+    } catch {
+      setVersions((savedReport as any).versions || []);
+    }
+  }, [savedReport]);
 
   const handleSelectPatient = (patient: any) => {
     // Ensure patient has the correct gender type and name getter
@@ -131,8 +157,29 @@ export default function MedicalReports() {
       reportCode: reportCodeToUse, // Include the report code
     };
     
-    // Update state with the report code
-    setReportCode(reportCodeToUse);
+// Update state with the report code
+setReportCode(reportCodeToUse);
+
+// Initialize versions for this report
+try {
+  const currentUserName = user ? `${user.firstName} ${user.lastName}` : currentDoctor.name;
+  const initialVersion: MedicalReportVersion = {
+    id: `ver-${Date.now()}`,
+    reportId: savedReportData.id!,
+    version: 1,
+    report: data.report || "",
+    therapy: data.therapy || "",
+    notes: data.notes,
+    createdAt: new Date().toISOString(),
+    createdBy: currentUserName,
+    status: (data.status as any) || 'draft',
+  };
+  const initialVersions = [initialVersion];
+  (savedReportData as any).versions = initialVersions;
+  setVersions(initialVersions);
+  localStorage.setItem(`report-versions:${savedReportData.id}`, JSON.stringify(initialVersions));
+} catch {}
+
     
     // Try to save to file system if available
     const basePath = localStorage.getItem('dataFolderPath');
@@ -283,6 +330,14 @@ export default function MedicalReports() {
   const handleFinalizeReport = (isFinal: boolean) => {
     setShowFinalizeConfirm(false);
     setIsFinalizingReport(true);
+
+    // If editing an existing report, just append a new version
+    if (isEditingReport && savedReport?.id) {
+      setTimeout(() => {
+        handleUpdateReport(isFinal);
+      }, 500);
+      return;
+    }
     
     const typedPatient = ensurePatient(selectedPatient!);
     
@@ -319,7 +374,54 @@ export default function MedicalReports() {
       setIsSaved(true);
     }, 1000);
   };
-  
+  const handleUpdateReport = (isFinal: boolean) => {
+    if (!savedReport?.id) return;
+    const currentUserName = user ? `${user.firstName} ${user.lastName}` : currentDoctor.name;
+    const newVersion: MedicalReportVersion = {
+      id: `ver-${Date.now()}`,
+      reportId: savedReport.id!,
+      version: (versions[versions.length - 1]?.version || 0) + 1,
+      report: reportText,
+      therapy: therapyText,
+      notes: editReason,
+      createdAt: new Date().toISOString(),
+      createdBy: currentUserName,
+      status: isFinal ? 'final' : 'draft',
+    };
+    const newVersions = [...versions, newVersion];
+    const updated = {
+      ...savedReport,
+      report: reportText,
+      therapy: therapyText,
+      status: (isFinal ? 'final' : 'draft') as 'final' | 'draft',
+      versions: newVersions,
+      verificationStatus: (isFinal ? 'pending' : 'unverified') as 'pending' | 'unverified',
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentUserName,
+    } as Partial<MedicalReport>;
+    setSavedReport(updated);
+    setVersions(newVersions);
+    setIsEditingReport(false);
+    setEditReason("");
+    try {
+      localStorage.setItem(`report-versions:${savedReport.id}`, JSON.stringify(newVersions));
+      const existingReports = JSON.parse(localStorage.getItem('medicalReports') || '[]');
+      const replaced = Array.isArray(existingReports)
+        ? existingReports.map((r: any) => (r.id === savedReport.id ? updated : r))
+        : [updated];
+      localStorage.setItem('medicalReports', JSON.stringify(replaced));
+    } catch {}
+    toast({
+      title: "Nova verzija sačuvana",
+      description: `Verzija ${newVersion.version} je dodana.${isFinal ? " Potrebna je ponovna verifikacija." : ""}`,
+    });
+    if (isFinal) {
+      setTimeout(() => setIsVerificationDialogOpen(true), 500);
+    }
+    setIsFinalizingReport(false);
+    setIsSaved(true);
+  };
+
   const handleVerifyReport = (reportId: string, doctorName: string) => {
     // In a real app, this would call your backend API
     if (savedReport) {
@@ -741,6 +843,25 @@ export default function MedicalReports() {
             onSelectExamType={setSelectedExamType}
             disabled={isSaved}
           />
+        )}
+
+        {savedReport && (
+          <div className="flex items-center gap-2 mb-4">
+            <Button variant="outline" size="sm" onClick={() => setShowVersions(true)}>Verzije nalaza</Button>
+            <Button variant="outline" size="sm" onClick={() => setReasonOpen(true)}>Uredi nalaz</Button>
+          </div>
+        )}
+
+        {showVersions && savedReport && (
+          <div className="mb-6">
+            <MedicalReportVersions
+              report={savedReport as any}
+              versions={versions}
+              onClose={() => setShowVersions(false)}
+              onPrint={(v) => { setReportText(v.report); setTherapyText(v.therapy); setShowVersions(false); setTimeout(() => generatePDF(), 100); }}
+              onEdit={(v) => { setReportText(v.report); setTherapyText(v.therapy); setShowVersions(false); setReasonOpen(true); }}
+            />
+          </div>
         )}
 
         <div className="mx-auto max-w-[1120px]">
