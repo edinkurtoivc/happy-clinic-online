@@ -306,7 +306,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             <div>
               <h3 className={`${headingClass} font-semibold mb-3`} style={{ fontSize: `${(fontSizePx + 4).toFixed(1)}px` }}>Nalaz</h3>
               <div className={`${sectionClass} p-4 rounded-md min-h-[150px] print:bg-transparent print:border-0 print:p-0`}>
-                <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: `${fontSizePx.toFixed(1)}px` }}>
+                <p className="whitespace-pre-wrap leading-normal" style={{ fontSize: `${fontSizePx.toFixed(1)}px` }}>
                   {reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}
                 </p>
               </div>
@@ -315,7 +315,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
             <div>
               <h3 className={`${headingClass} font-semibold mb-3`} style={{ fontSize: `${(fontSizePx + 4).toFixed(1)}px` }}>Terapija i preporuke</h3>
               <div className={`${sectionClass} p-4 rounded-md min-h-[150px] print:bg-transparent print:border-0 print:p-0`}>
-                <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: `${fontSizePx.toFixed(1)}px` }}>
+                <p className="whitespace-pre-wrap leading-normal" style={{ fontSize: `${fontSizePx.toFixed(1)}px` }}>
                   {therapyText || "Ovdje će biti prikazana terapija i preporuke..."}
                 </p>
               </div>
