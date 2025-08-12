@@ -10,7 +10,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Eye, Edit, Trash2, Search, Download, Key } from "lucide-react";
 import type { User } from "@/types/user";
 import UserForm from "./UserForm";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +25,8 @@ export default function UsersManagement() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [users, setUsers] = useState<User[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'doctor' | 'nurse' | 'technician'>('all');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -186,7 +191,7 @@ export default function UsersManagement() {
       const updatedUsers = [...users, newUser];
       setUsers(updatedUsers);
       await saveUsers(updatedUsers);
-      
+      logAudit('create', `Kreiran korisnik ${newUser.email}`, newUser.id);
       console.log("[UsersManagement] Added new user:", newUser);
     } catch (error) {
       console.error("[UsersManagement] Error adding user:", error);
@@ -244,6 +249,7 @@ export default function UsersManagement() {
         }
       }
       
+      logAudit('update', `Ažuriran korisnik ${data.email}`, selectedUser.id);
       console.log("[UsersManagement] Updated user:", selectedUser.id);
     } catch (error) {
       console.error("[UsersManagement] Error updating user:", error);
@@ -258,6 +264,7 @@ export default function UsersManagement() {
       
       await saveUsers(updatedUsers);
       
+      logAudit('delete', `Obrisan korisnik ${userId}`, userId);
       toast({
         title: "Korisnik obrisan",
         description: "Korisnik je uspješno obrisan iz sistema",
@@ -286,17 +293,115 @@ export default function UsersManagement() {
     setIsFormOpen(true);
   };
 
+  // Derived list with filters
+  const filteredUsers = users.filter((u) => {
+    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+    const q = searchTerm.trim().toLowerCase();
+    const matchesQuery = !q || `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+    return matchesRole && matchesQuery;
+  });
+
+  const logAudit = (action: string, details: string, entityId?: string) => {
+    try {
+      const currentUser = localStorage.getItem('currentUser');
+      const performedBy = currentUser ? `${JSON.parse(currentUser).firstName} ${JSON.parse(currentUser).lastName}` : 'unknown';
+      const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+      logs.push({
+        id: Date.now(),
+        action,
+        entityType: 'user',
+        entityId: entityId || '',
+        performedBy,
+        performedAt: new Date().toISOString(),
+        details,
+      });
+      localStorage.setItem('auditLogs', JSON.stringify(logs));
+    } catch {}
+  };
+
+  const handleToggleActive = async (user: User) => {
+    try {
+      const updatedUsers = users.map(u => u.id === user.id ? { ...u, active: !u.active } : u);
+      setUsers(updatedUsers);
+      await saveUsers(updatedUsers);
+      logAudit('update', `Status promijenjen na ${!user.active ? 'Aktivan' : 'Neaktivan'} za ${user.email}`, user.id);
+      toast({ title: 'Status ažuriran', description: `${user.firstName} ${user.lastName} je sada ${!user.active ? 'aktivan' : 'neaktivan'}.` });
+    } catch (e) {
+      console.error('[UsersManagement] Toggle active failed', e);
+      toast({ title: 'Greška', description: 'Nije moguće promijeniti status', variant: 'destructive' });
+    }
+  };
+
+  const handleResetPassword = async (user: User) => {
+    try {
+      if (!window.confirm(`Reset lozinke za ${user.firstName} ${user.lastName}?`)) return;
+      const temp = `Temp-${Math.random().toString(36).slice(2,8)}`;
+      const hashed = await bcrypt.hash(temp, 10);
+      const updatedUsers = users.map(u => u.id === user.id ? { ...u, password: hashed } : u);
+      setUsers(updatedUsers);
+      await saveUsers(updatedUsers);
+      logAudit('update', `Reset lozinke za ${user.email}`, user.id);
+      toast({ title: 'Lozinka resetovana', description: `Privremena lozinka: ${temp}` });
+    } catch (e) {
+      console.error('[UsersManagement] Reset password failed', e);
+      toast({ title: 'Greška', description: 'Nije moguće resetovati lozinku', variant: 'destructive' });
+    }
+  };
+
+  const exportCSV = () => {
+    const headers = ['ID','Ime','Prezime','Email','Uloga','Specijalizacija','Telefon','Aktivan'];
+    const rows = filteredUsers.map(u => [u.id, u.firstName, u.lastName, u.email, u.role, u.specialization || '', u.phone || '', u.active ? 'DA' : 'NE']);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `korisnici-${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <Card className="p-6">
-        <div className="mb-6 flex justify-between items-center">
-          <div>
-            <h2 className="text-lg font-semibold text-clinic-800">Osoblje</h2>
-            <p className="text-sm text-muted-foreground">
-              Upravljanje doktorima, administratorima i medicinskim tehničarima
-            </p>
+        <div className="mb-6 space-y-3">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-semibold text-clinic-800">Osoblje</h2>
+              <p className="text-sm text-muted-foreground">
+                Upravljanje doktorima, administratorima i medicinskim tehničarima
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={exportCSV}>
+                <Download className="h-4 w-4 mr-2" /> Izvoz CSV
+              </Button>
+              <Button onClick={openAddForm}>Dodaj korisnika</Button>
+            </div>
           </div>
-          <Button onClick={openAddForm}>Dodaj korisnika</Button>
+          <div className="flex flex-wrap gap-2">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Pretraži po imenu ili emailu..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as any)}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Uloga" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Sve uloge</SelectItem>
+                <SelectItem value="admin">Administrator</SelectItem>
+                <SelectItem value="doctor">Doktor</SelectItem>
+                <SelectItem value="nurse">Medicinski tehničar</SelectItem>
+                <SelectItem value="technician">Tehničar</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="rounded-md border">
@@ -313,7 +418,7 @@ export default function UsersManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>{user.firstName} {user.lastName}</TableCell>
                   <TableCell className="capitalize">
@@ -338,11 +443,14 @@ export default function UsersManagement() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      user.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {user.active ? 'Aktivan' : 'Neaktivan'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                        user.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {user.active ? 'Aktivan' : 'Neaktivan'}
+                      </span>
+                      <Switch checked={user.active} onCheckedChange={() => handleToggleActive(user)} />
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
@@ -356,6 +464,14 @@ export default function UsersManagement() {
                         title="Uredi"
                       >
                         <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        title="Reset lozinke"
+                        onClick={() => handleResetPassword(user)}
+                      >
+                        <Key className="h-4 w-4" />
                       </Button>
                       <Button 
                         variant="ghost" 
