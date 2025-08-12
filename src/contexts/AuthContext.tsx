@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+
 import { useToast } from "@/hooks/use-toast";
 import * as bcrypt from 'bcryptjs';
 import type { User, UserRole } from "@/types/user";
@@ -118,7 +118,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [bypassAuth, setBypassAuth] = useState<boolean>(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   // Initialize users and load current user from localStorage on mount
   useEffect(() => {
@@ -359,7 +358,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       description: "Uspješno ste se odjavili iz sistema",
     });
     
-    navigate("/login");
+    window.location.assign("/login");
   };
   
   // Helper function to check if user has permission based on role
