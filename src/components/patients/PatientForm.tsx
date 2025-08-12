@@ -8,6 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { v4 as uuidv4 } from "uuid";
 import { PatientImpl } from "@/types/patient";
 import type { Patient } from "@/types/patient";
+import { useToast } from "@/hooks/use-toast";
+import dataStorageService from "@/services/DataStorageService";
 
 interface PatientFormProps {
   onSubmit: (patient: Patient) => void;
@@ -78,23 +80,43 @@ export default function PatientForm({ onSubmit, onCancel }: PatientFormProps) {
     return Object.keys(newErrors).length === 0;
   };
   
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (validateForm()) {
-      // Create the patient object using PatientImpl which implements the name getter
+    if (!validateForm()) return;
+
+    try {
+      const existing = await dataStorageService.getPatients();
+      const jmbgExists = existing.some(p => (p.jmbg || "").trim() === form.jmbg.trim());
+      if (jmbgExists) {
+        setErrors(prev => ({ ...prev, jmbg: "Pacijent sa ovim JMBG već postoji" }));
+        return;
+      }
+
+      const likelyDuplicate = existing.find(p =>
+        (p.firstName || "").trim().toLowerCase() === form.firstName.trim().toLowerCase() &&
+        (p.lastName || "").trim().toLowerCase() === form.lastName.trim().toLowerCase() &&
+        (p.dob || "") === form.dob
+      );
+      if (likelyDuplicate) {
+        // Soft warning, allow continue
+        console.warn("[PatientForm] Possible duplicate detected:", likelyDuplicate);
+      }
+
       const patient = new PatientImpl({
         id: parseInt(uuidv4().replace(/-/g, '').substring(0, 8), 16),
-        firstName: form.firstName,
-        lastName: form.lastName,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
         dob: form.dob,
-        jmbg: form.jmbg,
-        phone: form.phone,
-        address: form.address || undefined,
-        email: form.email || undefined,
+        jmbg: form.jmbg.trim(),
+        phone: form.phone.trim(),
+        address: form.address ? form.address.trim() : undefined,
+        email: form.email ? form.email.trim() : undefined,
         gender: form.gender ? (form.gender as "M" | "F") : undefined
       });
-      
+
       onSubmit(patient);
+    } catch (err) {
+      console.error("[PatientForm] Error validating duplicates", err);
     }
   };
   

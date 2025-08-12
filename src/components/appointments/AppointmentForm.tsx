@@ -38,6 +38,20 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   const [isLoadingPatients, setIsLoadingPatients] = useState(false);
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
   const [appointmentTypes, setAppointmentTypes] = useState<ExaminationType[]>([]);
+  const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
+
+  // Helper: generate 30-min slots between 08:00 and 20:00
+  const generateSlots = () => {
+    const slots: string[] = [];
+    for (let h = 8; h <= 20; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const hh = h.toString().padStart(2, '0');
+        const mm = m.toString().padStart(2, '0');
+        slots.push(`${hh}:${mm}`);
+      }
+    }
+    return slots;
+  };
 
   // Fetch patients from DataStorageService
   useEffect(() => {
@@ -95,6 +109,28 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   useEffect(() => {
     setAppointmentTypes(examTypes || []);
   }, [examTypes]);
+
+  // Load occupied times for selected doctor/date
+  useEffect(() => {
+    const fetchOccupied = async () => {
+      if (!selectedDoctorId || !date) {
+        setOccupiedTimes([]);
+        return;
+      }
+      try {
+        const all = await dataStorageService.getAppointments();
+        const day = format(date, "yyyy-MM-dd");
+        const taken = all
+          .filter(a => a.doctorId === selectedDoctorId && a.date === day && a.status !== 'cancelled')
+          .map(a => a.time);
+        setOccupiedTimes(taken);
+      } catch (err) {
+        console.error("[AppointmentForm] Failed to load occupied times", err);
+        setOccupiedTimes([]);
+      }
+    };
+    fetchOccupied();
+  }, [selectedDoctorId, date]);
   
   const getDefaultDoctors = (): User[] => {
     return [
@@ -140,13 +176,22 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
     setSearchTerm("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedPatient || !date || !selectedTime || !selectedDoctorId || !selectedAppointmentType) {
       toast({
         title: "Greška pri validaciji",
         description: "Molimo popunite sva obavezna polja",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (occupiedTimes.includes(selectedTime)) {
+      toast({
+        title: "Termin zauzet",
+        description: "Odabrani termin za ovog doktora je već zauzet",
         variant: "destructive"
       });
       return;
@@ -174,7 +219,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       time: selectedTime,
       examinationType: appointmentType,
       status: 'scheduled',
-      scheduledAt: new Date().toISOString(), // Add timestamp when appointment was scheduled
+      scheduledAt: new Date().toISOString(),
     };
     
     console.log("[AppointmentForm] Creating new appointment:", newAppointment);
@@ -183,17 +228,14 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
       onSave(newAppointment);
     } else {
       try {
-        const savedAppointments = localStorage.getItem('appointments') || '[]';
-        const appointments = JSON.parse(savedAppointments);
-        appointments.push(newAppointment);
-        localStorage.setItem('appointments', JSON.stringify(appointments));
+        const success = await dataStorageService.addAppointment(newAppointment);
+        if (!success) throw new Error('Save failed');
         
         toast({
           title: "Termin zakazan",
           description: `Termin uspješno zakazan za ${format(date!, "dd.MM.yyyy.")} u ${selectedTime}`,
         });
         
-        console.log("[AppointmentForm] Saved appointment directly to localStorage");
         onCancel();
       } catch (error) {
         console.error("[AppointmentForm] Error saving appointment:", error);
@@ -364,14 +406,11 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
                 <SelectValue placeholder="Odaberi vrijeme" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="09:00">09:00</SelectItem>
-                <SelectItem value="09:30">09:30</SelectItem>
-                <SelectItem value="10:00">10:00</SelectItem>
-                <SelectItem value="10:30">10:30</SelectItem>
-                <SelectItem value="11:00">11:00</SelectItem>
-                <SelectItem value="11:30">11:30</SelectItem>
-                <SelectItem value="12:00">12:00</SelectItem>
-                <SelectItem value="12:30">12:30</SelectItem>
+                {generateSlots().map((t) => (
+                  <SelectItem key={t} value={t} disabled={occupiedTimes.includes(t)}>
+                    {t} {occupiedTimes.includes(t) ? "— zauzeto" : ""}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -6,6 +6,7 @@ import { Printer } from "lucide-react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
+import QRCode from "qrcode";
 
 interface ClinicInfo {
   name: string;
@@ -73,12 +74,47 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       }
     }, []);
 
-    // Get the current user's full name for doctor signature and verification
+// Get the current user's full name for doctor signature and verification
     const currentUserName = user ? `${user.firstName} ${user.lastName}` : "";
     
     // Use current user's name if available, otherwise fall back to provided names or defaults
     const displayedDoctorName = currentUserName || doctorName || "potpis doktora";
     const displayedVerifierName = verifiedBy && verifiedBy !== "Dr. Marko Marković" ? verifiedBy : currentUserName || verifiedBy || "";
+
+    const [qrDataUrl, setQrDataUrl] = useState<string>("");
+
+    const computeHash = async (input: string) => {
+      const data = new TextEncoder().encode(input);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    };
+
+    useEffect(() => {
+      const buildQr = async () => {
+        try {
+          const payload = JSON.stringify({
+            code: reportCode || '',
+            patient: patient ? { name: patient.name, jmbg: patient.jmbg } : {},
+            type: appointmentType || '',
+            doctor: displayedDoctorName,
+            clinic: clinicInfo.name,
+            t: new Date().toISOString(),
+          });
+          const hash = await computeHash(payload);
+          const text = `MR:${reportCode || ''}|H:${hash}`;
+          const url = await QRCode.toDataURL(text, { margin: 0, width: 128 });
+          setQrDataUrl(url);
+        } catch (e) {
+          console.error('[MedicalReportPreview] QR generation failed', e);
+          setQrDataUrl("");
+        }
+      };
+      buildQr();
+    }, [patient, reportText, therapyText, appointmentType, displayedDoctorName, reportCode, clinicInfo.name]);
+
+// (removed duplicate name derivations)
 
     const formatDate = (dateString?: string) => {
       if (!dateString) return "";
