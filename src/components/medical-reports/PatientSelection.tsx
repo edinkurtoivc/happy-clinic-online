@@ -48,6 +48,30 @@ export default function PatientSelection({ selectedPatient, onSelectPatient, onV
     loadPatients();
   }, [toast]);
 
+  // Auto-refresh patients list on data change and window focus
+  useEffect(() => {
+    const refresh = async () => {
+      try {
+        const loadedPatients = await dataStorageService.getPatients();
+        const patientsWithName = loadedPatients.map(p => ensurePatient(p));
+        setPatients(patientsWithName);
+      } catch (error) {
+        console.error('[PatientSelection] Error refreshing patients:', error);
+      }
+    };
+
+    const onChanged = () => refresh();
+    const onFocus = () => refresh();
+
+    window.addEventListener('patients:changed', onChanged);
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      window.removeEventListener('patients:changed', onChanged);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
   const filteredPatients = patients.filter(patient => {
     const searchLower = searchTerm.toLowerCase();
     // Ensure the patient has the name getter before accessing it
@@ -78,7 +102,22 @@ export default function PatientSelection({ selectedPatient, onSelectPatient, onV
           <Input 
             placeholder={selectedPatient ? ensurePatient(selectedPatient).name : "Odaberite pacijenta"}
             className="w-full border rounded-md p-4"
-            onClick={() => setShowPatientsDropdown(!showPatientsDropdown)}
+            onClick={async () => {
+              const next = !showPatientsDropdown;
+              setShowPatientsDropdown(next);
+              if (next) {
+                setIsLoading(true);
+                try {
+                  const loaded = await dataStorageService.getPatients();
+                  const withName = loaded.map(p => ensurePatient(p));
+                  setPatients(withName);
+                } catch (error) {
+                  console.error('[PatientSelection] Error loading patients on open:', error);
+                } finally {
+                  setIsLoading(false);
+                }
+              }
+            }}
             readOnly
           />
           <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400">

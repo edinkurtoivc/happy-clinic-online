@@ -131,6 +131,13 @@ class DataStorageService {
       
       localStorage.setItem('patients', JSON.stringify(updatedPatients));
       
+      // Notify listeners that patients data changed
+      try {
+        window.dispatchEvent(new CustomEvent('patients:changed', { detail: { id: patient.id, action: existingIndex >= 0 ? 'updated' : 'added' } }));
+      } catch (e) {
+        console.warn('[DataStorage] patients:changed event dispatch failed', e);
+      }
+      
       // If file system is not available, we're done
       if (this._fallbackToLocalStorage || !this.basePath) {
         return true;
