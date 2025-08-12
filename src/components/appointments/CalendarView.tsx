@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import dayGridPlugin from "@fullcalendar/daygrid";
+
 import interactionPlugin from "@fullcalendar/interaction";
 import "@fullcalendar/core/index.css";
-import "@fullcalendar/daygrid/index.css";
+
 import "@fullcalendar/timegrid/index.css";
 import type { Appointment } from "@/types/medical-report";
 import dataStorageService from "@/services/DataStorageService";
@@ -114,9 +114,9 @@ export default function CalendarView({ appointments, onUpdated }: CalendarViewPr
   return (
     <div className="rounded-md border overflow-hidden">
       <FullCalendar
-        plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+        plugins={[timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
-        headerToolbar={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" }}
+        headerToolbar={{ left: "prev,next today", center: "title", right: "timeGridWeek,timeGridDay" }}
         slotMinTime="08:00:00"
         slotMaxTime="20:00:00"
         weekends={true}
