@@ -33,6 +33,8 @@ interface MedicalReportPreviewProps {
   appointmentType?: string;
   doctorName?: string;
   reportCode?: string;
+  signatureImageUrl?: string;
+  stampImageUrl?: string;
 }
 
 const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProps>(
@@ -49,6 +51,8 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
     appointmentType,
     doctorName,
     reportCode, 
+    signatureImageUrl,
+    stampImageUrl,
   }, ref) => {
     const { user } = useAuth();
     const [clinicInfo, setClinicInfo] = useState<ClinicInfo>({
@@ -256,7 +260,11 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                 <div className="flex justify-end items-end space-x-4">
                   {showSignature && (
                     <div className="text-center">
-                      <div className="border-b border-black w-32 mb-1"></div>
+                      {signatureImageUrl ? (
+                        <img src={signatureImageUrl} alt="Potpis doktora" className="h-16 object-contain mx-auto mb-1" />
+                      ) : (
+                        <div className="border-b border-black w-32 mb-1"></div>
+                      )}
                       <p className="text-xs text-gray-600">
                         {displayedDoctorName}
                       </p>
@@ -264,9 +272,13 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                   )}
                   
                   {showStamp && (
-                    <div className="border-2 border-dashed border-gray-300 rounded-full w-24 h-24 flex items-center justify-center text-gray-400 print:border-gray-400">
-                      Pečat
-                    </div>
+                    stampImageUrl ? (
+                      <img src={stampImageUrl} alt="Pečat" className="w-24 h-24 object-contain" />
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 rounded-full w-24 h-24 flex items-center justify-center text-gray-400 print:border-gray-400">
+                        Pečat
+                      </div>
+                    )
                   )}
                 </div>
               </div>

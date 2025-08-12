@@ -425,14 +425,24 @@ try {
   const handleVerifyReport = (reportId: string, doctorName: string) => {
     // In a real app, this would call your backend API
     if (savedReport) {
+      const verifierSignature = user?.signatureImage;
+      const verifierStamp = user?.stampImage;
       const verifiedReport = {
         ...savedReport,
         verificationStatus: 'verified' as const,
         verifiedBy: doctorName,
-        verifiedAt: new Date().toISOString()
+        verifiedAt: new Date().toISOString(),
+        doctorInfo: {
+          ...(savedReport.doctorInfo || {}),
+          fullName: doctorName,
+          signatureImage: verifierSignature || (savedReport.doctorInfo?.signatureImage),
+          stampImage: verifierStamp || (savedReport.doctorInfo?.stampImage),
+        }
       };
       
       setSavedReport(verifiedReport);
+      setHasSignature(true);
+      setHasStamp(true);
       
       // Log this action
       console.log('[MedicalReports] Report verified:', {
@@ -443,7 +453,7 @@ try {
       
       toast({
         title: "Nalaz verifikovan",
-        description: "Nalaz je uspješno verifikovan i spreman za printanje.",
+        description: "Potpis i pečat su automatski dodani.",
       });
     }
   };
@@ -710,6 +720,8 @@ try {
               appointmentType={selectedExamType}
               doctorName={currentDoctor.name}
               reportCode={savedReport?.reportCode || reportCode}
+              signatureImageUrl={savedReport?.doctorInfo?.signatureImage}
+              stampImageUrl={savedReport?.doctorInfo?.stampImage}
             />
           </div>
         </div>
