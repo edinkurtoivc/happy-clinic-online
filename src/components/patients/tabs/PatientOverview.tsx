@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { RecentVisits } from "./RecentVisits";
 import { PatientInfoCard } from "./patient-overview/PatientInfoCard";
 import { PatientDetailsForm } from "./patient-overview/PatientDetailsForm";
 import { EditActions } from "./patient-overview/EditActions";
@@ -17,8 +16,6 @@ interface PatientOverviewProps {
   setIsEditing: (value: boolean) => void;
   setEditedPatient: (patient: Patient) => void;
   onUpdate?: (patient: Patient) => void;
-  setIsScheduling: (value: boolean) => void;
-  patientHistory: any[];
 }
 
 export function PatientOverview({
@@ -28,8 +25,6 @@ export function PatientOverview({
   setIsEditing,
   setEditedPatient,
   onUpdate,
-  setIsScheduling,
-  patientHistory
 }: PatientOverviewProps) {
   const { toast } = useToast();
 
@@ -88,12 +83,6 @@ export function PatientOverview({
           setEditedPatient={setEditedPatient}
         />
       </div>
-
-      <RecentVisits 
-        patientHistory={patientHistory} 
-        setIsScheduling={setIsScheduling} 
-        patient={patient}  
-      />
 
       <EditActions
         isEditing={isEditing}

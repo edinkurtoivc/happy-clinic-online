@@ -202,16 +202,6 @@ export default function PatientChartTab({ patient }: { patient: any }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-semibold">Karton pacijenta</h3>
-          <p className="text-sm text-muted-foreground">{patient?.firstName} {patient?.lastName} • JMBG: {patient?.jmbg}</p>
-        </div>
-        <div className="space-x-2">
-          <Button variant="outline" onClick={() => setPdfOpen(true)}>PDF izvoz</Button>
-        </div>
-      </div>
-
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Pregled</TabsTrigger>

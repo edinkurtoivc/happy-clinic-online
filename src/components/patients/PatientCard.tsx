@@ -175,8 +175,6 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
               setIsEditing={setIsEditing}
               setEditedPatient={setEditedPatient}
               onUpdate={onUpdate}
-              setIsScheduling={setIsScheduling}
-              patientHistory={patientHistory}
             />
             
             <section aria-labelledby="patient-history" className="mt-6">
@@ -187,6 +185,10 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
                 patient={patient}
               />
             </section>
+          </TabsContent>
+          
+          <TabsContent value="chart">
+            <PatientChartTab patient={patient} />
           </TabsContent>
           
           <TabsContent value="reports">
