@@ -23,17 +23,27 @@ export default function AppearanceSettings() {
   };
 
 
-  const [reportFontScale, setReportFontScale] = useState<number>(() => {
-    const saved = localStorage.getItem('reportFontScale');
-    const num = saved ? parseFloat(saved) : 1;
-    return isNaN(num) ? 1 : num;
+  const [reportFontSize, setReportFontSize] = useState<number>(() => {
+    const savedPx = localStorage.getItem('reportFontSize');
+    if (savedPx) {
+      const num = parseFloat(savedPx);
+      return isNaN(num) ? 14 : num;
+    }
+    const savedScale = localStorage.getItem('reportFontScale');
+    const scale = savedScale ? parseFloat(savedScale) : 1;
+    const derived = 14 * (isNaN(scale) ? 1 : scale);
+    return Math.round(derived * 10) / 10;
   });
 
-  const applyReportFontScale = (val: number) => {
-    setReportFontScale(val);
-    localStorage.setItem('reportFontScale', String(val));
-    try { window.dispatchEvent(new CustomEvent('reportFontScale:changed', { detail: { scale: val } })); } catch {}
-    toast({ title: "Veličina fonta ažurirana", description: `Skala: ${Math.round(val * 100)}%` });
+  const applyReportFontSize = (val: number) => {
+    setReportFontSize(val);
+    localStorage.setItem('reportFontSize', String(val));
+    // Backwards compatibility: also store scale
+    const scale = val / 14;
+    localStorage.setItem('reportFontScale', String(scale));
+    try { window.dispatchEvent(new CustomEvent('reportFontSize:changed', { detail: { size: val } })); } catch {}
+    try { window.dispatchEvent(new CustomEvent('reportFontScale:changed', { detail: { scale } })); } catch {}
+    toast({ title: "Veličina fonta ažurirana", description: `${val.toFixed(1)} px` });
   };
 
   type ReportStyle = { headingFont: 'heading' | 'sans'; sectionBackground: boolean; showQr: boolean; showReportCode: boolean };
@@ -97,14 +107,14 @@ export default function AppearanceSettings() {
           <div className="flex items-center gap-3">
             <input
               type="range"
-              min={0.9}
-              max={1.3}
-              step={0.05}
-              value={reportFontScale}
-              onChange={(e) => applyReportFontScale(parseFloat(e.target.value))}
+              min={12}
+              max={18}
+              step={0.5}
+              value={reportFontSize}
+              onChange={(e) => applyReportFontSize(parseFloat(e.target.value))}
               className="w-full"
             />
-            <span className="text-sm tabular-nums">{Math.round(reportFontScale * 100)}%</span>
+            <span className="text-sm tabular-nums">{reportFontSize.toFixed(1)} px</span>
           </div>
         </div>
 

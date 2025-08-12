@@ -68,6 +68,17 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       const num = saved ? parseFloat(saved) : 1;
       return isNaN(num) ? 1 : num;
     });
+    const [fontSizePx, setFontSizePx] = useState<number>(() => {
+      const savedPx = localStorage.getItem('reportFontSize');
+      if (savedPx) {
+        const n = parseFloat(savedPx);
+        return isNaN(n) ? 14 : n;
+      }
+      const savedScale = localStorage.getItem('reportFontScale');
+      const scale = savedScale ? parseFloat(savedScale) : 1;
+      const derived = 14 * (isNaN(scale) ? 1 : scale);
+      return Math.round(derived * 10) / 10;
+    });
     const [stylePrefs, setStylePrefs] = useState<{ headingFont: 'heading' | 'sans'; sectionBackground: boolean; showQr: boolean; showReportCode: boolean }>(() => {
       try {
         const saved = localStorage.getItem('reportStyle');
@@ -98,14 +109,25 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       }
     }, []);
 
-    // Listen for font scale changes from settings
+    // Listen for font changes from settings (scale or absolute px)
     useEffect(() => {
-      const onScale = (e: any) => {
-        const val = e?.detail?.scale;
-        if (typeof val === 'number') setFontScale(val);
+      const onChange = (e: any) => {
+        const s = e?.detail?.scale;
+        const px = e?.detail?.size;
+        if (typeof px === 'number') {
+          setFontSizePx(px);
+          setFontScale(px / 14);
+        } else if (typeof s === 'number') {
+          setFontScale(s);
+          setFontSizePx(Math.round(14 * s * 10) / 10);
+        }
       };
-      window.addEventListener('reportFontScale:changed', onScale);
-      return () => window.removeEventListener('reportFontScale:changed', onScale);
+      window.addEventListener('reportFontScale:changed', onChange);
+      window.addEventListener('reportFontSize:changed', onChange);
+      return () => {
+        window.removeEventListener('reportFontScale:changed', onChange);
+        window.removeEventListener('reportFontSize:changed', onChange);
+      };
     }, []);
 
     // Listen for style preference changes from settings
@@ -282,18 +304,18 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
 
           <div className="space-y-6 px-6 leading-relaxed">
             <div>
-              <h3 className={`${headingClass} font-semibold mb-3`} style={{ fontSize: `${(18 * fontScale).toFixed(2)}px` }}>Nalaz</h3>
+              <h3 className={`${headingClass} font-semibold mb-3`} style={{ fontSize: `${(fontSizePx + 4).toFixed(1)}px` }}>Nalaz</h3>
               <div className={`${sectionClass} p-4 rounded-md min-h-[150px] print:bg-transparent print:border-0 print:p-0`}>
-                <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: `${(14 * fontScale).toFixed(2)}px` }}>
+                <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: `${fontSizePx.toFixed(1)}px` }}>
                   {reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}
                 </p>
               </div>
             </div>
 
             <div>
-              <h3 className="font-heading font-semibold text-lg mb-3">Terapija i preporuke</h3>
-              <div className="bg-accent/40 p-4 rounded-md border border-border min-h-[150px] print:bg-transparent print:border-0 print:p-0">
-                <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: `${(14 * fontScale).toFixed(2)}px` }}>
+              <h3 className={`${headingClass} font-semibold mb-3`} style={{ fontSize: `${(fontSizePx + 4).toFixed(1)}px` }}>Terapija i preporuke</h3>
+              <div className={`${sectionClass} p-4 rounded-md min-h-[150px] print:bg-transparent print:border-0 print:p-0`}>
+                <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: `${fontSizePx.toFixed(1)}px` }}>
                   {therapyText || "Ovdje će biti prikazana terapija i preporuke..."}
                 </p>
               </div>
