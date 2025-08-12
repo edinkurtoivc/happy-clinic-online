@@ -8,10 +8,11 @@ import BackupRestore from "@/components/settings/BackupRestore";
 import AppearanceSettings from "@/components/settings/AppearanceSettings";
 import UserRoles from "@/components/settings/UserRoles";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Check, AlertCircle, HardDrive, Settings as SettingsIcon, Users, Palette } from "lucide-react";
+import { Check, AlertCircle, HardDrive, Settings as SettingsIcon, Users, Palette, ScrollText } from "lucide-react";
 import dataStorageService from "@/services/DataStorageService";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AuditLogViewer from "@/components/settings/AuditLogViewer";
 export default function Settings() {
   const [dataFolderStatus, setDataFolderStatus] = useState<'initializing' | 'ready' | 'error'>('initializing');
   const basePath = dataStorageService.basePath;
@@ -40,7 +41,8 @@ export default function Settings() {
     { value: "general", label: "Opće postavke", Icon: SettingsIcon },
     { value: "users", label: "Korisnici i dozvole", Icon: Users },
     { value: "data", label: "Podaci i backup", Icon: HardDrive },
-    { value: "appearance", label: "Izgled", Icon: Palette },
+  { value: "appearance", label: "Izgled", Icon: Palette },
+  { value: "audit", label: "Evidencija", Icon: ScrollText },
   ];
   
   return (
@@ -109,6 +111,7 @@ export default function Settings() {
                 <TabsTrigger value="users">Korisnici i dozvole</TabsTrigger>
                 <TabsTrigger value="data">Podaci i backup</TabsTrigger>
                 <TabsTrigger value="appearance">Izgled</TabsTrigger>
+                <TabsTrigger value="audit">Evidencija</TabsTrigger>
               </TabsList>
               
               <TabsContent value="general" className="mt-6">
@@ -135,6 +138,10 @@ export default function Settings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <AppearanceSettings />
                 </div>
+              </TabsContent>
+
+              <TabsContent value="audit" className="mt-6">
+                <AuditLogViewer embedded />
               </TabsContent>
             </Tabs>
           </div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,6 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 
+interface AuditLogViewerProps {
+  embedded?: boolean;
+}
+
 interface LogEntry {
   timestamp?: string;
   userId?: string;
@@ -25,7 +28,7 @@ interface LogEntry {
   raw: string;
 }
 
-const AuditLogViewer = () => {
+const AuditLogViewer = ({ embedded = false }: AuditLogViewerProps) => {
   const [logs, setLogs] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
@@ -136,6 +139,87 @@ const AuditLogViewer = () => {
     };
   };
 
+  if (embedded) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Evidencija aktivnosti korisnika</CardTitle>
+            <CardDescription>Pregled svih aktivnosti korisnika sistema</CardDescription>
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={downloadLogs}
+              disabled={logs.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Preuzmi
+            </Button>
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={logs.length === 0}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Obriši sve
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Potvrda brisanja</DialogTitle>
+                  <DialogDescription>
+                    Da li ste sigurni da želite obrisati sve zapise o aktivnostima korisnika?
+                    Ova akcija se ne može poništiti.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsOpen(false)}>Odustani</Button>
+                  <Button variant="destructive" onClick={clearLogs}>Obriši sve</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {logs.length > 0 ? (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[200px]">Vrijeme</TableHead>
+                    <TableHead className="w-[150px]">Korisnik</TableHead>
+                    <TableHead>Aktivnost</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logs.map((log, index) => {
+                    const parsedLog = parseLogEntry(log);
+                    return (
+                      <TableRow key={index}>
+                        <TableCell className="font-mono text-sm">{parsedLog.timestamp}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span>{parsedLog.userId}</span>
+                            <span className="text-xs text-muted-foreground">({parsedLog.role})</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{parsedLog.action}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-40 text-muted-foreground">
+              Nema zapisa aktivnosti
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       <HeaderWithUserMenu title="Evidencija aktivnosti" />
@@ -156,7 +240,6 @@ const AuditLogViewer = () => {
                 <Download className="mr-2 h-4 w-4" />
                 Preuzmi
               </Button>
-              
               <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogTrigger asChild>
                   <Button variant="destructive" size="sm" disabled={logs.length === 0}>
@@ -194,7 +277,6 @@ const AuditLogViewer = () => {
                   <TableBody>
                     {logs.map((log, index) => {
                       const parsedLog = parseLogEntry(log);
-                      
                       return (
                         <TableRow key={index}>
                           <TableCell className="font-mono text-sm">{parsedLog.timestamp}</TableCell>
