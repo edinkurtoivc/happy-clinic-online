@@ -362,9 +362,9 @@ const getStatusBadge = (status: string) => {
                   filteredAppointments.map((appointment) => (
                     <tr 
                       key={appointment.id} 
-                      className={`hover:bg-muted/50 ${
-                        appointment.status === 'completed' ? 'bg-green-50' : 
-                        appointment.status === 'cancelled' ? 'bg-red-50' : ''
+                      className={`hover:bg-muted/50 border-l-4 ${
+                        appointment.status === 'completed' ? 'border-secondary' : 
+                        appointment.status === 'cancelled' ? 'border-destructive' : 'border-primary'
                       } ${
                         appointment.status === 'scheduled' ? 'cursor-pointer' : ''
                       }`}

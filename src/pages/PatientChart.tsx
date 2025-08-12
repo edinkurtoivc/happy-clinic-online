@@ -9,11 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import dataStorageService from "@/services/DataStorageService";
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 interface ProblemItem { id: string; description: string; status: "active" | "resolved"; code?: string }
 interface AllergyItem { id: string; substance: string; reaction?: string; severity?: "mild" | "moderate" | "severe" }
 interface MedicationItem { id: string; name: string; dose?: string; route?: string; active: boolean }
-interface ClinicalData { problems: ProblemItem[]; allergies: AllergyItem[]; medications: MedicationItem[] }
+interface OrderItem { id: string; type: 'lab' | 'imaging' | 'procedure'; name: string; status: 'draft' | 'ordered' | 'collected' | 'resulted' | 'cancelled'; scheduledAt?: string; resultId?: string }
+interface ObservationItem { id: string; orderId: string; code: string; value: string; unit?: string; abnormal?: boolean; resultedAt: string }
+interface ClinicalData { problems: ProblemItem[]; allergies: AllergyItem[]; medications: MedicationItem[]; orders: OrderItem[]; observations: ObservationItem[] }
 
 export default function PatientChart() {
   const { patientId } = useParams();
@@ -21,7 +23,7 @@ export default function PatientChart() {
   const { toast } = useToast();
   const [patient, setPatient] = useState<any>(null);
   const [tab, setTab] = useState("overview");
-  const [clinical, setClinical] = useState<ClinicalData>({ problems: [], allergies: [], medications: [] });
+  const [clinical, setClinical] = useState<ClinicalData>({ problems: [], allergies: [], medications: [], orders: [], observations: [] });
 
   // form states
   const [problemText, setProblemText] = useState("");
@@ -32,6 +34,8 @@ export default function PatientChart() {
   const [medName, setMedName] = useState("");
   const [medDose, setMedDose] = useState("");
   const [medRoute, setMedRoute] = useState("");
+  const [orderType, setOrderType] = useState<'lab'|'imaging'|'procedure'>('lab');
+  const [orderName, setOrderName] = useState("");
 
   const storageKey = useMemo(() => `clinical-${patientId}`, [patientId]);
 
@@ -120,6 +124,38 @@ export default function PatientChart() {
     persist(next, `lijek ${id} obrisan. Razlog: ${reason}`);
   };
 
+  // Orders & Results
+  const addOrder = () => {
+    if (!orderName.trim()) return;
+    const newOrder: OrderItem = { id: `${Date.now()}`, type: orderType, name: orderName.trim(), status: 'ordered', scheduledAt: new Date().toISOString() };
+    const next: ClinicalData = { ...clinical, orders: [newOrder, ...clinical.orders] };
+    persist(next, `dodat nalog '${newOrder.name}' (${newOrder.type})`);
+    setOrderName("");
+    toast({ title: "Sačuvano", description: "Nalog je dodat." });
+  };
+
+  const setOrderStatus = (id: string, status: OrderItem['status']) => {
+    const next: ClinicalData = { ...clinical, orders: clinical.orders.map(o => o.id === id ? { ...o, status } : o) };
+    persist(next, `nalog ${id} status: ${status}`);
+  };
+
+  const enterResult = (orderId: string) => {
+    const code = window.prompt('Šifra (npr. LOINC):');
+    if (!code) return;
+    const value = window.prompt('Vrijednost:');
+    if (value == null) return;
+    const unit = window.prompt('Jedinica (opcionalno):') || undefined;
+    const abnormal = window.confirm('Označi kao abnormalno?');
+    const obs: ObservationItem = { id: `${Date.now()}`, orderId, code, value, unit, abnormal, resultedAt: new Date().toISOString() };
+    const next: ClinicalData = { 
+      ...clinical, 
+      observations: [obs, ...clinical.observations], 
+      orders: clinical.orders.map(o => o.id === orderId ? { ...o, status: 'resulted', resultId: obs.id } : o)
+    };
+    persist(next, `rezultat unesen za nalog ${orderId}${abnormal ? ' (abnormal)' : ''}`);
+    toast({ title: "Rezultat unesen", description: "Rezultat je sačuvan." });
+  };
+
   if (!patient) {
     return (
       <div className="flex h-full flex-col">
@@ -144,6 +180,8 @@ export default function PatientChart() {
             <TabsTrigger value="problems">Problemi</TabsTrigger>
             <TabsTrigger value="allergies">Alergije</TabsTrigger>
             <TabsTrigger value="medications">Medikacija</TabsTrigger>
+            <TabsTrigger value="orders">Nalozi</TabsTrigger>
+            <TabsTrigger value="results">Rezultati</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -289,6 +327,98 @@ export default function PatientChart() {
                     ))}
                     {clinical.medications.length === 0 && (
                       <tr><td className="px-4 py-6 text-center text-muted-foreground" colSpan={5}>Nema unesenih lijekova</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="orders" className="space-y-4">
+            <Card className="p-4">
+              <div className="grid gap-2 md:grid-cols-5">
+                <Select value={orderType} onValueChange={(v) => setOrderType(v as any)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tip naloga" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lab">Lab</SelectItem>
+                    <SelectItem value="imaging">Imaging</SelectItem>
+                    <SelectItem value="procedure">Procedura</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input placeholder="Naziv naloga" value={orderName} onChange={(e) => setOrderName(e.target.value)} />
+                <div className="md:col-span-2" />
+                <Button onClick={addOrder}>Dodaj nalog</Button>
+              </div>
+            </Card>
+            <Card className="p-0">
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="px-4 py-2 text-left">Naziv</th>
+                      <th className="px-4 py-2 text-left">Tip</th>
+                      <th className="px-4 py-2 text-left">Status</th>
+                      <th className="px-4 py-2 text-right">Akcije</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clinical.orders.map((o) => (
+                      <tr key={o.id} className="border-b">
+                        <td className="px-4 py-2">{o.name}</td>
+                        <td className="px-4 py-2">
+                          {o.type === 'lab' ? <Badge>Lab</Badge> : o.type === 'imaging' ? <Badge variant="secondary">Imaging</Badge> : <Badge variant="outline">Procedura</Badge>}
+                        </td>
+                        <td className="px-4 py-2">
+                          {o.status === 'cancelled' ? <Badge variant="destructive">Otkazan</Badge> :
+                           o.status === 'resulted' ? <Badge variant="secondary">Rezultiran</Badge> :
+                           o.status === 'collected' ? <Badge variant="default">U obradi</Badge> :
+                           o.status === 'ordered' ? <Badge variant="default">Naručen</Badge> :
+                           <Badge variant="outline">Nacrt</Badge>}
+                        </td>
+                        <td className="px-4 py-2 text-right space-x-2">
+                          <Button variant="outline" size="sm" disabled={o.status !== 'ordered'} onClick={() => setOrderStatus(o.id, 'collected')}>Uzorkovan</Button>
+                          <Button variant="outline" size="sm" disabled={!(o.status === 'ordered' || o.status === 'collected')} onClick={() => enterResult(o.id)}>Unesi rezultat</Button>
+                          <Button variant="ghost" size="sm" className="text-destructive" disabled={o.status === 'resulted' || o.status === 'cancelled'} onClick={() => setOrderStatus(o.id, 'cancelled')}>Otkaži</Button>
+                        </td>
+                      </tr>
+                    ))}
+                    {clinical.orders.length === 0 && (
+                      <tr><td className="px-4 py-6 text-center text-muted-foreground" colSpan={4}>Nema naloga</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="results" className="space-y-4">
+            <Card className="p-0">
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="px-4 py-2 text-left">Šifra</th>
+                      <th className="px-4 py-2 text-left">Vrijednost</th>
+                      <th className="px-4 py-2 text-left">Nalog</th>
+                      <th className="px-4 py-2 text-left">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clinical.observations.map((r) => {
+                      const order = clinical.orders.find(o => o.id === r.orderId);
+                      return (
+                        <tr key={r.id} className="border-b">
+                          <td className="px-4 py-2">{r.code}</td>
+                          <td className="px-4 py-2">{r.value} {r.unit}</td>
+                          <td className="px-4 py-2">{order ? order.name : r.orderId}</td>
+                          <td className="px-4 py-2">{r.abnormal ? <Badge variant="destructive">Abnormal</Badge> : <Badge variant="secondary">Normal</Badge>}</td>
+                        </tr>
+                      );
+                    })}
+                    {clinical.observations.length === 0 && (
+                      <tr><td className="px-4 py-6 text-center text-muted-foreground" colSpan={4}>Nema rezultata</td></tr>
                     )}
                   </tbody>
                 </table>
