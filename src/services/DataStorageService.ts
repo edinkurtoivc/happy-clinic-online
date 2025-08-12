@@ -1,5 +1,5 @@
 
-import { isFileSystemAvailable, initializeFileSystem, readJsonData, writeJsonData, logAction, DATA_FILES, DEFAULT_DIRS, createPatientDirectory } from "@/utils/fileSystemUtils";
+import { isFileSystemAvailable, initializeFileSystem, readJsonData, writeJsonData, logAction, DATA_FILES, DEFAULT_DIRS, createPatientDirectory, createFolderIfNotExists } from "@/utils/fileSystemUtils";
 import { v4 as uuidv4 } from "uuid";
 import type { Patient } from "@/types/patient";
 import type { Appointment, ExaminationType } from "@/types/medical-report";
@@ -160,6 +160,71 @@ class DataStorageService {
       return true;
     } catch (error) {
       console.error("[DataStorage] Error saving patient:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Get patient clinical data (problems, allergies, medications, orders, observations, vitalSigns)
+   */
+  async getPatientClinicalData(patientId: string | number): Promise<any> {
+    try {
+      // Fallback or no base path -> localStorage
+      if (this._fallbackToLocalStorage || !this.basePath) {
+        const key = `clinical-${patientId}`;
+        const saved = localStorage.getItem(key);
+        return saved ? JSON.parse(saved) : { problems: [], allergies: [], medications: [], orders: [], observations: [], vitalSigns: [] };
+      }
+
+      // Try filesystem
+      const patients = await this.getPatients();
+      const patient = patients.find((p: any) => String(p.id) === String(patientId));
+      if (!patient) {
+        // fallback to local
+        const key = `clinical-${patientId}`;
+        const saved = localStorage.getItem(key);
+        return saved ? JSON.parse(saved) : { problems: [], allergies: [], medications: [], orders: [], observations: [], vitalSigns: [] };
+      }
+
+      const folderName = `${patient.firstName}_${patient.lastName}_${patient.jmbg}`;
+      const patientDir = `${this.basePath}${DEFAULT_DIRS.PATIENTS}/${folderName}`;
+      const filePath = `${patientDir}/clinical.json`;
+      const data = await readJsonData<any>(filePath, { problems: [], allergies: [], medications: [], orders: [], observations: [], vitalSigns: [] });
+      return data;
+    } catch (e) {
+      console.error("[DataStorage] getPatientClinicalData failed", e);
+      return { problems: [], allergies: [], medications: [], orders: [], observations: [], vitalSigns: [] };
+    }
+  }
+
+  /**
+   * Save patient clinical data
+   */
+  async savePatientClinicalData(patientId: string | number, clinical: any): Promise<boolean> {
+    try {
+      // Always update localStorage for compatibility
+      const key = `clinical-${patientId}`;
+      localStorage.setItem(key, JSON.stringify(clinical));
+
+      // If file system not available, stop here
+      if (this._fallbackToLocalStorage || !this.basePath) {
+        return true;
+      }
+
+      const patients = await this.getPatients();
+      const patient = patients.find((p: any) => String(p.id) === String(patientId));
+      if (!patient) return true; // localStorage already saved
+
+      const folderName = `${patient.firstName}_${patient.lastName}_${patient.jmbg}`;
+      const patientDir = `${this.basePath}${DEFAULT_DIRS.PATIENTS}/${folderName}`;
+      await createFolderIfNotExists(patientDir);
+      const filePath = `${patientDir}/clinical.json`;
+      await writeJsonData(filePath, { ...clinical, lastUpdated: new Date().toISOString() });
+
+      await logAction(this.basePath, `Updated clinical data for patient ${patient.firstName} ${patient.lastName} (${patient.id})`);
+      return true;
+    } catch (e) {
+      console.error("[DataStorage] savePatientClinicalData failed", e);
       return false;
     }
   }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { Card } from "@/components/ui/card";
@@ -10,12 +10,19 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import dataStorageService from "@/services/DataStorageService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ReasonDialog } from "@/components/patient-chart/ReasonDialog";
+import { ConfirmDialog } from "@/components/patient-chart/ConfirmDialog";
+import { ResultEntryDialog, type ResultPayload } from "@/components/patient-chart/ResultEntryDialog";
+import VitalSignsTab, { type VitalSign } from "@/components/patient-chart/VitalSignsTab";
+import SectionPdfDialog from "@/components/patient-chart/SectionPdfDialog";
+import html2pdf from "html2pdf.js";
+
 interface ProblemItem { id: string; description: string; status: "active" | "resolved"; code?: string }
 interface AllergyItem { id: string; substance: string; reaction?: string; severity?: "mild" | "moderate" | "severe" }
 interface MedicationItem { id: string; name: string; dose?: string; route?: string; active: boolean }
 interface OrderItem { id: string; type: 'lab' | 'imaging' | 'procedure'; name: string; status: 'draft' | 'ordered' | 'collected' | 'resulted' | 'cancelled'; scheduledAt?: string; resultId?: string }
-interface ObservationItem { id: string; orderId: string; code: string; value: string; unit?: string; abnormal?: boolean; resultedAt: string }
-interface ClinicalData { problems: ProblemItem[]; allergies: AllergyItem[]; medications: MedicationItem[]; orders: OrderItem[]; observations: ObservationItem[] }
+interface ObservationItem { id: string; orderId: string; code: string; value: string; unit?: string; abnormal?: boolean; resultedAt: string; refLow?: string; refHigh?: string; refText?: string; note?: string }
+interface ClinicalData { problems: ProblemItem[]; allergies: AllergyItem[]; medications: MedicationItem[]; orders: OrderItem[]; observations: ObservationItem[]; vitalSigns: VitalSign[] }
 
 export default function PatientChart() {
   const { patientId } = useParams();
@@ -23,7 +30,7 @@ export default function PatientChart() {
   const { toast } = useToast();
   const [patient, setPatient] = useState<any>(null);
   const [tab, setTab] = useState("overview");
-  const [clinical, setClinical] = useState<ClinicalData>({ problems: [], allergies: [], medications: [], orders: [], observations: [] });
+  const [clinical, setClinical] = useState<ClinicalData>({ problems: [], allergies: [], medications: [], orders: [], observations: [], vitalSigns: [] });
 
   // form states
   const [problemText, setProblemText] = useState("");
@@ -34,8 +41,29 @@ export default function PatientChart() {
   const [medName, setMedName] = useState("");
   const [medDose, setMedDose] = useState("");
   const [medRoute, setMedRoute] = useState("");
+
   const [orderType, setOrderType] = useState<'lab'|'imaging'|'procedure'>('lab');
   const [orderName, setOrderName] = useState("");
+
+  // dialogs and UI state
+  const [reasonOpen, setReasonOpen] = useState(false);
+  const reasonRef = useRef<{ onConfirm?: (reason: string) => void; title?: string; description?: string } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const confirmRef = useRef<{ onConfirm?: (reason?: string) => void; title?: string; description?: string; requireReason?: boolean; destructive?: boolean } | null>(null);
+  const [resultOpen, setResultOpen] = useState(false);
+  const resultOrderIdRef = useRef<string | null>(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const pdfSections = [
+    { id: 'overview', label: 'Pregled' },
+    { id: 'vitals', label: 'Vitalni znakovi' },
+    { id: 'problems', label: 'Problemi' },
+    { id: 'allergies', label: 'Alergije' },
+    { id: 'medications', label: 'Medikacija' },
+    { id: 'orders', label: 'Nalozi' },
+    { id: 'results', label: 'Rezultati' },
+  ];
+  const [onlyAbnormal, setOnlyAbnormal] = useState(false);
+  const [sortDir, setSortDir] = useState<'desc'|'asc'>('desc');
 
   const storageKey = useMemo(() => `clinical-${patientId}`, [patientId]);
 
