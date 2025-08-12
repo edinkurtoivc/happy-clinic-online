@@ -57,7 +57,7 @@ interface MedicalReportFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: Partial<MedicalReport>) => void;
   defaultValues?: Partial<MedicalReport>;
-  examinationTypes: ExaminationType[];
+  examinationTypes?: ExaminationType[];
 }
 
 export default function MedicalReportForm({

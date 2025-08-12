@@ -9,7 +9,7 @@ import ReportEditor from "@/components/medical-reports/ReportEditor";
 import { useSaveData } from "@/hooks/useSaveData";
 import { saveMedicalReport } from "@/utils/fileSystemUtils";
 import { isAbsolutePath, normalizePath, createReportData, generateReportCode } from "@/utils/reportUtils";
-import type { MedicalReport, ExaminationType } from "@/types/medical-report";
+import type { MedicalReport } from "@/types/medical-report";
 import type { Patient } from "@/types/patient";
 import { ensurePatient } from "@/types/patient";
 import { useToast } from "@/hooks/use-toast";
@@ -19,14 +19,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/contexts/AuthContext";
 import dataStorageService from "@/services/DataStorageService";
 
-// Mock data for examination types - would come from settings in a real app
-const mockExaminationTypes: ExaminationType[] = [
-  { id: 1, name: "Internistički pregled", duration: "30", price: "50" },
-  { id: 2, name: "Kardiološki pregled", duration: "40", price: "80" },
-  { id: 3, name: "Laboratorijski nalaz", duration: "20", price: "30" },
-  { id: 4, name: "Oftalmološki pregled", duration: "25", price: "45" },
-  { id: 5, name: "Pedijatrijski pregled", duration: "30", price: "40" },
-];
 
 // Mock current user/doctor
 const currentDoctor = {
@@ -51,7 +43,7 @@ export default function MedicalReports() {
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [isFinalizingReport, setIsFinalizingReport] = useState(false);
   const reportPreviewRef = useRef<HTMLDivElement>(null);
-  const [examinationTypes] = useState<ExaminationType[]>(mockExaminationTypes);
+  
   const [isSavingToFileSystem, setIsSavingToFileSystem] = useState(false);
   const [reportCode, setReportCode] = useState<string | undefined>(undefined);
 
@@ -747,7 +739,6 @@ export default function MedicalReports() {
           <ExaminationTypeSelect
             selectedExamType={selectedExamType}
             onSelectExamType={setSelectedExamType}
-            examinationTypes={examinationTypes}
             disabled={isSaved}
           />
         )}
@@ -798,7 +789,6 @@ export default function MedicalReports() {
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         onSubmit={handleCreateReport}
-        examinationTypes={examinationTypes}
       />
       
       {savedReport && (
