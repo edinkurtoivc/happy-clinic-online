@@ -15,6 +15,8 @@ import { ensurePatient } from "@/types/patient";
 import type { Appointment } from "@/types/medical-report";
 import type { User } from "@/types/user";
 import dataStorageService from "@/services/DataStorageService";
+import useExaminationTypes from "@/hooks/useExaminationTypes";
+import type { ExaminationType } from "@/types/medical-report";
 
 interface AppointmentFormProps {
   onCancel: () => void;
@@ -35,7 +37,7 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
   const [doctors, setDoctors] = useState<User[]>([]);
   const [isLoadingPatients, setIsLoadingPatients] = useState(false);
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
-  const [appointmentTypes, setAppointmentTypes] = useState<any[]>([]);
+  const [appointmentTypes, setAppointmentTypes] = useState<ExaminationType[]>([]);
 
   // Fetch patients from DataStorageService
   useEffect(() => {
@@ -88,38 +90,11 @@ export default function AppointmentForm({ onCancel, preselectedPatient, onSave }
     loadDoctors();
   }, [toast]);
   
-  // Load examination types from the settings
+  // Load examination types from centralized storage
+  const { examTypes } = useExaminationTypes();
   useEffect(() => {
-    try {
-      const savedTypes = localStorage.getItem('examination-types');
-      if (savedTypes) {
-        const parsedTypes = JSON.parse(savedTypes);
-        if (Array.isArray(parsedTypes) && parsedTypes.length > 0) {
-          console.log("[AppointmentForm] Loaded examination types from settings:", parsedTypes);
-          setAppointmentTypes(parsedTypes);
-          return;
-        }
-      }
-
-      // Fallback to default types if no saved types found
-      setAppointmentTypes([
-        { id: 1, name: "Opći pregled", duration: "30 min", price: "50 KM" },
-        { id: 2, name: "Kardiološki pregled", duration: "45 min", price: "80 KM" },
-        { id: 3, name: "Dermatološki pregled", duration: "30 min", price: "60 KM" },
-        { id: 4, name: "Neurološki pregled", duration: "60 min", price: "100 KM" },
-        { id: 5, name: "Laboratorijski nalaz", duration: "20 min", price: "30 KM" },
-      ]);
-    } catch (error) {
-      console.error("[AppointmentForm] Error loading examination types:", error);
-      // Set default types on error
-      setAppointmentTypes([
-        { id: 1, name: "Opći pregled", duration: "30 min", price: "50 KM" },
-        { id: 2, name: "Kardiološki pregled", duration: "45 min", price: "80 KM" },
-        { id: 3, name: "Dermatološki pregled", duration: "30 min", price: "60 KM" },
-        { id: 4, name: "Neurološki pregled", duration: "60 min", price: "100 KM" },
-      ]);
-    }
-  }, []);
+    setAppointmentTypes(examTypes || []);
+  }, [examTypes]);
   
   const getDefaultDoctors = (): User[] => {
     return [

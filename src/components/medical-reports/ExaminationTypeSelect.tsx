@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import type { ExaminationType } from "@/types/medical-report";
+import useExaminationTypes from "@/hooks/useExaminationTypes";
 
 interface ExaminationTypeSelectProps {
   selectedExamType: string;

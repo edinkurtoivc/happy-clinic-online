@@ -2,7 +2,7 @@
 import { isFileSystemAvailable, initializeFileSystem, readJsonData, writeJsonData, logAction, DATA_FILES, DEFAULT_DIRS, createPatientDirectory } from "@/utils/fileSystemUtils";
 import { v4 as uuidv4 } from "uuid";
 import type { Patient } from "@/types/patient";
-import type { Appointment } from "@/types/medical-report";
+import type { Appointment, ExaminationType } from "@/types/medical-report";
 import type { User } from "@/types/user";
 
 class DataStorageService {
@@ -432,6 +432,75 @@ class DataStorageService {
       return true;
     } catch (error) {
       console.error("[DataStorage] Error saving users:", error);
+      return false;
+    }
+  }
+  /**
+   * Get examination types
+   */
+  async getExaminationTypes(): Promise<ExaminationType[]> {
+    try {
+      // Try filesystem first if available
+      if (!this._fallbackToLocalStorage && this.basePath) {
+        try {
+          const path = `${this.basePath}${DATA_FILES.EXAMINATION_TYPES}`;
+          const data = await readJsonData<{ types: ExaminationType[] }>(path, { types: [] });
+          const types = data.types || [];
+          if (types.length) {
+            console.log("[DataStorage] Loaded examination types from FS:", types.length);
+            return types;
+          }
+        } catch (err) {
+          console.warn("[DataStorage] FS read examination types failed, fallback to localStorage", err);
+        }
+      }
+
+      // Fallback to localStorage
+      const saved = localStorage.getItem('examination-types');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          console.log("[DataStorage] Loaded examination types from localStorage:", parsed.length);
+          return parsed;
+        }
+        if (parsed?.types && Array.isArray(parsed.types)) {
+          // In case older structure was stored
+          return parsed.types;
+        }
+      }
+
+      return [];
+    } catch (error) {
+      console.error("[DataStorage] Unexpected error in getExaminationTypes:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Save examination types
+   */
+  async saveExaminationTypes(types: ExaminationType[]): Promise<boolean> {
+    try {
+      // Always store to localStorage
+      localStorage.setItem('examination-types', JSON.stringify(types));
+      console.log("[DataStorage] Saved examination types to localStorage:", types.length);
+
+      // Save to FS when available
+      if (!this._fallbackToLocalStorage && this.basePath) {
+        try {
+          const path = `${this.basePath}${DATA_FILES.EXAMINATION_TYPES}`;
+          await writeJsonData(path, { types, lastUpdated: new Date().toISOString() });
+          await logAction(this.basePath, `Updated examination types: ${types.length}`);
+          console.log("[DataStorage] Saved examination types to FS:", types.length);
+        } catch (err) {
+          console.error("[DataStorage] Error saving examination types to FS:", err);
+          // Still return true because localStorage succeeded
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error("[DataStorage] Error saving examination types:", error);
       return false;
     }
   }

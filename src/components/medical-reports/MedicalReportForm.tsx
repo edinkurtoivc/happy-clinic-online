@@ -35,6 +35,7 @@ import { AutoSaveIndicator } from "@/components/ui/auto-save-indicator";
 import { Spinner } from "@/components/ui/spinner";
 import type { MedicalReport, ExaminationType } from "@/types/medical-report";
 import { createReportData } from "@/utils/reportUtils";
+import useExaminationTypes from "@/hooks/useExaminationTypes";
 
 // Define form schema with validation rules
 const formSchema = z.object({

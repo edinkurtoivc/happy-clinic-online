@@ -3,34 +3,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-} from "@/components/ui/form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useSaveData } from "@/hooks/useSaveData";
 import { AutoSaveIndicator } from "@/components/ui/auto-save-indicator";
+import dataStorageService from "@/services/DataStorageService";
+import type { ExaminationType } from "@/types/medical-report";
 
-// Define a proper interface for ExamType
-interface ExamType {
-  id: number;
-  name: string;
-  duration: string;
-  price: string;
-}
 
 const examTypeSchema = z.object({
   id: z.number().optional(),
@@ -43,28 +26,23 @@ type ExamTypeFormData = z.infer<typeof examTypeSchema>;
 
 export default function ExaminationTypes() {
   const { toast } = useToast();
-  const [examTypes, setExamTypes] = useState<ExamType[]>([
-    { id: 1, name: "Opći pregled", duration: "30 min", price: "50 KM" },
-    { id: 2, name: "Kardiološki pregled", duration: "45 min", price: "80 KM" },
-    { id: 3, name: "Dermatološki pregled", duration: "30 min", price: "60 KM" },
-    { id: 4, name: "Neurološki pregled", duration: "60 min", price: "100 KM" },
-  ]);
+  const [examTypes, setExamTypes] = useState<ExaminationType[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   useEffect(() => {
-    try {
-      const savedTypes = localStorage.getItem('examination-types');
-      if (savedTypes) {
-        const parsedTypes = JSON.parse(savedTypes);
-        if (Array.isArray(parsedTypes) && parsedTypes.length > 0) {
-          console.log("[ExaminationTypes] Loaded saved examination types:", parsedTypes);
-          setExamTypes(parsedTypes);
+    const loadTypes = async () => {
+      try {
+        const types = await dataStorageService.getExaminationTypes();
+        if (types && Array.isArray(types)) {
+          setExamTypes(types);
+          console.log("[ExaminationTypes] Loaded examination types:", types);
         }
+      } catch (error) {
+        console.error("[ExaminationTypes] Error loading examination types:", error);
       }
-    } catch (error) {
-      console.error("[ExaminationTypes] Error loading examination types:", error);
-    }
+    };
+    loadTypes();
   }, []);
 
   const { isSaving, lastSaved, isOffline, forceSave, saveStatus } = useSaveData({
@@ -72,9 +50,7 @@ export default function ExaminationTypes() {
     key: "examination-types",
     onSave: async (data) => {
       console.log("[ExaminationTypes] Saving examination types:", data);
-      // U stvarnoj aplikaciji, ovdje bi bio API poziv
-      await new Promise(resolve => setTimeout(resolve, 500));
-      localStorage.setItem('examination-types', JSON.stringify(data));
+      await dataStorageService.saveExaminationTypes(data as ExaminationType[]);
       return;
     },
     loadFromStorage: false // We handle loading manually above
@@ -99,7 +75,7 @@ export default function ExaminationTypes() {
     setIsDialogOpen(true);
   };
 
-  const openEditDialog = (examType: ExamType) => {
+  const openEditDialog = (examType: ExaminationType) => {
     form.reset({
       id: examType.id,
       name: examType.name,
@@ -113,7 +89,7 @@ export default function ExaminationTypes() {
   const handleSubmit = (data: ExamTypeFormData) => {
     if (formMode === 'create') {
       // Ensure all required fields are provided
-      const newExamType: ExamType = {
+      const newExamType: ExaminationType = {
         id: Math.max(0, ...examTypes.map(e => e.id)) + 1,
         name: data.name,
         duration: data.duration,
@@ -131,7 +107,7 @@ export default function ExaminationTypes() {
         name: data.name,
         duration: data.duration,
         price: data.price || "",
-      } : e)));
+      } as ExaminationType : e)));
       toast({
         title: "Vrsta pregleda ažurirana",
         description: "Vrsta pregleda je uspješno ažurirana",
