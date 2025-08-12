@@ -68,6 +68,20 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       const num = saved ? parseFloat(saved) : 1;
       return isNaN(num) ? 1 : num;
     });
+    const [stylePrefs, setStylePrefs] = useState<{ headingFont: 'heading' | 'sans'; sectionBackground: boolean; showQr: boolean; showReportCode: boolean }>(() => {
+      try {
+        const saved = localStorage.getItem('reportStyle');
+        const parsed = saved ? JSON.parse(saved) : null;
+        return {
+          headingFont: parsed?.headingFont === 'sans' ? 'sans' : 'heading',
+          sectionBackground: parsed?.sectionBackground !== false,
+          showQr: parsed?.showQr !== false,
+          showReportCode: parsed?.showReportCode !== false,
+        };
+      } catch {
+        return { headingFont: 'heading', sectionBackground: true, showQr: true, showReportCode: true };
+      }
+    });
 
     // Load clinic info from localStorage on component mount
     useEffect(() => {
@@ -92,6 +106,18 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       };
       window.addEventListener('reportFontScale:changed', onScale);
       return () => window.removeEventListener('reportFontScale:changed', onScale);
+    }, []);
+
+    // Listen for style preference changes from settings
+    useEffect(() => {
+      const onStyle = (e: any) => {
+        const style = e?.detail?.style;
+        if (style && typeof style === 'object') {
+          setStylePrefs(prev => ({ ...prev, ...style }));
+        }
+      };
+      window.addEventListener('reportStyle:changed', onStyle);
+      return () => window.removeEventListener('reportStyle:changed', onStyle);
     }, []);
 
 // Get the current user's full name for doctor signature and verification
@@ -164,6 +190,9 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       ? 'secondary'
       : 'outline';
 
+    const headingClass = stylePrefs.headingFont === 'heading' ? 'font-heading' : 'font-sans';
+    const sectionClass = stylePrefs.sectionBackground ? 'bg-accent/40 border border-border' : 'bg-transparent border border-border/50';
+
     return (
       <div className="flex flex-col h-full">
         <div className="flex justify-between mb-4 print:hidden">
@@ -193,13 +222,13 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                 />
               ) : (
                 <div className="h-12 mb-2 flex items-center justify-center bg-accent rounded-md px-4">
-                  <span className="text-primary font-bold font-heading">{clinicInfo.name}</span>
+                  <span className={`text-primary font-bold ${headingClass}`}>{clinicInfo.name}</span>
                 </div>
               )}
             </div>
             
             <div className="text-right">
-              <h2 className="font-heading font-semibold text-base text-primary">{clinicInfo.name}</h2>
+              <h2 className={`${headingClass} font-semibold text-base text-primary`}>{clinicInfo.name}</h2>
               <p className="text-muted-foreground text-xs">
                 {clinicInfo.address}, {clinicInfo.city}<br />
                 {clinicInfo.email}<br />
@@ -219,12 +248,12 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
                 <p className="text-xs text-muted-foreground">Izdao: {displayedDoctorName}</p>
               </div>
               <div className="flex flex-col items-end justify-start">
-                {reportCode && (
+                {stylePrefs.showReportCode && reportCode && (
                   <p className="font-medium text-sm bg-accent/40 p-2 px-3 rounded-md border border-border text-primary mb-2">
                     Broj nalaza: {reportCode}
                   </p>
                 )}
-                {qrDataUrl && (
+                {stylePrefs.showQr && qrDataUrl && (
                   <img src={qrDataUrl} alt="QR kod nalaza" className="w-24 h-24 mb-2" />
                 )}
                 {appointmentType && (
@@ -253,8 +282,8 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
 
           <div className="space-y-6 px-6 leading-relaxed">
             <div>
-              <h3 className="font-heading font-semibold text-lg mb-3">Nalaz</h3>
-              <div className="bg-accent/40 p-4 rounded-md border border-border min-h-[150px] print:bg-transparent print:border-0 print:p-0">
+              <h3 className={`${headingClass} font-semibold mb-3`} style={{ fontSize: `${(18 * fontScale).toFixed(2)}px` }}>Nalaz</h3>
+              <div className={`${sectionClass} p-4 rounded-md min-h-[150px] print:bg-transparent print:border-0 print:p-0`}>
                 <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: `${(14 * fontScale).toFixed(2)}px` }}>
                   {reportText || "Ovdje će biti prikazan tekst nalaza koji korisnik unosi..."}
                 </p>
