@@ -57,13 +57,28 @@ export default function PatientCard({ patient, onClose, onUpdate }: PatientCardP
   
   // Fetch patient history from data storage
   const fetchPatientHistory = async (patientId: number): Promise<PatientHistoryType[]> => {
-    // In real implementation, this would come from your data storage
-    // For now returning mock data that would be replaced with real data
-    return [
-      { id: 1, patientId: patientId, date: "2023-10-15", type: "Opći pregled", doctor: "Dr. Marija Popović" },
-      { id: 2, patientId: patientId, date: "2023-08-22", type: "Krvni test", doctor: "Dr. Petar Petrović" },
-      { id: 3, patientId: patientId, date: "2023-05-07", type: "Vakcinacija", doctor: "Dr. Marija Popović" },
-    ];
+    try {
+      // 1) Clinical observations -> history entries
+      const clinical = await dataStorageService.getPatientClinicalData(String(patientId));
+      const fromObs: PatientHistoryType[] = (clinical?.observations || []).map((o: any) => ({
+        id: Number(o.id) || Date.now(),
+        patientId,
+        date: (o.resultedAt || new Date().toISOString()).slice(0,10),
+        type: `Rezultat ${o.code}: ${o.value} ${o.unit || ''}`.trim(),
+        doctor: '—'
+      }));
+
+      // 2) Extra history entries saved explicitly
+      const extraKey = `patient-history-${patientId}`;
+      const extra = JSON.parse(localStorage.getItem(extraKey) || '[]') as PatientHistoryType[];
+
+      // Merge and sort desc
+      const merged = [...fromObs, ...extra];
+      return merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    } catch (e) {
+      console.error('Error building patient history:', e);
+      return [];
+    }
   };
   
   // Fetch patient audit logs from data storage

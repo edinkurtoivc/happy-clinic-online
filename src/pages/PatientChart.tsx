@@ -73,16 +73,16 @@ export default function PatientChart() {
       const found = pts.find((p: any) => String(p.id) === String(patientId));
       setPatient(found);
       try {
-        const saved = localStorage.getItem(storageKey);
-        if (saved) setClinical(JSON.parse(saved));
+        const saved = await dataStorageService.getPatientClinicalData(String(patientId || ""));
+        setClinical(saved);
       } catch {}
     };
     load();
-  }, [patientId, storageKey]);
+  }, [patientId]);
 
-  const persist = (next: ClinicalData, actionDesc: string) => {
+  const persist = async (next: ClinicalData, actionDesc: string) => {
     setClinical(next);
-    localStorage.setItem(storageKey, JSON.stringify(next));
+    await dataStorageService.savePatientClinicalData(String(patientId || ""), next);
     try {
       const currentUser = localStorage.getItem('currentUser');
       const performedBy = currentUser ? `${JSON.parse(currentUser).firstName} ${JSON.parse(currentUser).lastName}` : 'unknown';
@@ -114,10 +114,15 @@ export default function PatientChart() {
     persist(next, `problem ${id} označen kao riješen`);
   };
   const deleteProblem = (id: string) => {
-    const reason = window.prompt('Unesite razlog brisanja problema:');
-    if (!reason) return;
-    const next = { ...clinical, problems: clinical.problems.filter(p => p.id !== id) };
-    persist(next, `problem ${id} obrisan. Razlog: ${reason}`);
+    reasonRef.current = {
+      title: 'Brisanje problema',
+      description: 'Unesite razlog brisanja problema.',
+      onConfirm: (reason: string) => {
+        const next = { ...clinical, problems: clinical.problems.filter(p => p.id !== id) };
+        persist(next, `problem ${id} obrisan. Razlog: ${reason}`);
+      }
+    };
+    setReasonOpen(true);
   };
 
   const addAllergy = () => {
@@ -128,10 +133,15 @@ export default function PatientChart() {
     toast({ title: "Sačuvano", description: "Alergija je dodata." });
   };
   const deleteAllergy = (id: string) => {
-    const reason = window.prompt('Unesite razlog brisanja alergije:');
-    if (!reason) return;
-    const next = { ...clinical, allergies: clinical.allergies.filter(a => a.id !== id) };
-    persist(next, `alergija ${id} obrisana. Razlog: ${reason}`);
+    reasonRef.current = {
+      title: 'Brisanje alergije',
+      description: 'Unesite razlog brisanja alergije.',
+      onConfirm: (reason: string) => {
+        const next = { ...clinical, allergies: clinical.allergies.filter(a => a.id !== id) };
+        persist(next, `alergija ${id} obrisana. Razlog: ${reason}`);
+      }
+    };
+    setReasonOpen(true);
   };
 
   const addMedication = () => {
@@ -146,10 +156,15 @@ export default function PatientChart() {
     persist(next, `lijek ${id} promjena statusa`);
   };
   const deleteMedication = (id: string) => {
-    const reason = window.prompt('Unesite razlog brisanja lijeka:');
-    if (!reason) return;
-    const next = { ...clinical, medications: clinical.medications.filter(m => m.id !== id) };
-    persist(next, `lijek ${id} obrisan. Razlog: ${reason}`);
+    reasonRef.current = {
+      title: 'Brisanje lijeka',
+      description: 'Unesite razlog brisanja lijeka.',
+      onConfirm: (reason: string) => {
+        const next = { ...clinical, medications: clinical.medications.filter(m => m.id !== id) };
+        persist(next, `lijek ${id} obrisan. Razlog: ${reason}`);
+      }
+    };
+    setReasonOpen(true);
   };
 
   // Orders & Results
@@ -163,25 +178,36 @@ export default function PatientChart() {
   };
 
   const setOrderStatus = (id: string, status: OrderItem['status']) => {
+    if (status === 'cancelled') {
+      confirmRef.current = {
+        title: 'Otkazivanje naloga',
+        description: 'Želite li otkazati ovaj nalog? Unesite razlog (opcionalno).',
+        requireReason: true,
+        destructive: true,
+        onConfirm: (reason?: string) => {
+          const next: ClinicalData = { ...clinical, orders: clinical.orders.map(o => o.id === id ? { ...o, status } : o) };
+          persist(next, `nalog ${id} otkazan${reason ? `. Razlog: ${reason}` : ''}`);
+        }
+      };
+      setConfirmOpen(true);
+      return;
+    }
     const next: ClinicalData = { ...clinical, orders: clinical.orders.map(o => o.id === id ? { ...o, status } : o) };
     persist(next, `nalog ${id} status: ${status}`);
   };
 
+  const addHistoryEntry = (type: string, doctor?: string) => {
+    try {
+      const key = `patient-history-${patientId}`;
+      const existing = JSON.parse(localStorage.getItem(key) || '[]');
+      existing.unshift({ id: Date.now(), patientId: Number(patientId), date: new Date().toISOString().slice(0,10), type, doctor: doctor || '—' });
+      localStorage.setItem(key, JSON.stringify(existing));
+    } catch {}
+  };
+
   const enterResult = (orderId: string) => {
-    const code = window.prompt('Šifra (npr. LOINC):');
-    if (!code) return;
-    const value = window.prompt('Vrijednost:');
-    if (value == null) return;
-    const unit = window.prompt('Jedinica (opcionalno):') || undefined;
-    const abnormal = window.confirm('Označi kao abnormalno?');
-    const obs: ObservationItem = { id: `${Date.now()}`, orderId, code, value, unit, abnormal, resultedAt: new Date().toISOString() };
-    const next: ClinicalData = { 
-      ...clinical, 
-      observations: [obs, ...clinical.observations], 
-      orders: clinical.orders.map(o => o.id === orderId ? { ...o, status: 'resulted', resultId: obs.id } : o)
-    };
-    persist(next, `rezultat unesen za nalog ${orderId}${abnormal ? ' (abnormal)' : ''}`);
-    toast({ title: "Rezultat unesen", description: "Rezultat je sačuvan." });
+    resultOrderIdRef.current = orderId;
+    setResultOpen(true);
   };
 
   if (!patient) {
@@ -197,14 +223,20 @@ export default function PatientChart() {
     <div className="flex h-full flex-col">
       <Header title="Karton pacijenta" />
       <div className="page-container">
-        <div className="mb-6">
-          <h1 className="text-2xl font-heading font-semibold">{patient.firstName} {patient.lastName}</h1>
-          <p className="text-sm text-muted-foreground">JMBG: {patient.jmbg} • Tel: {patient.phone}</p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-heading font-semibold">{patient.firstName} {patient.lastName}</h1>
+            <p className="text-sm text-muted-foreground">JMBG: {patient.jmbg} • Tel: {patient.phone}</p>
+          </div>
+          <div className="space-x-2">
+            <Button variant="outline" onClick={() => setPdfOpen(true)}>PDF izvoz</Button>
+          </div>
         </div>
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="overview">Pregled</TabsTrigger>
+            <TabsTrigger value="vitals">Vitalni znakovi</TabsTrigger>
             <TabsTrigger value="problems">Problemi</TabsTrigger>
             <TabsTrigger value="allergies">Alergije</TabsTrigger>
             <TabsTrigger value="medications">Medikacija</TabsTrigger>
@@ -212,7 +244,7 @@ export default function PatientChart() {
             <TabsTrigger value="results">Rezultati</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
+          <TabsContent value="overview" className="space-y-4" id="section-overview">
             <Card className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -362,7 +394,7 @@ export default function PatientChart() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="orders" className="space-y-4">
+          <TabsContent value="orders" className="space-y-4" id="section-orders">
             <Card className="p-4">
               <div className="grid gap-2 md:grid-cols-5">
                 <Select value={orderType} onValueChange={(v) => setOrderType(v as any)}>
@@ -421,7 +453,22 @@ export default function PatientChart() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="results" className="space-y-4">
+          <TabsContent value="results" className="space-y-4" id="section-results">
+            <Card className="p-4">
+              <div className="flex items-center gap-4">
+                <label className="text-sm flex items-center gap-2">
+                  <input type="checkbox" checked={onlyAbnormal} onChange={(e) => setOnlyAbnormal(e.target.checked)} />
+                  Samo abnormalni
+                </label>
+                <label className="text-sm flex items-center gap-2">
+                  Sortiraj
+                  <select className="rounded-md border bg-background px-2 py-1 text-sm" value={sortDir} onChange={(e) => setSortDir(e.target.value as any)}>
+                    <option value="desc">Najnoviji</option>
+                    <option value="asc">Najstariji</option>
+                  </select>
+                </label>
+              </div>
+            </Card>
             <Card className="p-0">
               <div className="overflow-x-auto">
                 <table className="min-w-full">
@@ -429,24 +476,29 @@ export default function PatientChart() {
                     <tr className="border-b bg-muted/50">
                       <th className="px-4 py-2 text-left">Šifra</th>
                       <th className="px-4 py-2 text-left">Vrijednost</th>
+                      <th className="px-4 py-2 text-left">Ref. raspon</th>
                       <th className="px-4 py-2 text-left">Nalog</th>
                       <th className="px-4 py-2 text-left">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {clinical.observations.map((r) => {
+                    {(clinical.observations
+                      .filter(r => !onlyAbnormal || r.abnormal)
+                      .sort((a,b) => sortDir === 'desc' ? new Date(b.resultedAt).getTime() - new Date(a.resultedAt).getTime() : new Date(a.resultedAt).getTime() - new Date(b.resultedAt).getTime())
+                    ).map((r) => {
                       const order = clinical.orders.find(o => o.id === r.orderId);
                       return (
                         <tr key={r.id} className="border-b">
                           <td className="px-4 py-2">{r.code}</td>
                           <td className="px-4 py-2">{r.value} {r.unit}</td>
+                          <td className="px-4 py-2">{r.refLow || r.refHigh ? `${r.refLow || ''} - ${r.refHigh || ''}` : (r.refText || '-')}</td>
                           <td className="px-4 py-2">{order ? order.name : r.orderId}</td>
                           <td className="px-4 py-2">{r.abnormal ? <Badge variant="destructive">Abnormal</Badge> : <Badge variant="secondary">Normal</Badge>}</td>
                         </tr>
                       );
                     })}
                     {clinical.observations.length === 0 && (
-                      <tr><td className="px-4 py-6 text-center text-muted-foreground" colSpan={4}>Nema rezultata</td></tr>
+                      <tr><td className="px-4 py-6 text-center text-muted-foreground" colSpan={5}>Nema rezultata</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -454,6 +506,46 @@ export default function PatientChart() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Dialogs */}
+        <ReasonDialog
+          open={reasonOpen}
+          title={reasonRef.current?.title || 'Razlog izmjene'}
+          description={reasonRef.current?.description || 'Molimo unesite razlog.'}
+          onClose={() => setReasonOpen(false)}
+          onConfirm={(r) => { reasonRef.current?.onConfirm?.(r); setReasonOpen(false); }}
+        />
+        <ConfirmDialog
+          open={confirmOpen}
+          title={confirmRef.current?.title || 'Potvrda'}
+          description={confirmRef.current?.description || ''}
+          requireReason={confirmRef.current?.requireReason}
+          destructive={confirmRef.current?.destructive}
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={(r) => { confirmRef.current?.onConfirm?.(r); setConfirmOpen(false); }}
+        />
+        <ResultEntryDialog
+          open={resultOpen}
+          onClose={() => setResultOpen(false)}
+          onSubmit={async (form: ResultPayload) => {
+            const orderId = resultOrderIdRef.current!;
+            const obs: ObservationItem = { id: `${Date.now()}`, orderId, code: form.code, value: form.value, unit: form.unit, abnormal: form.abnormal, resultedAt: new Date().toISOString(), refLow: form.refLow, refHigh: form.refHigh, refText: form.refText, note: form.note };
+            const next: ClinicalData = {
+              ...clinical,
+              observations: [obs, ...clinical.observations],
+              orders: clinical.orders.map(o => o.id === orderId ? { ...o, status: 'resulted', resultId: obs.id } : o)
+            };
+            await persist(next, `rezultat unesen za nalog ${orderId}${form.abnormal ? ' (abnormal)' : ''}`);
+            addHistoryEntry(`Rezultat ${form.code}: ${form.value} ${form.unit || ''}`);
+            setResultOpen(false);
+            toast({ title: 'Rezultat unesen', description: 'Rezultat je sačuvan i dodan u historiju.' });
+          }}
+        />
+        <SectionPdfDialog open={pdfOpen} onClose={() => setPdfOpen(false)} sections={pdfSections} onConfirm={(sections) => {
+          setPdfOpen(false);
+          // PDF export implementacija može biti dodana u sljedećem koraku
+          toast({ title: 'PDF', description: `Odabrane sekcije: ${sections.join(', ')}` });
+        }} />
       </div>
     </div>
   );
