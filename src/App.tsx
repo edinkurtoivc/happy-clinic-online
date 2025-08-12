@@ -18,6 +18,8 @@ import Statistics from "./pages/Statistics";
 import NotFound from "./pages/NotFound";
 import AuditLogViewer from "./components/settings/AuditLogViewer";
 import { UserRole } from "./types/user";
+import PatientChart from "./pages/PatientChart";
+import CommandPalette from "@/components/layout/CommandPalette";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +57,7 @@ const ProtectedRoute = ({
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-auto">
         {children}
+        <CommandPalette />
       </main>
     </div>
   );
@@ -86,6 +89,11 @@ const AppRoutes = () => {
       <Route path="/medical-reports" element={
         <ProtectedRoute allowedRoles={["admin", "doctor"]}>
           <MedicalReports />
+        </ProtectedRoute>
+      } />
+      <Route path="/chart/:patientId" element={
+        <ProtectedRoute allowedRoles={["admin", "doctor", "nurse"]}>
+          <PatientChart />
         </ProtectedRoute>
       } />
       <Route path="/users" element={
