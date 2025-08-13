@@ -70,9 +70,12 @@ export default function Login() {
     try {
       setIsLoading(true);
       setLoginError(null);
-      console.log("Login attempt with:", values.email);
+      console.log("🔍 LOGIN: Login attempt with email:", values.email);
+      console.log("🔍 LOGIN: Password length:", values.password.length);
       
       const success = await login(values.email, values.password);
+      
+      console.log("🔍 LOGIN: Login result:", success);
       
       if (success) {
         if (rememberMe) {
@@ -80,12 +83,14 @@ export default function Login() {
         } else {
           localStorage.removeItem('rememberedEmail');
         }
+        console.log("🔍 LOGIN: Login successful, navigating to dashboard");
         toast({
           title: "Dobrodošli",
           description: "Uspješno ste prijavljeni."
         });
         navigate('/');
       } else {
+        console.log("🔍 LOGIN: Login failed");
         setLoginError("Prijava nije uspjela. Provjerite svoje podatke.");
       }
     } catch (error) {
