@@ -204,6 +204,7 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
   };
 
   const handlePrint = (reportId: string) => {
+    console.log("[MedicalReports] Print button clicked, reportId:", reportId, "patientId:", patient.id);
     // Make sure to pass the patient ID when navigating to print a report
     navigate(`/medical-reports?reportId=${reportId}&mode=print&patientId=${patient.id}`);
   };
