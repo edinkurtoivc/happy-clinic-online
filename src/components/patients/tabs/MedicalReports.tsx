@@ -98,7 +98,7 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
     return new Date(dateString).toLocaleDateString('bs-BA', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: '2-digit'
     });
   };
 
@@ -302,7 +302,7 @@ export function MedicalReports({ patient }: MedicalReportsProps) {
                     <p className="font-medium">{report.appointmentType}</p>
                     <p className="text-sm text-muted-foreground">
                       {formatDate(report.date)} · {
-                        'doctor' in report ? report.doctor : report.doctorInfo?.fullName || "Doktor"
+                        'doctor' in report ? report.doctor : (report.doctorInfo?.fullName || "Dr. Marko Marković")
                       }
                     </p>
                   </div>
