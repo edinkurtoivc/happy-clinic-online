@@ -189,6 +189,20 @@ export default function Login() {
                   <Checkbox id="rememberMe" checked={rememberMe} onCheckedChange={(v) => setRememberMe(!!v)} disabled={isLoading} />
                   <Label htmlFor="rememberMe">Zapamti me</Label>
                 </div>
+                <Button 
+                  type="button" 
+                  variant="link" 
+                  className="px-0 font-normal text-sm h-auto"
+                  onClick={() => {
+                    toast({
+                      title: "Zaboravljena šifra",
+                      description: "Kontaktirajte administratora za resetovanje šifre.",
+                    });
+                  }}
+                  disabled={isLoading}
+                >
+                  Zaboravili ste šifru?
+                </Button>
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
