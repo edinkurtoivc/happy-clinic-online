@@ -144,17 +144,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         // If still no users, set default users
         if (!users || users.length === 0) {
-          console.log("No users found, initializing default users");
+          console.log("🔧 No users found, initializing default users");
           // Make sure passwords are properly hashed and not lost during serialization
           await dataStorageService.saveUsers(defaultUsers);
           localStorage.setItem("users", JSON.stringify(defaultUsers));
-          console.log("[AuthContext] Initialized default users");
+          console.log("[AuthContext] ✅ Initialized default users:", defaultUsers.length);
           users = defaultUsers;
         } else {
+          console.log("🔧 Found existing users:", users.length);
+          // Always check if we need to add missing default users
+          const existingEmails = users.map(u => u.email);
+          const missingUsers = defaultUsers.filter(defaultUser => 
+            !existingEmails.includes(defaultUser.email)
+          );
+          
+          if (missingUsers.length > 0) {
+            console.log("🔧 Adding missing default users:", missingUsers.map(u => u.email));
+            users = [...users, ...missingUsers];
+            await dataStorageService.saveUsers(users);
+            localStorage.setItem("users", JSON.stringify(users));
+          }
+          
           // Verify that all users have passwords, if not, update them
           const usersNeedUpdate = users.some(user => !user.password);
           if (usersNeedUpdate) {
-            console.log("Some users missing passwords, updating from defaults");
+            console.log("🔧 Some users missing passwords, updating from defaults");
             // Update users that are missing passwords
             users = users.map(user => {
               const defaultUser = defaultUsers.find(du => du.email === user.email);
