@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import MedicalReportPreview from "@/components/medical-reports/MedicalReportPreview";
 import MedicalReportForm from "@/components/medical-reports/MedicalReportForm";
@@ -32,6 +33,7 @@ const currentDoctor = {
 export default function MedicalReports() {
   const { toast } = useToast();
   const { user } = useAuth(); // Get the current authenticated user
+  const [searchParams] = useSearchParams();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isVerificationDialogOpen, setIsVerificationDialogOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -92,6 +94,64 @@ export default function MedicalReports() {
       console.warn("[MedicalReports] No data folder path found in localStorage");
     }
 }, [toast]);
+
+  // Handle URL parameters for printing specific reports
+  useEffect(() => {
+    const reportId = searchParams.get('reportId');
+    const mode = searchParams.get('mode');
+    const patientId = searchParams.get('patientId');
+
+    if (reportId && mode === 'print' && patientId) {
+      console.log("[MedicalReports] Loading report for printing:", { reportId, patientId });
+      
+      // Load the report from localStorage
+      const savedReports = localStorage.getItem('medicalReports');
+      if (savedReports) {
+        try {
+          const allReports = JSON.parse(savedReports);
+          const report = allReports.find((r: any) => r.id === reportId);
+          
+          if (report) {
+            // Load the patient
+            const savedPatients = localStorage.getItem('patients');
+            if (savedPatients) {
+              const patients = JSON.parse(savedPatients);
+              const patient = patients.find((p: any) => p.id.toString() === patientId);
+              
+              if (patient) {
+                const typedPatient = ensurePatient({
+                  ...patient,
+                  gender: patient.gender as 'M' | 'F'
+                });
+                
+                // Set the state
+                setSelectedPatient(typedPatient);
+                setReportText(report.report || "");
+                setTherapyText(report.therapy || "");
+                setSelectedExamType(report.appointmentType || "");
+                setHasSignature(report.signature || false);
+                setHasStamp(report.stamp || false);
+                setSavedReport(report);
+                setIsSaved(true);
+                
+                // Auto-trigger print after a short delay
+                setTimeout(() => {
+                  generatePDF();
+                }, 1000);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("[MedicalReports] Error loading report for printing:", error);
+          toast({
+            title: "Greška",
+            description: "Nije moguće učitati nalaz za printanje",
+            variant: "destructive"
+          });
+        }
+      }
+    }
+  }, [searchParams, toast]);
 
   // Load versions from storage when a report is selected/created
   useEffect(() => {
