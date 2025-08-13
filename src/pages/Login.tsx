@@ -21,7 +21,7 @@ const loginSchema = z.object({
 });
 
 export default function Login() {
-  const { login, isAuthenticated, isLoadingAuth } = useAuth();
+  const { login, isAuthenticated, isLoadingAuth, bypassAuth, toggleBypassAuth } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
@@ -217,10 +217,20 @@ export default function Login() {
           </Form>
           
         </CardContent>
-        <CardFooter className="text-center">
-          <p className="text-sm text-muted-foreground w-full">
-            Sistem kliničke evidencije | v1.0.0
-          </p>
+        <CardFooter className="space-y-4">
+          <div className="w-full flex flex-col items-center gap-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={toggleBypassAuth}
+              className="w-full"
+            >
+              {bypassAuth ? "Uključi autentifikaciju" : "Zaobiđi autentifikaciju (DEV)"}
+            </Button>
+            <p className="text-sm text-muted-foreground text-center">
+              Sistem kliničke evidencije | v1.0.0
+            </p>
+          </div>
         </CardFooter>
       </Card>
     </div>
