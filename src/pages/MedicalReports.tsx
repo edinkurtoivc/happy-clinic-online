@@ -506,6 +506,17 @@ try {
       localStorage.setItem('auditLogs', JSON.stringify(logs));
     } catch {}
 
+    // Read appearance settings from localStorage (same as MedicalReportPreview)
+    const fontScale = parseFloat(localStorage.getItem('reportFontScale') || '1');
+    const baseFontSize = 14;
+    const fontSizePx = Math.round(baseFontSize * fontScale);
+    
+    // Get style preferences (same as MedicalReportPreview)
+    const stylePrefs = JSON.parse(localStorage.getItem('reportStylePrefs') || '{}');
+    const headingFont = stylePrefs.headingFont || 'Open Sans';
+    const sectionBackground = stylePrefs.sectionBackground || 'light';
+    const showQr = stylePrefs.showQr !== false; // default true
+    const showReportCode = stylePrefs.showReportCode !== false; // default true
     
     // Get the current user's name for the print
     const currentUserName = user ? `${user.firstName} ${user.lastName}` : currentDoctor.name;
@@ -532,6 +543,13 @@ try {
         return;
       }
       
+      // Define section background styles based on preference
+      const sectionBgStyle = sectionBackground === 'white' 
+        ? 'background: white; border: 1px solid #e5e7eb;'
+        : sectionBackground === 'none'
+        ? 'background: transparent; border: none;'
+        : 'background: #f9fafb; border: 1px solid #e5e7eb;'; // light (default)
+      
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
@@ -539,28 +557,51 @@ try {
             <title>Nalaz - ${selectedPatient?.name || 'Pacijent'}</title>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
             <style>
-              @media print { @page { size: A4; margin: 15mm; } .content-box { background: transparent; border: none; padding: 0; } }
-              body { font-family: 'Open Sans', sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 0; }
+              @media print { 
+                @page { size: A4; margin: 15mm; } 
+                .content-box { ${sectionBackground === 'none' ? 'background: transparent !important; border: none !important; padding: 0 !important;' : ''} }
+              }
+              body { 
+                font-family: '${headingFont}', sans-serif; 
+                color: #333; 
+                line-height: 1.6; 
+                margin: 0; 
+                padding: 0; 
+                font-size: ${fontSizePx}px;
+              }
               .print-container { max-width: 210mm; margin: 0 auto; padding: 20px; box-sizing: border-box; }
               .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 10px; }
-              .clinic-name { font-weight: bold; font-size: 20px; color: #059669; }
-              .clinic-info { font-size: 12px; color: #666; text-align: right; }
+              .clinic-name { font-weight: bold; font-size: ${Math.round(fontSizePx * 1.43)}px; color: #059669; }
+              .clinic-info { font-size: ${Math.round(fontSizePx * 0.86)}px; color: #666; text-align: right; }
               .patient-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
               .separator { border-top: 1px solid #e5e7eb; margin: 20px 0; }
-              .report-code { font-weight: bold; background: #f9fafb; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 4px; color: #059669; display: inline-block; }
+              .report-code { font-weight: bold; ${sectionBgStyle} padding: 8px 12px; border-radius: 4px; color: #059669; display: inline-block; }
               .exam-type { font-weight: medium; color: #059669; margin-top: 8px; text-align: right; }
-              .verified-badge { display: flex; align-items: center; color: #059669; font-size: 12px; justify-content: flex-end; margin-top: 4px; }
+              .verified-badge { display: flex; align-items: center; color: #059669; font-size: ${Math.round(fontSizePx * 0.86)}px; justify-content: flex-end; margin-top: 4px; }
               .verified-dot { height: 8px; width: 8px; background-color: #059669; border-radius: 50%; margin-right: 4px; }
               .content-section { margin-bottom: 30px; }
-              .section-title { font-weight: bold; margin-bottom: 10px; font-size: 16px; }
-              .content-box { padding: 15px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; min-height: 100px; white-space: pre-wrap; }
+              .section-title { 
+                font-weight: bold; 
+                margin-bottom: 10px; 
+                font-size: ${Math.round(fontSizePx * 1.14)}px; 
+                font-family: '${headingFont}', sans-serif;
+              }
+              .content-box { 
+                padding: 15px; 
+                ${sectionBgStyle}
+                border-radius: 6px; 
+                min-height: 100px; 
+                white-space: pre-wrap; 
+                font-size: ${fontSizePx}px;
+                line-height: 1.6;
+              }
               .signature-area { display: flex; justify-content: flex-end; align-items: flex-end; margin-top: 60px; gap: 20px; }
               .signature-line { border-bottom: 1px solid #000; width: 120px; display: inline-block; margin-bottom: 4px; }
-              .signature-name { font-size: 12px; color: #666; text-align: center; }
+              .signature-name { font-size: ${Math.round(fontSizePx * 0.86)}px; color: #666; text-align: center; }
               .stamp { border: 2px dashed #ccc; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; color: #999; }
-              .footer { margin-top: 60px; padding-top: 10px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #666; }
+              .footer { margin-top: 60px; padding-top: 10px; border-top: 1px solid #e5e7eb; text-align: center; font-size: ${Math.round(fontSizePx * 0.86)}px; color: #666; }
             </style>
           </head>
           <body>
@@ -601,16 +642,16 @@ try {
                   <p><strong>Datum rođenja:</strong> ${selectedPatient ? (() => { try { return new Date(selectedPatient.dob).toLocaleDateString('bs-BA',{day:'2-digit',month:'2-digit',year:'numeric'});} catch(e){ return selectedPatient.dob || ""; } })() : ""}</p>
                   <p><strong>Spol:</strong> ${selectedPatient ? (selectedPatient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
                   <p><strong>JMBG:</strong> ${selectedPatient ? selectedPatient.jmbg : ""}</p>
-                  <p style="margin-top: 10px; font-size: 12px; color: #666;">Datum i vrijeme izdavanja: ${new Date().toLocaleDateString('bs-BA',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</p>
-                  <p style="font-size: 12px; color: #666;">Izdao: ${currentUserName}</p>
+                  <p style="margin-top: 10px; font-size: ${Math.round(fontSizePx * 0.86)}px; color: #666;">Datum i vrijeme izdavanja: ${new Date().toLocaleDateString('bs-BA',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</p>
+                  <p style="font-size: ${Math.round(fontSizePx * 0.86)}px; color: #666;">Izdao: ${currentUserName}</p>
                 </div>
                 <div style="text-align: right;">
-                  ${savedReport?.reportCode ? `<div class="report-code">Broj nalaza: ${savedReport.reportCode}</div>` : ''}
+                  ${showReportCode && savedReport?.reportCode ? `<div class="report-code">Broj nalaza: ${savedReport.reportCode}</div>` : ''}
                   ${selectedExamType ? `<div class="exam-type">Vrsta pregleda: ${selectedExamType}</div>` : ''}
-                  ${qrUrl ? `<img src="${qrUrl}" alt="QR kod nalaza" style="width:96px;height:96px;margin-top:8px;" />` : ''}
+                  ${showQr && qrUrl ? `<img src="${qrUrl}" alt="QR kod nalaza" style="width:96px;height:96px;margin-top:8px;" />` : ''}
                   ${savedReport?.verificationStatus === 'verified' ? `
                     <div class="verified-badge"><div class="verified-dot"></div><span>Verificirano</span></div>
-                    <p style="font-size: 12px; color: #666; margin-top: 4px;">Verificirao: ${verifierName}</p>
+                    <p style="font-size: ${Math.round(fontSizePx * 0.86)}px; color: #666; margin-top: 4px;">Verificirao: ${verifierName}</p>
                   ` : ''}
                 </div>
               </div>
