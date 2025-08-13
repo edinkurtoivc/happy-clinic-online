@@ -36,7 +36,7 @@ export default function VitalSignsTab({ items, onChange }: VitalSignsTabProps) {
   const chartData = items
     .filter(i => numericTypes.includes(i.type))
     .map(i => ({
-      time: new Date(i.takenAt).toLocaleString(),
+      time: new Date(i.takenAt).toLocaleDateString('bs-BA', {day:'2-digit', month:'2-digit', year:'2-digit'}),
       type: i.type,
       value: Number(i.value.replace(',', '.')),
     }));
@@ -76,7 +76,7 @@ export default function VitalSignsTab({ items, onChange }: VitalSignsTabProps) {
                     {i.type === 'BP' ? <Badge>BP</Badge> : i.type === 'HR' ? <Badge>HR</Badge> : i.type === 'Temp' ? <Badge>Temp</Badge> : i.type === 'SpO2' ? <Badge>SpO₂</Badge> : <Badge>RR</Badge>}
                   </td>
                   <td className="px-4 py-2">{i.value} {i.unit}</td>
-                  <td className="px-4 py-2">{new Date(i.takenAt).toLocaleString()}</td>
+                  <td className="px-4 py-2">{new Date(i.takenAt).toLocaleDateString('bs-BA', {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
                 </tr>
               ))}
               {items.length === 0 && (

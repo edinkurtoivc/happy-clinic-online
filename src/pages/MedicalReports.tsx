@@ -699,10 +699,10 @@ try {
               <div class="patient-info">
                 <div>
                   <p><strong>Ime i Prezime:</strong> ${selectedPatient ? selectedPatient.name : ""}</p>
-                  <p><strong>Datum rođenja:</strong> ${selectedPatient ? (() => { try { return new Date(selectedPatient.dob).toLocaleDateString('bs-BA',{day:'2-digit',month:'2-digit',year:'numeric'});} catch(e){ return selectedPatient.dob || ""; } })() : ""}</p>
+                  <p><strong>Datum rođenja:</strong> ${selectedPatient ? (() => { try { return new Date(selectedPatient.dob).toLocaleDateString('bs-BA',{day:'2-digit',month:'2-digit',year:'2-digit'});} catch(e){ return selectedPatient.dob || ""; } })() : ""}</p>
                   <p><strong>Spol:</strong> ${selectedPatient ? (selectedPatient.gender === "M" ? "Muški" : "Ženski") : ""}</p>
                   <p><strong>JMBG:</strong> ${selectedPatient ? selectedPatient.jmbg : ""}</p>
-                  <p style="margin-top: 10px; font-size: ${Math.round(fontSizePx * 0.86)}px; color: #666;">Datum i vrijeme izdavanja: ${new Date().toLocaleDateString('bs-BA',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</p>
+                  <p style="margin-top: 10px; font-size: ${Math.round(fontSizePx * 0.86)}px; color: #666;">Datum i vrijeme izdavanja: ${new Date().toLocaleDateString('bs-BA',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'})}</p>
                   <p style="font-size: ${Math.round(fontSizePx * 0.86)}px; color: #666;">Izdao: ${currentUserName}</p>
                 </div>
                 <div style="text-align: right;">

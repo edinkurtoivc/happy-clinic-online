@@ -178,7 +178,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       if (!dateString) return "";
       
       try {
-        return format(new Date(dateString), "dd.MM.yyyy.");
+        return format(new Date(dateString), "dd.MM.yy.");
       } catch (e) {
         return dateString;
       }
@@ -188,7 +188,7 @@ const MedicalReportPreview = forwardRef<HTMLDivElement, MedicalReportPreviewProp
       if (!dateString) return "";
       
       try {
-        return format(new Date(dateString), "dd.MM.yyyy. HH:mm");
+        return format(new Date(dateString), "dd.MM.yy. HH:mm");
       } catch (e) {
         return dateString;
       }

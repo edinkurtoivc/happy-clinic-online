@@ -21,7 +21,7 @@ export function PatientDetailsForm({
     return new Date(dateString).toLocaleDateString('bs-BA', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: '2-digit'
     });
   };
 

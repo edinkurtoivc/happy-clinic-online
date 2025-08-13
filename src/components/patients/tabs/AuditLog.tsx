@@ -136,7 +136,7 @@ export function AuditLogTab({ auditLogs }: AuditLogProps) {
             <tbody>
               {filteredLogs.map((log) => (
                 <tr key={log.id} className="border-b hover:bg-muted/50">
-                  <td className="px-4 py-2">{new Date(log.performedAt).toLocaleString('bs-BA')}</td>
+                  <td className="px-4 py-2">{new Date(log.performedAt).toLocaleDateString('bs-BA', {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
                   <td className="px-4 py-2">
                     <span className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${
                       log.action === 'create' ? 'bg-green-100 text-green-800' : 

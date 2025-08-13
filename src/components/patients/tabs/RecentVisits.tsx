@@ -70,7 +70,7 @@ export function RecentVisits({ patientHistory, setIsScheduling, patient }: Recen
     return new Date(dateString).toLocaleDateString('bs-BA', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: '2-digit'
     });
   };
 

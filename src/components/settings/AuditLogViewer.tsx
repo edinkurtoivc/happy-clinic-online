@@ -110,7 +110,7 @@ const AuditLogViewer = ({ embedded = false }: AuditLogViewerProps) => {
       if (log.performedAt) {
         // Format for structured audit logs
         return {
-          timestamp: new Date(log.performedAt).toLocaleString(),
+          timestamp: new Date(log.performedAt).toLocaleDateString('bs-BA', {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'}),
           userId: log.performedBy || "",
           role: log.entityType || "",
           action: log.action || "",
